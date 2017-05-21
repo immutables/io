@@ -1,0 +1,14 @@
+java_package(
+  name = 'parse',
+  res = glob(['*.grammar']),
+  deps = [
+    '//src/io/immutables/collect:collect',
+    '//src/io/immutables/grammar:grammar',
+    '//lib:immutables_trees',
+  ],
+  processors = ['io.immutables.grammar.processor.Processor'],
+  processor_deps = [
+    '//src:metainf_annotations',
+    '//src/io/immutables/grammar/processor:processor',
+  ]
+)

@@ -1,0 +1,14 @@
+'num' ~ [0-9]+
+'space' ~ ' '
+'if' ~ 'if' ![a-zA-Z0-9]
+'af' ~ 'affiliate'
+'ff' ~ 'affect'
+'iden' ~ [a-zA-Z][a-zA-Z0-9]*
+'lp' ~ '(' !'('
+'<_<' ~ '<' & '<'
+'<' ~ '<' 
+'rp' ~ ')'
+'eq' ~ '=='
+'let' ~ '='
+<id> ~ [a-z]+
+<constant> ~ [0-9]+

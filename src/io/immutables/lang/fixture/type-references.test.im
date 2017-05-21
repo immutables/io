@@ -1,0 +1,21 @@
+
+type A<X, Y>() :: (Int, X) == Y
+
+type ComplicatedReferences(x, y Int | (Int, Bool, String))
+
+type MoreComplicatedReferences(a {b Int, z Bool, r String}, x ZugZug)
+
+type SuffixReferences{a String?, b Int~}
+
+type CombinedReferences(a (Int~)?)
+
+type Sequence(a Int...)
+
+type ComplicatedSequences{a (Int...)?, y Int..., x {a, z String...}}
+
+type ComplicatedConstraints<A, B, C>() :: A == B..., A? == B~, Abz<(String, Int), C>
+
+type ComplicatedMultilineConstraints<A, B, C>()
+  :: A == B...
+  :: A? == B~
+  :: Abz<(String, Int), C>

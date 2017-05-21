@@ -1,0 +1,44 @@
+
+type EmptyProduct ()
+
+type SingleProduct (x Int) // Trailing comment
+
+// On top comment
+type TrioGroupedProduct(x, y, z Int)
+
+type TrioUngroupedProduct(x Int, y Bool, z String)
+
+type TwoPairsProduct(a, b Int, t, u Double)
+
+type Alternative(a Int | Bool)
+
+type TwoAlternatives(a Int | Bool, b String | Int)
+
+type EmptyRecord{}
+
+type EmptyNewlineRecord {
+}
+
+type EmptyCommentRecord {
+  // Empty record
+  // With multiline comment
+}
+
+type SimpleRecord { a Int, b Bool, c String }
+
+type GropedRecord {
+  x, y, z Int
+  comment String
+  // This is the first line
+  // The second one
+  // The third line is great
+  description String
+  // Flag
+  t, u Bool // Trailing comment
+}
+
+type DefaultValues {
+  memo String: "Irrelevant"
+  x, y Double: 0
+  v, w Bool: true
+}

@@ -1,0 +1,30 @@
+// Rocketspace API
+// Is super cool
+title: "Rocketspace API"
+host: "http://derevitour.touridev.com"
+base: "/dev"
+version: "1.0.0"
+schemes: ["https"]
+produces: ["application/json"]
+consumes: ["application/json"]
+
+// Documentation
+get /request/{siren}
+path {
+  // siren
+  siren String
+}
+response 200 String
+
+// Gets path of it
+post /path
+reques{
+
+
+}
+query {
+  query param Int
+  query param2 Number
+  query param3 String
+}
+response 200 Type

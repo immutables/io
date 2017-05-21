@@ -1,0 +1,13 @@
+java_package(
+  name = 'jaeger',
+  res = glob(['*.jg']),
+  deps = [
+    '//src/io/immutables/collect:collect',
+    '//src/io/immutables/grammar:grammar',
+    '//src/io/immutables/jaeger/parse:parse',
+    '//lib:gson',
+    '//lib:jackson',
+    '//lib:jackson_yaml',
+    '//lib:immutables_gson',
+  ]
+)

@@ -1,0 +1,109 @@
+
+number ~ [0-9]+
+
+value
+	number
+
+expression
+	| left:value "+" right:value
+	| left:value "-" right:value
+	| left:value "*" right:value
+
+expression
+	value binary-op value
+
+binary-op
+	| "+"
+	| "-"
+	| "*"
+
+
+identifier ~
+unicode ~
+
+expression
+	| terminal
+	| operation
+
+terminal
+	| number
+	| string
+
+operation
+	| terminal binary-operator-symbol terminal
+	| ("(" parens ")")*
+
+parametrized
+	| abarvalg right: expression? left: expression* '}'
+	| abarvalg right: expression? right: expression* '}'
+
+expression
+	package
+
+operation
+	| state: '{' end ?
+	| shallow: '{' commid ?
+
+amorphism
+	| isomorphism
+
+
+lex1 ~ [a][b]*[z]?
+lex2 ~ [h-j][A-Z][U]*
+lex3 ~ [a-zA-Z]
+lex4 ~ [a-zA-Z0-9]?
+lex5 ~ [a-zA][1a-z]
+lex6 ~ [\u0000\u1]*[a\n\f\rcs-\u01]
+
+-- Simple
+uni ~ [1]
+number ~ [0-9][0-9]+
+identifier ~ [a-zA-Z][a-zA-Z0-9\n]*
+
+-- pro
+prod0
+	e0
+
+-- something else
+prod1
+	e1 e2
+
+prod2
+	e3+ e4* e5
+
+prod2
+	e3+ e4* e5
+
+-- difference
+prod3
+	e6? (e7 e8 e9)* (e1 e2)?
+
+prod3
+	(a:aa b:ass)?
+
+prod4
+	| alt-arcansas
+	| balt
+	| zalt
+
+prod5
+	| a
+	| b
+	| c
+
+terminal
+	| number '{' '}' '*'
+	| string bing wing
+
+operation
+	| terminal binary-operator-symbol terminal
+	| tag: '{' bag: ( group poop ) *
+	| ('<' parens '>')*
+
+parameterized
+	| abarvalg right: expression? left: expression* '}'
+	| abarvalg right: expression? right: expression* '}'
+
+operation
+	| shallow: commid ?
+	| state: ('&' aaa)	end ?

@@ -1,0 +1,29 @@
+
+// Mixed content of compilation unit
+
+constant = 1
+
+packageFeature String {
+  //
+}
+
+inPackageDefinition(a Int, b String) {
+  h = 1
+  c = 2
+}
+
+main {
+  //println
+}
+
+concept Bulshitter{}
+
+//x, y, z = 1, 2, 3
+type Point(x, y, z Double)
+
+type Person{ name1 String, age2 Bool } :: Bulshitter {
+  name String { // return name
+  }
+  age Bool { // return age
+  }
+}

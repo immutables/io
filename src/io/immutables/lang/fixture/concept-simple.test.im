@@ -1,0 +1,21 @@
+
+concept ConceptName {}
+
+concept Conc<A, B> {
+}
+
+concept Num<E> :: Self<E> {
+  (E) + (E) E
+  (E) - (E) E
+  (E) / (E) E
+  (E) * (E) E
+  - (E) E
+}
+
+concept NumericSlot<V>
+  :: Self<V>
+  :: Slot<V>
+  :: Num<V> {
+  (V) ++ // increment slot content
+  (V) -- // decrement slot content
+}

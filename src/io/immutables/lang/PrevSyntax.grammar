@@ -1,0 +1,162 @@
+----------------------------------------------------------------
+-- Terms
+-- This list contains only necessary refinements to terms
+-- and identifier-like lexical elements. Most of the delimiters
+-- are inlined into production definitions
+----------------------------------------------------------------
+
+-- Keywords should not be followed by a word identifier without delimiter
+keyword:
+  'type' ~ 'type' ! [a-zA-Z0-9]
+
+keyword-types:
+  'int' ~ 'int' ! [a-zA-Z0-9]
+  'bool' ~ 'bool' ! [a-zA-Z0-9]
+  'float' ~ 'float' ! [a-zA-Z0-9]
+
+-- Only forcing the priority order for compound operators
+delimiters:
+  '::' ~ '::'
+  ':' ~ ':'
+  '==' ~ '=='
+  '=' ~ '='
+
+identifier:
+  <name> ~ [a-z][a-zA-Z0-9]*
+  <typename> ~ [A-Z][a-zA-Z0-9]*
+
+other:
+  <number> ~ [0-9]+
+  <string> ~ ["][^"]*["]
+  -- FIXME if there's no newline at the end of file
+  -- lexer breaks, need handle
+  <comment-newline> ~ [/][/][^\n]*[\n]
+  <newline> ~ [\n]
+
+-- lists terms which are skipped by parser
+ignored:
+  <spacing> ~ [\s\r\t]+
+
+----------------------------
+-- Productions
+----------------------------
+
+unit
+  elements:unit-element+
+
+unit-element
+  | concept-declaration
+  | empty-declaration
+--  | type-declaration
+
+empty-declaration
+  nl
+
+nl
+  | <comment-newline>
+  | <newline>
+
+type-declaration
+  'type' name:<typename> type-parameters? constructor:parameter-constructor type-constraints-trail
+
+(type-constraints-trail)
+   nl? type-constraints?
+
+concept-declaration
+  'concept' name:<typename> type-parameters? type-constraints-trail
+
+(type-parameters)
+  '<' type-parameter:<typename> (',' type-parameter:<typename>)* '>'
+
+(type-constraints)
+  '::' constraint:type-constraint (',' constraint:type-constraint)*
+
+type-constraint
+  | type-constraint-equivalence
+  | type-constraint-conception
+
+-- T == Box<Y>
+type-constraint-equivalence
+  left:type-reference '==' right:type-reference
+
+-- Eq<A>
+type-constraint-conception
+  concept:type-reference-declared
+
+type-reference
+  | type-reference-keyword
+  | type-reference-product
+  | type-reference-record
+  | type-reference-list
+  | type-reference-slot
+  | type-reference-option
+  | type-reference-variant
+  | type-reference-declared
+
+-- bool
+type-reference-keyword
+  | name:'int'
+  | name:'bool'
+  | name:'float'
+
+-- (Aa, Bb)
+type-reference-product
+  | '(' ')'
+  | '(' component:type-reference (',' component:type-reference)* ')'
+
+-- {x, y, z int, comment String}
+type-reference-record
+  '{' nl? fields:field-parameters (field-separator fields:field-parameters)* field-separator? '}'
+
+field-parameters
+  name:<name> (',' name:<name>)* type:type-reference
+
+(field-separator)
+  | ',' nl?
+  | nl
+
+-- [String]
+type-reference-list
+  '[' component:type-reference ']'
+
+-- String?
+type-reference-option
+  '?' component:type-reference
+
+-- ~Int
+type-reference-slot
+  '~' component:type-reference
+
+type-reference-variant
+  '|' alternative:type-reference ('|' alternative:type-reference)+
+
+-- String or Box<Nail>
+type-reference-declared
+  name:<typename> type-arguments?
+
+(type-arguments)
+  '<' argument:type-reference (',' argument:type-reference)* '>'
+
+parameter-constructor
+  | parameter-constructor-product
+  | parameter-constructor-record
+
+parameter-constructor-product
+  '(' nl? parameters:field-parameters (field-separator parameters:field-parameters)* field-separator? ')'
+
+parameter-constructor-record
+  '{' nl? parameters:field-parameters (field-separator parameters:field-parameters)* field-separator? '}'
+
+features-declaration
+  | '{' '}'
+  | '{' nl feature-element* '}'
+
+(feature-element)
+  | feature:feature-declaration nl
+  | nl
+
+feature-declaration
+  name:<name> type-parameters? input:parameter-constructor? output:feature-type-output
+
+feature-type-output
+  component:type-reference (',' component:type-reference)*

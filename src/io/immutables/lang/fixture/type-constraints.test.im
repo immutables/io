@@ -1,0 +1,14 @@
+
+type Equiv<T, U>() :: T == U
+
+type EquivOpt<W, Y>() :: W? == Y
+
+type ContextConstraint() :: Context
+
+type ManyContextConstraint() // This is trailing comment
+  :: Context, AnotherContext, YetAnotherContext
+
+type ConceptFormation<A>() :: Concept<A>
+
+// On top comment
+type ConceptAndEquiv<X, Y, Z>() :: Concept<X>, Y == Z, Z == Y?

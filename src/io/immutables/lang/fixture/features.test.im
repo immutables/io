@@ -1,0 +1,58 @@
+
+concept DirectionalMover {
+  up
+  down
+  left
+  right
+}
+
+type Position() :: DirectionalMover {
+  x, y Int~ := 0
+
+  up {
+    // y++
+  }
+
+  down {
+    // y--
+  }
+
+  left {
+    // x--
+  }
+
+  right {
+    // x++
+  }
+}
+
+concept Eq<A> :: Self<A> {
+  (A) == (A)
+  (a A) != (b A) { // !(a == b)
+  }
+}
+
+concept Cmp<A> :: Eq<A> {
+  // The only method which is actually required to be implemented
+  compareTo(a A) Int
+
+  (left A) > (right A) Bool { // left.compareTo(right) > 0
+  }
+  (left A) < (right A) Bool { // left.compareTo(right) < 0
+  }
+  (left A) != (right A) Bool {
+    // left.compareTo(right) != 0
+  }
+
+  (left A) == (right A) Bool {
+    // left.compareTo(right) == 0
+  }
+  // On top comment
+  (left A) >= (right A) Bool { // additional comment
+    // left.compareTo(right) >= 0
+  }
+
+  (left A) <= (right A) Bool {
+    // left.compareTo(right) <= 0
+  }
+}

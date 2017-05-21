@@ -1,0 +1,1026 @@
+
+a, b = produce
+
+struct Complex {
+  re, im Double
+}
+
+type Color {
+  Rgb()
+  Rbb()
+}
+
+type Person{
+  name String
+  age Bool
+} impl {
+  name String { // return name
+  }
+  age Bool { // return age
+  }
+}
+
+type Point {x, y, z Int}
+
+p = Point{x: 1, y: 2, z: 3}
+z = p.{x: 2}
+
+type Point(x, y, z Int) impl {
+
+}
+
+for a <- as, b <- bs {
+  if c.break() {
+
+  }
+}
+
+
+// if convenience constructors will be really needed
+Complex.of(re, im Double) Complex {re: re; im: im}
+Complex.zero Complex{re: 0; im: 0}
+
+// OR??
+
+type Complex {
+  re, im Double
+
+  impl {
+    re()
+  }
+}
+
+impl c Complex {
+  func Double { c.re + c.im }
+}
+
+(c Complex).plus Double {c.re + c.im}
+
+(c Complex).mult Double {c.re * c.im}
+
+(c Complex).minus Double {c.re - c.im}
+
+impl c Complex {
+  plus Double { c.re + c.im }
+  mult Double { c.re * c.im }
+  minus Double { c.re - c.im }
+}
+
+(c Complex).minus Double {return c.re - c.im}
+
+impl c Complex :: Decompose<(Double, Double)> {
+
+}
+
+impl l List(T) :: Iterable(T) {
+  (l List<Optional<Y>>).resolve() Optional<List<Y>> {
+
+  }
+}
+// round or anglular brackets?
+impl l List<T> :: Iterable<T> {
+  (l List<Optional<Y>>).resolve() Optional<List<Y>> {
+
+  }
+}
+
+struct Complex {
+
+}
+
+static Complex {
+  of(re, im Double) Complex {re: re; im: im}
+  zero Complex {re: 0; im: 0}
+}
+
+class Intie(value E) :: E {
+
+} static {
+  when(value A) :: E == A {
+    Intie(value)
+  }
+}
+
+impl Complex c {
+  a, x enum { Int | Double }
+}
+
+// Box/Slot encoding
+
+type T~ (accessor SetGet<T> | value T) {
+
+}
+
+interface SetGet<T> {
+  get T
+  set(v T)
+}
+
+numbers Set<Int> {
+  return Set<Int> {1, 2, 3, 4, 5}
+}
+
+type Cmx {
+  re Double
+  im Double
+}
+
+type Coord {
+  Polar
+  Caa
+}
+
+meth(i MyInt) {
+  newMyInt = i + MyInt(12) // compile error MyInt + Int will not work
+  a = 15
+  meth(a) // compile error
+  // sdsdada
+}
+
+
+
+meth(12)
+meth(MyInt(12))
+
+
+
+type MyInt Int // new type
+
+Map<String, Int>
+
+import MyMap Map<String, Int>  // alias
+
+
+type Cmx { re, im Double } :: Decomposable<{ re, im Double }> {
+  re Double {
+    return re
+  }
+  decompose { re, im Double } {
+
+  }
+}
+
+
+
+funMenthod3{ re Double, im Double: 2 } Return | Error  {
+
+}
+
+....{
+  cmx = Cmp{ re: 1.0, im: 0.1 }
+  rr = funMethod3(cmx) | return
+}
+
+a, b = (1, 2), 3
+
+Cmx{re: 1, im: 2}
+
+type Coordinates {
+  Polar(r, f Double) {
+
+  }
+  Decart(x, y Double) {
+
+  }
+}
+
+funFunction(a Int|String) Obj {
+
+}
+
+//@PleasantHill{ a: 1, b: 2 }
+type Complex(re, im Double) {
+  h = re + 17 * im
+
+  addInts(a, b Int) { a + b }
+
+  lazyInt = Lazy<Int> {
+    get { a + b }
+  }
+
+  accessor Lazy<Int> { lazyInt }
+
+  internalField := 0
+
+  getAndSet Int~ {
+    get { internalField } // return type is Int
+    set(v Int) { internalField := v }
+  }
+
+  add(b Complex) Complex(re + b.re, im + b.im)
+
+  val() Demo {
+    a B~
+
+    a := 1
+
+    list [Int~]
+
+    list []Int~
+
+    string
+
+    (a Int~, a Int~)
+  }
+}
+
+/// Multinstanitation
+/// Aka dependency injection
+{
+  ...CorrabelModule
+  ...BluwishModule
+  ...GoblinModule
+  corralors: 1
+  burrito: 2
+}
+
+ (Int, Int)
+
+interface S {
+  burrito Int
+  corralors Int
+
+  weight Int {
+    burrito + corralors
+  }
+}
+
+type Serializable<T> {
+
+}
+
+interface Serializable {
+
+}
+
+impl Complex<T> c {
+
+}
+
+enum Complex {
+  | Covax
+  | Gobo
+}
+
+projection {
+
+}
+
+impl Complex a {
+  case a {
+  | 1 | 2 | 3 -> "dobrivetchir"
+  | "casablanka" -> gorobianka
+  | Vorotiki -> varhammer
+  | Govax -> flow
+  | Mor -> rolex
+  | Gobo -> rolexs
+  } else error("problem")
+}
+
+b = a.{
+  ...a
+  a: 1
+  b: 2
+}
+
+
+a*.call()
+
+for {
+
+
+}
+
+{ ...a, b: 2 }
+
+derivago(_ Int?) {
+  | x? -> 1
+  | _ -> 0
+}
+
+derivago<T>(list List<T>) List<T> {
+  | [x, ...xs] -> [...xs, x]
+  | [] -> []
+}
+
+enum List<T> {
+  | Cons [head T, ...tail Cons<T>]
+  | Nil []
+}
+
+derivago<T>([..., x, x]) {
+
+}
+
+decompose Option<T>() {
+
+}
+
+derivago<T>(list List<T>) {
+  if [x, ...xs] = list {
+    x
+  } else {
+    x
+  }
+}
+
+impl Maybe<Covax> {
+
+}
+
+interface Serializable {
+
+}
+
+static Complex {
+  varbrinder() {
+
+  }
+
+  gammatron() {
+
+  }
+}
+
+enum Coin {
+
+}
+
+data Coin(num Integer) {
+  | .Penny(0)
+  | .Nickel(1)
+  | .Dime(2)
+}
+
+export Symbols = {
+  constant Rgb: 1
+  constant Winter: 2
+  constant Wiber: 4
+}
+
+data Avantador {
+
+} impl {
+  constant =
+
+  Avantador.{
+    constant = "1"
+    constant = 2
+
+    promiscuitos() {
+      amputatedSoul = souls.amputate()
+      combinedSoul = souls.combine(amputatedSoul)
+      badSource = Soul {
+        mood: "bad"
+        vood: 1
+        color: #111111
+      }
+    }
+  }
+}
+
+enum Option<T> None | Some(v T) impl {}
+
+c = Complex {
+  re: 1
+  im: 2
+}
+
+{
+  kalo: 1
+  ren: 2
+  huy: buz
+}
+
+struct {
+
+} impl Anabolic,
+
+enum  {
+
+}
+
+{
+  kalo: x Integer
+  valo: y Warbringer
+}
+
+goro(a T, y T?) T where T : Name   {
+  if T == Name {
+
+  }
+}
+
+goro(a X, y Y?) => T where T, Z: Commutative<T, Z> {
+}
+
+min<T, Z>(a A, b A) => A :: T, Commutative<T, Z>, T == A {
+
+}
+
+package <X> {
+
+}
+
+goro(a X, y X) => T where T, Z: _ {
+
+}
+
+robo(T) where T: Class<X>
+
+boss() enum A | B
+
+prett >>= aabb
+
+fn functiona() Name {
+
+}
+
+functional() Name {
+
+}
+
+variadic = {
+
+} func {
+  goroscope(a, b Int) Int {
+
+  }
+
+  for () {
+    new(a, b) Waterfal {
+
+    }
+  }
+
+  procrustinator Facilitator { a + x }
+  procrust Agilitator = 2
+  progust Bughost = 1
+}
+
+fn futionale(robbie Name, williams Lastname) Name {
+  r = robbie
+  w = williams
+
+  williams.connect
+
+  if r == w {
+    return w
+  }
+
+  x = nil
+
+  if x? = pion {
+
+  }
+
+  case x {
+
+  }
+
+  a in aventador {
+    a.forEach()
+  }
+
+  [Char]
+
+  [1, 2, ...name*.beach*.beach, ...]
+
+  [2, 2, ...a in x { a * a }, ...x in ]
+
+  (1..<2)*.toString
+
+  [1..<3].forJoin
+
+  do a <- b; z <- c;
+
+
+  abracadabra =
+      for a <- b if a.z
+          z <- c if c.full
+          u <- w if z.empty {
+        a * z * u
+      }
+
+  zippocus = (a * z * u
+      for a <- b if a.z
+          z <- c if c.full
+          u <- w if z.empty).sub(5..)
+
+  first = collection[0]
+
+  [first,...] = collection
+
+
+  deps = [
+    ...deps
+    ...lib_immutables
+    ...lib_generator
+    ...lib_test
+    ': ' name
+    ...test_deps
+  ]
+
+  deps1 = deps ++ lib_immutables
+
+  abracadabra =
+      for a in b if a.z
+          z in c if c.full
+          u in w if z.empty {
+        a * z * u
+      }
+
+  cubaba = [for x <- xs if x % 2 == 0]
+
+  cubaba = xs.map{ x Int -> x * 2 }
+  cissd = xs.flatmap{ x Int -> [x * 2] }
+  folded = xs.foldl(0, x -> x * 2)
+
+  balabadu =
+      for z <- abracadabra { z * z }
+
+  hocuspocus =
+      for a, i <- collect.indexed
+          if i % 2 == 0
+          b = a * c {
+      }
+
+  // | 1, 2, 3, 4, 5 |
+
+  winners = [(p, p, x) for p <- players if p.score > 2]
+
+  winners = p.filter{ p -> p.score > 2 }
+  winners = p.{ *.score > 2 }
+
+  winners = a ?? "oscilli"
+
+  [a * z for a <- b, z <- c]
+
+  a*.{ e -> e.empty }
+
+  [1..2]
+
+  that>..(1-2) {
+
+  }
+
+  x = xpress if {
+    x * x
+  }
+
+  {{1, 2, 3}}
+
+  {
+    "" 1
+    "" 2
+    "" 3
+  }
+
+  "a"
+
+  <- r
+}
+
+segunda(a Name, c Covax) Name {
+
+}
+
+// Ceylon
+value result = parseJson(json);
+if (is ParseError result) {
+    throw AssertionError(result.message);
+}
+
+// Owlang
+result = parseJson(json)
+if r ParseError = result {
+  throw AssertionError(r.message)
+}
+
+//
+case parseJson(json) {
+  | r ParseError -> throw AssertionError(r.message)
+}
+
+// scala
+val (x, y) = object.point
+
+// imlang ?
+x, y = object.point
+
+interface X(self S) {
+  reverse S
+}
+
+for 0>..2 {
+  println(1)
+}
+
+for x <- 0>..2 {
+  println(1)
+}
+
+set = { e <- 1, 2, 3, 4, 5 } // ???
+
+set1 = e for e <- (1, 2, 3, 4, 5)
+set2 = x for x <- 1..2
+set2 = e <- 1..2
+set3 = Set(1, 2, 3, 4, 5)
+
+chan.put(1)
+chan.poll
+
+list []int
+list []int
+set {}int
+map [string]...int
+map [string][]int
+
+// set operation
+a = a & b
+b = a ~ c
+b = a ^ b
+c = a | c
+
+a = a && b
+b = a ~~ c
+b = a ^^ b
+c = a || c
+
+a = opt ?? 1
+
+struct Abacus {
+
+  list []int&
+  list [1..3]int
+  list [int ..3]
+  list [int]
+  list (int, double)
+  x, y, z int
+  set {}int
+  multimap [string: ...int]
+  maptolist [string: [int]]
+
+  map {}string:int
+  set {}(string, int)
+  map {string:int}
+  multiset []string:...int
+  multiset [string]...int
+
+  multimap {string}int
+  maptolist [string: [int]]
+  inter Abacus
+}
+
+Abacus struct {
+  list [Int]
+  multimap [String: ...Int]
+  maptolist [String: [Int]]
+  inter Abacus
+}
+
+A<T, X> ::  {
+  logvinov string,
+  viskaric int: 2
+}
+
+Abacus impl ::  {
+
+}
+
+Set{1, 2, 3, 4, 5, 6, 7}
+
+[]int{1, 2, 3, 4, 5, 6, 7}
+
+[1, 2, 3, 4, 5, 6, 7]
+
+{int}
+
+{
+  1
+  2
+  3
+}
+
+Mormorning {
+  colors {}Color
+}
+
+[first, ...rest] =
+
+
+a = (1, 2)
+
+aaa = 1
+
+aaa int = 1
+aaa int~ = 1
+
+aaa := 1
+
+type Type111<S> :: Self<S> {
+  method (param T) T :: T == Optional<S> {
+
+  }
+}
+
+Optional<T> {
+
+  flatten Optional<V> :: T == Optional<V> {
+
+  }
+}
+
+a Optional<Optional<Int>>
+
+a.flatten
+
+array []int
+
+mutableArray []int~
+
+mutableArray [1..2]int~
+
+{
+  array (int)int
+
+  array int, int {
+    return 1, 2
+  }
+}
+
+ab int {
+  aaa.{a: 1, b: 2}
+}
+
+{
+  as = {n <- 1, 2, 3}
+  a = {a, b, c}
+}
+
+
+iterable ...int
+
+iterable int, ...int
+
+concept Aaa<T> :: Numerical<T> {
+  (a T) + (b T) {
+    a.blabalba()
+  }
+}
+
+// this !
+concept Numerical<E> :: self<E> {
+  (a E) + (b E)
+  (a E) - (b E)
+  (a E) / (b E)
+  (a E) * (b E)
+}
+
+concept Numerical {
+  (a E) + (b E)
+  (a E) - (b E)
+  (a E) / (b E)
+  (a E) * (b E)
+}
+
+impl a A :: Numerical {
+
+}
+
+concept Named {
+  name string
+}
+
+type case Option<V> :: Named {
+	Some(V a)
+	None
+}
+
+type Option<V> {
+  Some(V a)
+  None
+}
+
+if value? = map[key] {
+  value
+}
+
+if [a, b, ...cs] = some.run(a + 1) {
+  return [...cs, b, a]
+}
+
+type Az {
+  acapulko Aa
+  badlands Bb
+  smurfics Cc
+}
+
+// this !
+case vaule.is {
+  | Valicaterss -> a
+  | [a] -> alternative
+} else {
+
+}
+
+// this !
+
+alka = stream.write() | err -> throw
+
+// this !
+
+if a = stream.write() {
+  andWeSucceded(a)
+} else case {
+  err CannotFindIt -> return err
+  err CannotLikeIt -> return err
+}
+
+case stream.write() {
+	| a int -> andWeSucceded(a)
+	| err CannotFindIt -> return err
+  | err CannotLikeIt -> return err
+}
+
+case stream.write() {
+	a int => andWeSucceded(a)
+	err CannotFindIt => return err
+  err CannotLikeIt => return err
+}
+
+case stream.write() {
+	a int -> andWeSucceded(a)
+	err CannotFindIt -> return err
+  err CannotLikeIt -> return err
+}
+
+case stream.write() {
+  a int: andWeSucceded(a)
+	err CannotFindIt | CannotLikeIt: return err
+}
+
+case object.mopject() {
+	[] -> 0
+	[a, b int] -> a + b
+	[a, b, c, ...d int] -> a + b + c + d.count
+}
+
+if a == 2 { a } else { b }
+
+return if a == 2 { a }
+  else { b }
+
+v = case object.mopject() {
+| [] if true -> {
+    abasc
+  }
+| [a, b] {
+    a + b
+  }
+  [a, b, c, ...d] if a + b == 2 -> {
+		a + b + c + d.count
+	}
+|	case
+} else {
+
+}
+
+when {
+  n <- actually abracadabra
+} case <- timeout {
+
+}
+
+observable =
+		for case <- actually || timeout(2.sec) {
+			a Actually | Happened: 0
+			a if true || false: korobel
+			t Timeout: 1
+		}
+
+if a == 2 -> 1sss
+else 2233
+
+a = {1, 2, 3} ~ {2, 3}
+
+if {c} = a {
+	c
+} else {
+	a
+}
+
+impl A<>
+
+// currying
+
+a.currying->
+
+a.currying->(a, b)
+
+((a, b) -> a + b)
+
+((a, b) -> a + b)
+
+f (Accent)Int = Accent a -> a
+f {String: Int} = 2
+f {string: int} = 2
+f [1..2]string = 1
+f []string =
+f [5]array = {1, 2, 3, 4, 5}
+f (milla, ...vanilla)
+
+f ...vanilla
+
+StrMap(map {String}Int)
+
+Asdadds {
+  a int
+  b int
+}
+
+type Point(x, y, z double)
+
+concept A
+
+abra { def } {
+
+}
+
+abra(1)
+
+abra int { 1 }
+
+type X(a int)
+
+
+x ...Int = for { 1 }
+
+a = [for x <- xs if x.abs]
+
+type Years(v Int) {
+	toString {
+
+	}
+}
+
+type Person {
+	name String
+	age Years
+	contacts []Contact: []
+}
+
+p = Person{name: "String", age: 1}
+p1 = p.{ age: p.age + 1 }
+
+p1 = Person{
+	...p
+	age: p.age + 1
+	contacts: [...p.contacts, cnt]
+}
+
+p2 = Person::contact.append(p1, cnt)
+
+Person::contact
+
+p1 = p.{ a: 1, b: 2 }
+
+p1 = { ...p, a: 2 }
+
+import lens<Person>
+
+l Person:>String = lens<Person>.name.toString
+
+lens<Person>.name.append(lens<Name>.toString)
+
+pn Lens<Person, Name> = Person.name
+nm Lens<Name, String> = Name.toString
+
+
+// Keywords
+
+if else case for return break continue yield
+package import export
+type concept async impl
+
+// Operators
++
+-
+*
+/
+%
+||
+~~
+++
+--
+:=
+&&
+^^
+->
+<-
+=
+()
+{}
+[]
+,.
+: ::

@@ -1,0 +1,8 @@
+// resolve imports
+
+Parse signatures into protoform and have a map by name
+
+Resolve signatures by unwinding depencencies, resolving dependencies first.
+If circular dependency is encountered, then issue an error
+
+Typecheck/resolve the body of each definition

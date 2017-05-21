@@ -1,0 +1,13 @@
+java_library(
+  name = 'metainf_extensions',
+  resources = glob(['META-INF/extensions/**']),
+  visibility = ['//...'])
+
+java_binary( # we need binary only for eclipse annotation processing  
+  name = 'metainf_extensions_jar',
+  deps = [':metainf_extensions'])
+  
+java_library(
+  name = 'metainf_annotations',
+  resources = glob(['META-INF/annotations/**']),
+  visibility = ['//...'])

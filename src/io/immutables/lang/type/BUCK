@@ -1,0 +1,4 @@
+java_package('type',
+  deps = [
+  '//src/io/immutables/collect:collect',
+  ])

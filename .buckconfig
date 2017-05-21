@@ -1,0 +1,21 @@
+[alias]
+
+[project]
+  ignore = \
+    .classes, \
+    .git, \
+    .settings, \
+    .idea, \
+    .buckd
+
+[java]
+  source_level = 1.8
+  target_level = 1.8
+  src_roots = src
+
+[log]
+  max_traces = 1
+  compress_traces = true
+
+[buildfile]
+  includes = //src/DEFS

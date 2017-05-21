@@ -1,0 +1,15 @@
+java_package(
+  name = 'lang',
+  res = glob(['*.grammar']),
+  deps = [
+    '//src/io/immutables/collect:collect',
+    '//src/io/immutables/grammar:grammar',
+    '//src/io/immutables/lang/type:type',
+    '//lib:immutables_trees',
+  ],
+  processors = ['io.immutables.grammar.processor.Processor'],
+  processor_deps = [
+    '//src:metainf_annotations',
+    '//src/io/immutables/grammar/processor:processor',
+  ]
+)

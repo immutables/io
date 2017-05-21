@@ -1,0 +1,10 @@
+
+// arbitrary spacing is intended
+
+type A ()
+
+type A1( )
+
+type B <U>()
+
+type C<X, Y, Z >()

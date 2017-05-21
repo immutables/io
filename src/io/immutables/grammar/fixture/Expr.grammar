@@ -1,0 +1,32 @@
+
+identifiers:
+<id> ~ [a-z]+
+<constant> ~ [0-9]+
+
+ignored: <spacing> ~ [\s\n]+
+
+operator
+	| '+'
+	| '-'
+
+variable
+	<id>
+
+constant
+	<constant>
+
+terminal
+	| variable
+	| constant
+	| list
+
+list
+  | '[' ']'
+  | '[' elem:terminal (',' elem:terminal)* ']'
+
+expression
+	left: terminal operator:operator right:terminal
+
+expressions
+	first: terminal (operator:operator right:terminal)*
+

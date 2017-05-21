@@ -1,0 +1,15 @@
+java_package(
+  name = 'processor',
+  res = glob(['*.generator']),
+  deps = [
+    '//lib:immutables_trees',
+    '//lib:immutables_generator',
+    '//src/io/immutables/lang:lang',
+    '//src/io/immutables/grammar:grammar'
+  ],
+  processors = [
+    'org.immutables.generator.processor.Processor'
+  ],
+  processor_deps = [
+    '//lib:immutables_generator'
+  ])

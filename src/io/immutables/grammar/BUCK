@@ -1,0 +1,5 @@
+java_package(
+  name = 'grammar',
+  deps = [
+    '//lib:immutables_ordinal',
+  ])

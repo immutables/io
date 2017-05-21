@@ -1,0 +1,427 @@
+[template public generate]
+[let lexerClassName][name]Lexer[/let]
+[output.java pack lexerClassName]
+[generateLexer lexerClassName]
+[/output.java]
+[let parserClassName][name]Parser[/let]
+[output.java pack parserClassName]
+[generateParser parserClassName]
+[/output.java]
+[let treesClassName][name]Trees[/let]
+[output.java pack treesClassName]
+[generateTrees treesClassName]
+[/output.java]
+[/template]
+
+[template generateLexer String className]
+package [pack];
+
+@SuppressWarnings("all")
+@javax.annotation.Generated({"[grmp].Generator", "[name].grammar"})
+public final class [className] extends [grmp].LexerBase {
+	[tokenConstants]
+
+	[smallTableDispatch]
+	[smallTableMatchers]
+	[charMatchesMatchers]
+
+	public [className](char[arr] input) {
+		super(input);
+	}
+	[readTokens]
+	[matchTokens]
+	[nextNonIgnore]
+	[showToken]
+	[kindToken]
+}
+[/template]
+
+[template tokenConstants]
+	[for d in dispatch.terms]
+/** [d] */
+public static final int TOKEN_[asConstant d.name] = [literal.hex for.index];
+	[/for]
+	[for k in dispatch.termsByKind.keySet if k ne unkinded]
+/** [k] */
+public static final int KIND_[asConstant k] = [literal.hex for.index];
+	[/for]
+public static final int UNKINDED = -1;
+[/template]
+
+[template kindToken]
+
+@Override
+public int kindToken(int token) {
+	switch (token) {
+	[for e in dispatch.termsByKind.asMap.entrySet if e.key ne unkinded]
+		[for d in e.value]
+	case TOKEN_[asConstant d.name]: // [d]
+		[/for]
+		 return KIND_[asConstant e.key];
+	[/for]
+	default: return UNKINDED;
+	}
+}
+[/template]
+
+[template showToken]
+
+@Override
+public String showToken(int token) {
+	switch (token) {
+	[for d in dispatch.terms]
+	case TOKEN_[asConstant d.name]: return "[d.id]";
+	[/for]
+	case EOF: return "EOF";
+	default: return "?";
+	}
+}
+[/template]
+
+[template nextNonIgnore]
+
+public int advance() {
+	int t = next();
+	[for ddd in dispatch.terms if ddd.ignored][if for.first]
+	while ([for d in dispatch.terms if d.ignored][if not for.first] | [/if]t == TOKEN_[asConstant d.name][/for]) {
+		t = next();
+	}
+	[/if][/for]
+	return t;
+}
+[/template]
+
+[template smallTableDispatch]
+private static final int[arr] FIRST_SIMPLE = {[for s in dispatch.simple][if not for.first],[/if][if mod16 for.index]
+		[else] [/if][s.group.index][/for]
+};
+[/template]
+
+[template smallTableMatcher Term d Match m String suffix]
+// [d.id] [m]
+private static final byte[arr] [asConstant d.name][suffix] = {[for b in m.smallTable.table][if not for.first],[/if][if mod16 for.index]
+		[else] [/if][if b]1[else]0[/if][/for]
+};
+[/template]
+
+[template smallTableMatchers]
+	[for d in dispatch.terms]
+		[for m in d.rest]
+			[if m.match.smallTable]
+[smallTableMatcher d m.match ('_' m.index)]
+			[/if]
+		[/for]
+		[if d.not.present]
+			[if d.not.get.smallTable]
+[smallTableMatcher d d.not.get '_G']
+			[/if]
+		[else if d.and.present]
+			[if d.and.get.smallTable]
+[smallTableMatcher d d.and.get '_G']
+			[/if]
+		[/if]
+	[/for]
+[/template]
+
+[template charMatchesMatcher Term d Match m String suffix]
+// [d.id] [m]
+[let cm]com.google.common.base.CharMatcher[/let]
+private static final [cm] [asConstant d.name][suffix] = [cm].none()
+	[for range in m.charMatches.defined.asRanges]
+		.or([cm].inRange('[range.lowerEndpoint]', '[range.upperEndpoint]')[if m.charMatches.not].negate()[/if])
+	[/for]
+		.precomputed();
+[/template]
+
+[template charMatchesMatchers]
+	[for d in dispatch.terms]
+		[for m in d.parts]
+			[if m.match.charMatches]
+[charMatchesMatcher d m.match ('_' m.index)]
+			[/if]
+		[/for]
+		[if d.not.present]
+			[if d.not.get.charMatches]
+[charMatchesMatcher d d.not.get '_G']
+			[/if]
+		[else if d.and.present]
+			[if d.and.get.charMatches]
+[charMatchesMatcher d d.and.get '_G']
+			[/if]
+		[/if]
+	[/for]
+[/template]
+
+[template matchTokens]
+	[for d in dispatch.terms]
+// [d]
+private int read_[asVar d.name](char c, int p) {
+	[if d.firstSimpleAlways]
+	c = nextChar();
+	[/if]
+	[for r in d.rest]
+	// [r]
+		[if r.match.sequence]
+			[for codepoint in r.match.sequence.points]
+	if (c != '[codepoint]') return position = p; c = nextChar();
+			[/for]
+		[else]
+	[if r.cardinality.atLeastOne]
+	if (!([codepointMatch d.name r.match ('_' r.index)])) return position = p; c = nextChar();
+	[else if r.cardinality.atMostOne]
+	if ([codepointMatch d.name r.match ('_' r.index)]) c = nextChar();
+	[/if]
+	[if r.cardinality.multiple]
+	while ([codepointMatch d.name r.match ('_' r.index)]) c = nextChar();
+	[/if]
+		[/if]
+	[/for]
+	[if d.not.present]
+	if ([codepointMatch d.name d.not.get '_G']) return position = p;
+	[else if d.and.present]
+	if (!([codepointMatch d.name d.and.get '_G'])) return position = p;
+	[/if]
+	return position;
+}
+	[/for]
+[/template]
+
+[template codepointMatch String name Match m String suffix][output.trim]
+[if m.equal] c == '[m.equal.point]'
+[else if m.notEqual] c != '[m.notEqual.point]'
+[else if m.inRange] '[m.inRange.lower]' <= c & c <= '[m.inRange.upper]'
+[else if m.notInRange] c < '[m.notInRange.lower]' & '[m.notInRange.upper]' > c
+[else if m.smallTable] c < 128 & [asConstant name][suffix][acc]c[/acc] == 1
+[else if m.charMatches] [asConstant name][suffix].matches(c)
+[else if m.sequence] c == '[m.sequence.asFirst.point]'
+[/if]
+[/output.trim][/template]
+
+[template readTokens]
+
+@Override
+protected int readToken(char c) {
+	int p = this.position;
+	if (c < 128) {
+		switch(FIRST_SIMPLE[acc]c[/acc]) {
+	[for g in dispatch.simpleGroups]
+		case [g.index]:
+		[for d in g.terms]
+			if (p != read_[asVar d.name](c, p)) return commit(TOKEN_[asConstant d.name]);
+		[/for]
+			break;
+	[/for]
+		default:
+			nextChar();
+			return commit(UNRECOGNIZED);
+		}
+	}
+	[for d in dispatch.complexGroup.terms]
+	if (p != read_[asVar d.name](c, p)) return commit(TOKEN_[asConstant d.name]);
+	[/for]
+	nextChar();
+	return commit(UNRECOGNIZED);
+}
+[/template]
+
+[template generateParser String className]
+package [pack];
+
+import javax.annotation.Nullable;
+import [pack].[name]Trees.*;
+import static [pack].[name]Lexer.*;
+
+@SuppressWarnings("all")
+@javax.annotation.Generated({"[grmp].Generator", "[name].grammar"})
+public final class [className] extends [grmp].ParserBase {
+	[let lexerClass][name]Lexer[/let]
+	private final [lexerClass] lex;
+
+	public [className]([lexerClass] lex) {
+		super(lex);
+		this.lex = lex;
+	}
+	[for p in productions,
+			String v = asVar p.id,
+			String t = asType p.id]
+
+		[if p.ephemeral]
+	[-- when no tagged parts in ephemeral, init will not be generated --]
+	private boolean [v]([if p.parts]Init_[t][else][grmp].AstProduction.Builder[/if] b) {
+		[else]
+	public @Nullable [t] [v]() {
+		[/if]
+	[if p.subtypes]
+		production([t].ID);
+		[t] t;
+		[for s in p.subtypes]
+			[if for.first]
+		int i = lex.index();
+			[/if]
+		if ((t = [asVar s]()) != null) return t;
+		lex.reset(i);
+		[/for]
+	[else]
+		[if not p.ephemeral]
+		production([t].ID);
+		[/if]
+		[for a in p.alternatives]
+			[if for.first]
+		int i = lex.index();
+			[/if]
+		[if not p.ephemeral][if for.first][t].Builder [/if]b = new [t].Builder().beginTokenIndex(i + 2);[/if]
+		if (alt_[v]_[for.index](b)) return [if p.ephemeral]true[else]b.endTokenIndex(lex.index()).build()[/if];
+		lex.reset(i);
+		[/for]
+	[/if]
+		return [if p.ephemeral]false[else]null[/if];
+	}
+	[for a in p.alternatives if not p.subtypes]
+	[let altPrefix]alt_[v]_[for.index][/let]
+	[let consumerType][output.trim]
+		[if p.ephemeral and p.parts]
+			Init_[t]
+		[else if p.ephemeral]
+			[grmp].AstProduction.Builder
+		[else]
+			[t].Builder
+		[/if]
+  [/output.trim][/let]
+
+	private boolean [altPrefix]([consumerType] b) {
+		[alternativeBody p a altPrefix]
+		return true;
+	}
+	[alternativePartMatch p a altPrefix consumerType]
+	[/for]
+	[/for]
+}
+[/template]
+
+[template alternativeBody Prod prod Alt alt String altPrefix]
+	[for part in alt.parts if part.mode.notConsume or part.cardinality.maybeOne][if for.first]
+int i;
+	[/if][/for]
+	[for part in alt.parts, Part p = asPartCase part]
+		[if p.not]
+i = lex.index();
+if ([altPartIden altPrefix for.index](b)) return false;
+lex.reset(i);
+		[else if p.and]
+i = lex.index();
+if (![altPartIden altPrefix for.index](b)) return false;
+lex.reset(i);
+		[else]
+[if p.cardinality.maybeOne]
+[altPartIden altPrefix for.index](b); // 0 or 1
+[/if]
+[if p.cardinality.atLeastOne]
+if (![altPartIden altPrefix for.index](b)) return false; // 1 or more
+[/if]
+[if p.cardinality.multiple]
+while ([altPartIden altPrefix for.index](b)); // 0 or more
+[/if]
+		[/if]
+	[/for]
+[/template]
+
+[template alternativePartMatch Prod prod Alt alt String altPrefix String consumerType]
+[for part in alt.parts, Part p = asPartCase part]
+
+private boolean [altPartIden altPrefix for.index]([consumerType] b) {
+[if p.literal]
+  int i = lex.index();
+  int t = lex.advance();
+	if (t == TOKEN_[asTokenConstant p.literal]) {
+		[if p.tagged]
+		b.[p.var](lex.getSymbol());
+		[/if]
+		return true;
+	}
+	mismatchAt(lex.index(), TOKEN_[asTokenConstant p.literal], t);
+	lex.reset(i);
+	return false;
+[else if p.reference]
+	[if p.reference.ephemeral]
+	return [asVar p.reference.id](b);
+	[else]
+	@Nullable [asType p.reference.id] p = [asVar p.reference.id]();
+	if (p != null) {
+		[if p.tagged]
+		b.[p.var](p);
+		[/if]
+		return true;
+	}
+	return false;
+	[/if]
+[/if]
+}
+[/for]
+[/template]
+
+[template altPartIden String altPrefix Integer partIndex]part_[partIndex]_of_[altPrefix][/template]
+
+[-- we don't add it as import because don't want clashes with node names --]
+[template grmp]io.immutables.grammar[/template]
+
+[template generateTrees String className]
+package [pack];
+
+@[grmp].Node
+@org.immutables.trees.Trees.Visit
+@SuppressWarnings("all")
+@javax.annotation.Generated({"[grmp].processor.Generator", "[name].grammar"})
+public interface [className] {
+	[for p in productions if not p.ephemeral,
+		String type = asType p.id]
+	[if p.subtypes]
+	interface [type] extends [grmp].AstProduction[for s in p.supertypes], [asType s][/for] {
+		[taggedPartsAttributes p]
+
+		[grmp].AstProduction.Id ID = new [grmp].AstProduction.Id("[p.id]");
+	}
+	[else]
+	@[grmp].Node
+	interface [type] extends [className]Nodes.With[type], [grmp].AstProduction[for s in p.supertypes], [asType s][/for] {
+		[taggedPartsAttributes p]
+
+		[grmp].AstProduction.Id ID = new [grmp].AstProduction.Id("[p.id]");
+		class Builder extends [className]Nodes.[type].Builder
+				implements [grmp].AstProduction.Builder[for s in p.ephemerals], Init_[asType s][/for] {}
+	}
+	[/if]
+	[/for]
+
+	[for p in productions if p.ephemeral and (not p.parts.empty)]
+	interface Init_[asType p.id] extends [grmp].AstProduction.Builder[for s in p.ephemerals], Init_[asType s][/for] {
+		[taggedPartsInitAttributes p]
+	}
+	[/for]
+}
+[/template]
+
+[template taggedPartsAttributes Prod p]
+[for t in p.parts, String n = asVar t.tag]
+[let partTypeName][if t.literal.present][grmp].Symbol[else][asType t.reference.get][/if][/let]
+	[if t.cardinality.exactlyOne]
+[partTypeName] [n]();
+	[else if t.cardinality.atMostOne]
+java.util.Optional<[partTypeName]> [n]();
+	[else]
+io.immutables.collect.Vect<[partTypeName]> [n]();
+	[/if]
+[/for]
+[/template]
+
+[template taggedPartsInitAttributes Prod p]
+[for t in p.parts, String n = asVar t.tag]
+	[if t.literal.present]
+[grmp].AstProduction.Builder [n]([grmp].Symbol [n]);
+	[else if t.reference.present]
+[grmp].AstProduction.Builder [n]([asType t.reference.get] [n]);
+	[/if]
+[/for]
+[/template]
+
+[template arr]['[]'][/template]
+[template acc String index]['['][index][']'][/template]
