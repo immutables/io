@@ -64,178 +64,6 @@ remote_file(
 )
 
 prebuilt_jar(
-  name = 'gson',
-  binary_jar = ':gson_jar',
-  source_jar = ':gson_src',
-  visibility = ['//...'],
-)
-
-remote_file(
-  name = 'gson_jar',
-  out = 'gson-2.8.0.jar',
-  url = 'https://repo1.maven.org/maven2/com/google/code/gson/gson/2.8.0/gson-2.8.0.jar',
-  sha1 = 'c4ba5371a29ac9b2ad6129b1d39ea38750043eff'
-)
-
-remote_file(
-  name = 'gson_src',
-  out = 'gson-2.8.0-sources.jar',
-  url = 'https://repo1.maven.org/maven2/com/google/code/gson/gson/2.8.0/gson-2.8.0-sources.jar',
-  sha1 = 'baf95d8519fc1a11d388f8543cb40cd2bb9d66dc'
-)
-
-prebuilt_jar(
-  name = 'jackson',
-  binary_jar = ':jackson_jar',
-  source_jar = ':jackson_src',
-  visibility = ['//...'],
-)
-
-remote_file(
-  name = 'jackson_jar',
-  out = 'jackson-core-2.8.5.jar',
-  url = 'https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.8.5/jackson-core-2.8.5.jar',
-  sha1 = '60d059f5d2930ccd1ef03535b713fd9f933d1ba7'
-)
-
-remote_file(
-  name = 'jackson_src',
-  out = 'jackson-core-2.8.5-sources.jar',
-  url = 'https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.8.5/jackson-core-2.8.5-sources.jar',
-  sha1 = '14b04ebe5d1d9b54b793f84245d983b4c329634d'
-)
-
-prebuilt_jar(
-  name = 'jackson_yaml',
-  binary_jar = ':jackson_yaml_jar',
-  source_jar = ':jackson_yaml_src',
-  visibility = ['//...'],
-  deps = [':snake_yaml']
-)
-
-remote_file(
-  name = 'jackson_yaml_jar',
-  out = 'jackson-dataformat-yaml-2.8.5.jar',
-  url = 'https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.8.5/jackson-dataformat-yaml-2.8.5.jar',
-  sha1 = 'dee4732dc03b6f3ce231fd065dcbbed25755b58f'
-)
-
-remote_file(
-  name = 'jackson_yaml_src',
-  out = 'jackson-dataformat-yaml-2.8.5-sources.jar',
-  url = 'https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.8.5/jackson-dataformat-yaml-2.8.5-sources.jar',
-  sha1 = '428b480e326207258ccfdff2f9ca0de387400df9'
-)
-
-prebuilt_jar(
-  name = 'retrofit',
-  binary_jar = ':retrofit_jar',
-  source_jar = ':retrofit_src',
-  visibility = ['//...'],
-  deps = [':retrofit_gson',':okhttp']
-)
-
-remote_file(
-  name = 'retrofit_jar',
-  out = 'retrofit-2.1.0.jar',
-  url = 'https://repo1.maven.org/maven2/com/squareup/retrofit2/retrofit/2.1.0/retrofit-2.1.0.jar',
-  sha1 = '2de7cd8b95b7021b1d597f049bcb422055119f2c'
-)
-
-remote_file(
-  name = 'retrofit_src',
-  out = 'retrofit-2.1.0-sources.jar',
-  url = 'https://repo1.maven.org/maven2/com/squareup/retrofit2/retrofit/2.1.0/retrofit-2.1.0-sources.jar',
-  sha1 = '3564ebef90ac75e61ed65ab9af0f422ce92d4afa'
-)
-
-prebuilt_jar(
-  name = 'retrofit_gson',
-  binary_jar = ':retrofit_gson_jar',
-  source_jar = ':retrofit_gson_src',
-  visibility = ['//...'],
-  deps = [':gson']
-)
-
-remote_file(
-  name = 'retrofit_gson_jar',
-  out = 'converter-gson-2.1.0.jar',
-  url = 'https://repo1.maven.org/maven2/com/squareup/retrofit2/converter-gson/2.1.0/converter-gson-2.1.0.jar',
-  sha1 = 'aa557d71ead91cbf26e0c316a0f593d168303309'
-)
-
-remote_file(
-  name = 'retrofit_gson_src',
-  out = 'converter-gson-2.1.0-sources.jar',
-  url = 'https://repo1.maven.org/maven2/com/squareup/retrofit2/converter-gson/2.1.0/converter-gson-2.1.0-sources.jar',
-  sha1 = 'e2c38b918400123c0e2a98dfd3f412c552bcf238'
-)
-
-prebuilt_jar(
-  name = 'okhttp',
-  binary_jar = ':okhttp_jar',
-  source_jar = ':okhttp_src',
-  visibility = ['//...'],
-  deps = [':okio']
-)
-
-remote_file(
-  name = 'okhttp_jar',
-  out = 'okhttp-3.3.0.jar',
-  url = 'https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/3.3.0/okhttp-3.3.0.jar',
-  sha1 = '2b802460eea20f8f2ad9c08c74e0f14718e88aa9'
-)
-
-remote_file(
-  name = 'okhttp_src',
-  out = 'okhttp-3.3.0-sources.jar',
-  url = 'https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/3.3.0/okhttp-3.3.0-sources.jar',
-  sha1 = 'ce902532a348a685692095f86d14800314078813'
-)
-
-prebuilt_jar(
-  name = 'okio',
-  binary_jar = ':okio_jar',
-  source_jar = ':okio_src',
-  visibility = ['//...'],
-)
-
-remote_file(
-  name = 'okio_jar',
-  out = 'okio-1.11.0.jar',
-  url = 'https://repo1.maven.org/maven2/com/squareup/okio/okio/1.11.0/okio-1.11.0.jar',
-  sha1 = '840897fcd7223a8143f1d9b6f69714e7be34fd50'
-)
-
-remote_file(
-  name = 'okio_src',
-  out = 'okio-1.11.0-sources.jar',
-  url = 'https://repo1.maven.org/maven2/com/squareup/okio/okio/1.11.0/okio-1.11.0-sources.jar',
-  sha1 = '46bdbd0e079883accbf581986e7f8f0d999a2637'
-)
-
-prebuilt_jar(
-  name = 'snake_yaml',
-  binary_jar = ':snake_yaml_jar',
-  source_jar = ':snake_yaml_src',
-  visibility = ['//...'],
-)
-
-remote_file(
-  name = 'snake_yaml_jar',
-  out = 'snakeyaml-1.15.jar',
-  url = 'https://repo1.maven.org/maven2/org/yaml/snakeyaml/1.15/snakeyaml-1.15.jar',
-  sha1 = '3b132bea69e8ee099f416044970997bde80f4ea6'
-)
-
-remote_file(
-  name = 'snake_yaml_src',
-  out = 'snakeyaml-1.15-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/yaml/snakeyaml/1.15/snakeyaml-1.15-sources.jar',
-  sha1 = '7dc55271cad1cf73bb495e372164269e75d9345a'
-)
-
-prebuilt_jar(
   name = 'hamcrest',
   binary_jar = ':hamcrest_jar',
   source_jar = ':hamcrest_src',
@@ -265,16 +93,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_jar',
-  out = 'value-2.4.3.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.4.3/value-2.4.3.jar',
-  sha1 = '5e328e597f40a1b64e209b5a5f07d19ec047afab'
+  out = 'value-2.5.2.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.2/value-2.5.2.jar',
+  sha1 = '585a3c2ebd089ccadce31342c7d7b40d500c931a'
 )
 
 remote_file(
   name = 'immutables_src',
-  out = 'value-2.4.3-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.4.3/value-2.4.3-sources.jar',
-  sha1 = '3fe076eb4298fbd5c57a73962c5c18072d3d5110'
+  out = 'value-2.5.2-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.2/value-2.5.2-sources.jar',
+  sha1 = 'd4e122b5a00b1bcbe37b5521933284ac10b71f2b'
 )
 
 prebuilt_jar(
@@ -286,38 +114,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_trees_jar',
-  out = 'trees-2.4.3.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.4.3/trees-2.4.3.jar',
-  sha1 = '0efc784284369e0e43b14bf30a5a85662cccfd91'
+  out = 'trees-2.5.2.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.5.2/trees-2.5.2.jar',
+  sha1 = '8ee23be4cef75a9c9f2ec0b0cd433e6cb56e8741'
 )
 
 remote_file(
   name = 'immutables_trees_src',
-  out = 'trees-2.4.3-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.4.3/trees-2.4.3-sources.jar',
-  sha1 = '7538965771098de98e54c6aeb476af40ff3eec20'
-)
-
-prebuilt_jar(
-  name = 'immutables_gson',
-  binary_jar = ':immutables_gson_jar',
-  source_jar = ':immutables_gson_src',
-  visibility = ['//...'],
-  deps = [':gson']
-)
-
-remote_file(
-  name = 'immutables_gson_jar',
-  out = 'gson-2.4.3.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/gson/2.4.3/gson-2.4.3.jar',
-  sha1 = 'c904ec7addca011c5abbd1a9b455420863749bdd'
-)
-
-remote_file(
-  name = 'immutables_gson_src',
-  out = 'gson-2.4.3-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/gson/2.4.3/gson-2.4.3-sources.jar',
-  sha1 = '9cd74a49c5f53e4992d1f8f09c7a48c4c9f32eb2'
+  out = 'trees-2.5.2-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.5.2/trees-2.5.2-sources.jar',
+  sha1 = '1b6a616defcb2836b446b13d3a2b5a02c401e66b'
 )
 
 prebuilt_jar(
@@ -329,16 +135,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_ordinal_jar',
-  out = 'ordinal-2.4.3.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.4.3/ordinal-2.4.3.jar',
-  sha1 = 'ad67828d3952a817b00845b40a81863f1e26c2b5'
+  out = 'ordinal-2.5.2.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.5.2/ordinal-2.5.2.jar',
+  sha1 = '27ff49b5106535835b39145330d59170991ad232'
 )
 
 remote_file(
   name = 'immutables_ordinal_src',
-  out = 'ordinal-2.4.3-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.4.3/ordinal-2.4.3-sources.jar',
-  sha1 = 'a59c818d4c89e4e13dcf38f931de4d34026ddfd3'
+  out = 'ordinal-2.5.2-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.5.2/ordinal-2.5.2-sources.jar',
+  sha1 = 'd70e506a99534b0d979d9643035b629c5b1ff387'
 )
 
 prebuilt_jar(
@@ -350,16 +156,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_annotations_jar',
-  out = 'value-2.4.3-annotations.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.4.3/value-2.4.3-annotations.jar',
-  sha1 = '94bb3c95b09775ebeacdc4737a660cba6dcbf057'
+  out = 'value-2.5.2-annotations.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.2/value-2.5.2-annotations.jar',
+  sha1 = '8f015c5d9c27554db6d1746a6f1a8dd8fae792ee'
 )
 
 remote_file(
   name = 'immutables_annotations_src',
-  out = 'value-2.4.3-annotations-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.4.3/value-2.4.3-annotations-sources.jar',
-  sha1 = '52c94716c162cda5c0577a3f62ef468d2cea5931'
+  out = 'value-2.5.2-annotations-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.2/value-2.5.2-annotations-sources.jar',
+  sha1 = '382f9817f79ede57155dbac7b34543d1ca1a35c3'
 )
 
 prebuilt_jar(
@@ -372,14 +178,14 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_generator_jar',
-  out = 'generator-processor-2.4.3-luggage.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.4.3/generator-processor-2.4.3-luggage.jar',
-  sha1 = '35dfe9d684d1d4b8d68bae33e69f0e686ce84cbb'
+  out = 'generator-processor-2.5.2-luggage.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.5.2/generator-processor-2.5.2-luggage.jar',
+  sha1 = '5bb8a4fdf28b90288308dd6736c47117f219a0e9'
 )
 
 remote_file(
   name = 'immutables_generator_src',
-  out = 'generator-processor-2.4.3-luggage-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.4.3/generator-processor-2.4.3-luggage-sources.jar',
-  sha1 = 'e847ffcdc75b473f663354663b4181e71c0147e0'
+  out = 'generator-processor-2.5.2-luggage-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.5.2/generator-processor-2.5.2-luggage-sources.jar',
+  sha1 = 'fd719e055aa6b0f0af03775577624908404c7169'
 )

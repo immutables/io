@@ -8,46 +8,44 @@ import static io.immutables.that.Assert.that;
 
 public class TestFixture {
 	@Test
-	public void someLex() {
-		that(lex("ififif if = == ="))
+	public void someterms() {
+		that(terms("ififif if = == ="))
 				.is("'iden'ififif 'space'\\s 'if'if 'space'\\s 'let'= 'space'\\s 'eq'== 'space'\\s 'let'=");
 
 		// testing not guard
-		that(lex("()(())"))
+		that(terms("()(())"))
 				.is("'lp'( 'rp') ?( 'lp'( 'rp') 'rp')");
 
-		that(lex("affiliate affect if (affiliate)"))
+		that(terms("affiliate affect if (affiliate)"))
 				.is("'af'affiliate 'space'\\s 'ff'affect 'space'\\s 'if'if 'space'\\s 'lp'( 'af'affiliate 'rp')");
 
 		// testing and guard
-		that(lex("<<<")).is("'<_<'< '<_<'< '<'<");
+		that(terms("<<<")).is("'<_<'< '<_<'< '<'<");
 	}
 
-	private String lex(String input) {
-		SomeLexLexer lexer = new SomeLexLexer(input.toCharArray());
-		lexer.tokenize();
-		return lexer.show();
+	private String terms(String input) {
+		return SomeLexTerms.from(input.toCharArray()).traverse().show();
 	}
 
 	@Test
 	public void exprParse() {
 		String string = "1  +[2 ,3,vvgg ] ";
 
-		ExprLexer lexer = new ExprLexer(string.toCharArray());
-		lexer.tokenize();
-		ExprParser parser = new ExprParser(lexer);
+		ExprTerms terms = ExprTerms.from(string.toCharArray());
+		ExprParser parser = new ExprParser(terms);
 		Expression expr = parser.expression();
-		that(expr).hasToString("Expression{left=Constant{}, operator=Operator{}, right=List{elem=[Constant{}, Constant{}, Variable{}]}}");
+		that(expr).hasToString(
+				"Expression{left=Constant{}, operator=Operator{}, right=List{elem=[Constant{}, Constant{}, Variable{}]}}");
 	}
 
 	@Test
 	public void unexpected() {
 		char[] input = "1  +[2 ___!,3,vvgg ] ".toCharArray();
-		ExprLexer lexer = new ExprLexer(input);
+		ExprTerms terms = ExprTerms.from(input);
 
-		that().not(lexer.tokenize());
-		that().is(lexer.hasUnexpected());
-		Source.Range range = lexer.getFirstUnrecognized();
+		that().not(terms.ok());
+		that().is(terms.hasUnexpected());
+		Source.Range range = terms.getFirstUnrecognized();
 		that(range.begin()).equalTo(Source.Position.of(7, 1, 8));
 		that(range.end()).equalTo(Source.Position.of(8, 1, 9));
 	}
@@ -55,18 +53,18 @@ public class TestFixture {
 	@Test
 	public void prematureEof() {
 		char[] input = "1\0\0".toCharArray();
-		ExprLexer lexer = new ExprLexer(input);
+		ExprTerms terms = ExprTerms.from(input);
 
-		that().not(lexer.tokenize());
-		that().is(lexer.hasPrematureEof());
+		that().not(terms.ok());
+		that().is(terms.hasPrematureEof());
 	}
 
 	@Test
 	public void parsingError() {
 		String string = "1  +[2 ,3,abc def ] ";
-		ExprLexer lexer = new ExprLexer(string.toCharArray());
-		that().is(lexer.tokenize());
-		ExprParser parser = new ExprParser(lexer);
+		ExprTerms terms = ExprTerms.from(string.toCharArray());
+		that().is(terms.ok());
+		ExprParser parser = new ExprParser(terms);
 		that(parser.expression()).isNull();
 		that().is(parser.hasMismatchedToken());
 		that(parser.getFarthestMismatchedProduction()).same(ExprTrees.Variable.ID);
@@ -81,11 +79,11 @@ public class TestFixture {
 		// String input = "\n[1\n, 2,\n,3, 4\n, 5, 6, 7,\n n,\n__!] \n\n\n";
 		// String input = "\n[1__\n] ";
 		// String input = "1__] ";
-		ExprLexer lexer = new ExprLexer(input.toCharArray());
-		lexer.tokenize();
-		Source.Range range = lexer.getFirstUnrecognized();
+		ExprTerms terms = ExprTerms.from(input.toCharArray());
+		terms.ok();
+		Source.Range range = terms.getFirstUnrecognized();
 		System.out.println(range);
-		Source.Excerpt excerpt = new Source.Excerpt(lexer.getSource());
+		Source.Excerpt excerpt = new Source.Excerpt(terms.getSource());
 		System.out.println(excerpt.get(range));
 	}
 }

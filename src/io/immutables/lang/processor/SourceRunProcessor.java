@@ -1,6 +1,5 @@
 package io.immutables.lang.processor;
 
-import com.google.common.base.Throwables;
 import com.google.common.io.CharSource;
 import io.immutables.lang.SourceRun;
 import java.io.IOException;
@@ -27,15 +26,15 @@ public final class SourceRunProcessor extends AbstractGenerator {
 
 	@Override
 	protected void process() {
-		Debug.setConsumer(message ->
-				processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING, message));
+		Debug.setConsumer(message -> processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING, message));
 
 		for (TypeElement fixtureType : ElementFilter.typesIn(round().getElementsAnnotatedWith(SourceRun.class))) {
 			PackageElement fixturePackage = processing().getElementUtils().getPackageOf(fixtureType);
 			SourceRun sourceFixture = fixtureType.getAnnotation(SourceRun.class);
 			String glob = sourceFixture.value();
-			try (DirectoryStream<Path> sources =
-					Files.newDirectoryStream(packageDir(fixturePackage), glob)) {
+			try (
+					DirectoryStream<Path> sources =
+							Files.newDirectoryStream(packageDir(fixturePackage), glob)) {
 
 				SourceRuns generator = generator();
 				generator.packageName = fixturePackage.getQualifiedName().toString();
@@ -48,7 +47,7 @@ public final class SourceRunProcessor extends AbstractGenerator {
 							return Files.newBufferedReader(path, StandardCharsets.UTF_8);
 						}
 					}.read();
-					
+
 					String filename = path.getFileName().toString();
 					String testname = filename.replace('.', '_');
 					generator.process(testname, filename, content);
@@ -57,7 +56,7 @@ public final class SourceRunProcessor extends AbstractGenerator {
 				invoke(generator.generate());
 
 			} catch (Exception ex) {
-				throw Throwables.propagate(ex);
+				throw new RuntimeException(ex);
 			}
 		}
 

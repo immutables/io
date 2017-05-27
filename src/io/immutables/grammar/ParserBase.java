@@ -5,15 +5,15 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 @NotThreadSafe
 public abstract class ParserBase {
+	private final Terms terms;
 	private int mismatchedTokenIndex = -1;
 	private AstProduction.Id mismatchedProduction;
 	private AstProduction.Id production;
-	private final LexerBase lex;
-	private int mismatchedExpectedToken = LexerBase.UNRECOGNIZED;
-	private int mismatchedActualToken = LexerBase.UNRECOGNIZED;
+	private int mismatchedExpectedToken = Terms.UNRECOGNIZED;
+	private int mismatchedActualToken = Terms.UNRECOGNIZED;
 
-	public ParserBase(LexerBase lex) {
-		this.lex = lex;
+	public ParserBase(Terms terms) {
+		this.terms = terms;
 	}
 
 	protected void production(AstProduction.Id production) {
@@ -31,12 +31,12 @@ public abstract class ParserBase {
 
 	public String getMismatchedExpectedToken() {
 		if (!hasMismatchedToken()) throw new NoSuchElementException();
-		return lex.showToken(mismatchedExpectedToken);
+		return terms.showToken(mismatchedExpectedToken);
 	}
 
 	public String getMismatchedActualToken() {
 		if (!hasMismatchedToken()) throw new NoSuchElementException();
-		return lex.showToken(mismatchedActualToken);
+		return terms.showToken(mismatchedActualToken);
 	}
 
 	public AstProduction.Id getFarthestMismatchedProduction() {
@@ -50,6 +50,6 @@ public abstract class ParserBase {
 
 	public Source.Range getFarthestMismatchedToken() {
 		if (!hasMismatchedToken()) throw new NoSuchElementException();
-		return lex.tokenRange(mismatchedTokenIndex);
+		return terms.tokenRange(mismatchedTokenIndex);
 	}
 }

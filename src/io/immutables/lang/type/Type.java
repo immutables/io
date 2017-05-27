@@ -154,6 +154,7 @@ public interface Type {
 
 		Vect<Constructor> constructors();
 
+		/** @param arguments */
 		default Declared apply(Vect<Type> arguments) {
 			throw new UnsupportedOperationException();
 		}
@@ -215,6 +216,7 @@ public interface Type {
 		// it is unclear now how record structural type can be thought of:
 		// as a bag of attributes/features or full fledged interface-like things with a
 		// operations/methods
+		// later: isn't this is the same
 		Vect<Feature> attributes();
 
 		class Builder extends ImmutableType.Record.Builder {}

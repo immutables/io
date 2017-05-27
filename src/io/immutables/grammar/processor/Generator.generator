@@ -1,7 +1,7 @@
 [template public generate]
-[let lexerClassName][name]Lexer[/let]
-[output.java pack lexerClassName]
-[generateLexer lexerClassName]
+[let termsClassName][name]Terms[/let]
+[output.java pack termsClassName]
+[generateTerms termsClassName]
 [/output.java]
 [let parserClassName][name]Parser[/let]
 [output.java pack parserClassName]
@@ -13,24 +13,37 @@
 [/output.java]
 [/template]
 
-[template generateLexer String className]
+[template generateTerms String className]
 package [pack];
 
 @SuppressWarnings("all")
 @javax.annotation.Generated({"[grmp].Generator", "[name].grammar"})
-public final class [className] extends [grmp].LexerBase {
+public final class [className] extends [grmp].Terms {
 	[tokenConstants]
 
-	[smallTableDispatch]
-	[smallTableMatchers]
-	[charMatchesMatchers]
+	private [className](Lexer lexer) { super(lexer); }
 
-	public [className](char[arr] input) {
-		super(input);
+	public static [className] from(char[arr] input) {
+		Lexer l = new Lexer(input);
+		l.tokenize();
+		return new [className](l);
 	}
-	[readTokens]
-	[matchTokens]
-	[nextNonIgnore]
+
+  private static final class Lexer extends [grmp].Terms.Lexer {
+		[smallTableDispatch]
+		[smallTableMatchers]
+		[charMatchesMatchers]
+
+		Lexer(char[arr] input) { super(input); }
+		[readTokens]
+		[matchTokens]
+	}
+
+	protected Traversal newTraversal(int[arr] tokens, int tokenEnd) {
+		return new Traversal(tokens, tokenEnd) {
+			[nextNonIgnore]
+		};
+	}
 	[showToken]
 	[kindToken]
 }
@@ -51,7 +64,7 @@ public static final int UNKINDED = -1;
 [template kindToken]
 
 @Override
-public int kindToken(int token) {
+protected int kindToken(int token) {
 	switch (token) {
 	[for e in dispatch.termsByKind.asMap.entrySet if e.key ne unkinded]
 		[for d in e.value]
@@ -67,7 +80,7 @@ public int kindToken(int token) {
 [template showToken]
 
 @Override
-public String showToken(int token) {
+protected String showToken(int token) {
 	switch (token) {
 	[for d in dispatch.terms]
 	case TOKEN_[asConstant d.name]: return "[d.id]";
@@ -225,21 +238,21 @@ protected int readToken(char c) {
 [/template]
 
 [template generateParser String className]
+[let termsClass][name]Terms[/let]
 package [pack];
 
 import javax.annotation.Nullable;
 import [pack].[name]Trees.*;
-import static [pack].[name]Lexer.*;
+import static [pack].[termsClass].*;
 
 @SuppressWarnings("all")
 @javax.annotation.Generated({"[grmp].Generator", "[name].grammar"})
 public final class [className] extends [grmp].ParserBase {
-	[let lexerClass][name]Lexer[/let]
-	private final [lexerClass] lex;
+	public final [termsClass].Traversal lex; // should be private
 
-	public [className]([lexerClass] lex) {
-		super(lex);
-		this.lex = lex;
+	public [className]([termsClass] terms) {
+		super(terms);
+		this.lex = terms.traverse();
 	}
 	[for p in productions,
 			String v = asVar p.id,
