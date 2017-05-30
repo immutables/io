@@ -1,7 +1,3 @@
--------------------------------------------------------------------------------
--- Terms
--------------------------------------------------------------------------------
-
 -- Keywords should not be followed by a word identifier without delimiter
 keyword:
   'type' ~ 'type' ! [a-zA-Z0-9]
@@ -80,9 +76,6 @@ identifier:
 ignored:
   <spacing> ~ [\s\r\t]+
 
--------------------------------------------------------------------------------
--- Productions
--------------------------------------------------------------------------------
 
 unit
   elements:unit-element+
@@ -102,7 +95,7 @@ empty
   | <newline>
 
 type-declaration
-  'type' name:<typename> type-parameters? constructor:constructor type-constraints* features:features? nl?
+  'type' name:<typename> type-parameters? constructor:constructor? type-constraints* features:features? nl?
 
 constructor
   | constructor-parameter

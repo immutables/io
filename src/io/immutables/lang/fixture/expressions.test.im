@@ -1,28 +1,28 @@
 
 crazyExpression(a, b, x, y Double) Double {
-  return a * x + b / y - (a + b)
+	return a * x + b / y - (a + b)
 }
 
 expressionAndRecord(a, b Int) Complex {
-  c = 1.re + 2.im
-  return Complex{
-    re: c.re * a
-    im: c.im * b
-  }
+	c = 1.re + 2.im
+	return Complex{
+		re: c.re * a
+		im: c.im * b
+	}
 }
 
-ifElseElse() {
-  i Int~ := 0
-  u = 2
-  if u == 1 {
-    i /= 1
-  } else if u == 2 {
-    i -= 2
-  } else if u < 0 {
-    i := 0
-  } else {
-    i += u
-  }
+ifElseElse {
+	i Int~ := 0
+	u = 2
+	if u == 1 {
+		i /= 1
+	} else if u == 2 {
+		i -= 2
+	} else if u < 0 {
+		i := 0
+	} else {
+		i += u
+	}
   return i
 }
 

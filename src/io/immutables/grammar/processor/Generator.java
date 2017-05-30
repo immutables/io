@@ -4,7 +4,9 @@ import com.google.common.base.CaseFormat;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import io.immutables.collect.Vect;
 import io.immutables.grammar.processor.Grammars.Alternative;
@@ -50,12 +52,19 @@ abstract class Generator extends AbstractTemplate {
 
 	private ImmutableMap<Identifier, Production> byIdentifier;
 
+	ImmutableSet<Identifier> uniqueParts;
+
 	Templates.Invokable with(String pack, String name, TermDispatch dispatch, Vect<Production> productions) {
 		this.pack = pack;
 		this.name = name;
 		this.dispatch = dispatch;
 		this.productions = productions;
 		this.byIdentifier = Maps.uniqueIndex(productions, Production::id);
+		this.uniqueParts = FluentIterable.from(productions)
+				.transformAndConcat(Production::parts)
+				.transform(TaggedPart::tag)
+				.toSet();
+
 		return generate();
 	}
 
@@ -88,6 +97,7 @@ abstract class Generator extends AbstractTemplate {
 		final boolean and;
 		final boolean tagged;
 		final String var;
+		final String tag;
 		final @Nullable Grammars.Literal literal;
 		final @Nullable Production reference;
 
@@ -99,7 +109,8 @@ abstract class Generator extends AbstractTemplate {
 			this.not = part.mode() == MatchMode.NOT;
 
 			this.tagged = part.tag().isPresent();
-			this.var = part.tag().map(t -> asVar.apply(t)).orElse("");
+			this.tag = part.tag().map(Object::toString).orElse("");
+			this.var = asVar.apply(tag);
 
 			this.literal = part instanceof LiteralPart
 					? ((LiteralPart) part).literal()

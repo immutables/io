@@ -1,6 +1,5 @@
 package io.immutables.grammar.processor;
 
-import io.immutables.grammar.processor.Grammars.AlternativeGroup;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -9,6 +8,7 @@ import com.google.common.collect.SetMultimap;
 import io.immutables.Unreachable;
 import io.immutables.collect.Vect;
 import io.immutables.grammar.processor.Grammars.Alternative;
+import io.immutables.grammar.processor.Grammars.AlternativeGroup;
 import io.immutables.grammar.processor.Grammars.Cardinality;
 import io.immutables.grammar.processor.Grammars.Group;
 import io.immutables.grammar.processor.Grammars.Identifier;
@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Lazy;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -76,6 +77,11 @@ abstract class Production implements WithProduction {
 		return !parts().isEmpty();
 	}
 
+	@Lazy
+	Vect<Alternative> alwaysSucceedingAlternatives() {
+		return alternatives().filter(Production::isAlwaysSucceding);
+	}
+	
 	static class Builder extends ImmutableProduction.Builder {}
 
 	@Immutable
@@ -113,9 +119,36 @@ abstract class Production implements WithProduction {
 	}
 
 	static Vect<Production> collectFrom(Unit unit) {
+		Vect<Production> productions = extractProductions(unit);
+
+		checkDuplicates(productions);
+		checkMissingReferences(productions);
+		checkPartInvariants(productions);
+		checkLeftRecursion(productions);
+		checkOnlySingleAlwaysSucceedAlterntive(productions);
+
+		productions = rewriteGroupsToEphemeral(productions);
+		productions = decorateWithTaggedParts(productions);
+		productions = decorateWithTypes(productions);
+		return productions;
+	}
+
+	private static void checkOnlySingleAlwaysSucceedAlterntive(Vect<Production> productions) {
+		for (Production p : productions) {
+			checkState(p.alwaysSucceedingAlternatives().size() <= 1,
+					"Production '%' contains more that one always succeeding alternatives where everything is optional",
+					p.id());
+		}
+	}
+
+	private static boolean isAlwaysSucceding(Alternative a) {
+		return a.parts().all(p -> p.mode() == MatchMode.CONSUME && p.cardinality().isZeroed());
+	}
+
+	private static Vect<Production> extractProductions(Unit unit) {
 		Vect.Builder<Production> builder = Vect.builder();
 
-		GrammarsTransformer productionExtractor = new GrammarsTransformer() {
+		new GrammarsTransformer() {
 			@Override
 			public SyntaxProduction toSyntaxProduction(SyntaxProduction p) {
 				builder.add(new Production.Builder()
@@ -126,21 +159,9 @@ abstract class Production implements WithProduction {
 
 				return p;
 			}
-		};
+		}.toUnit(unit);
 
-		productionExtractor.toUnit(unit);
-
-		Vect<Production> productions = builder.build();
-
-		checkDuplicates(productions);
-		checkMissingReferences(productions);
-		checkPartInvariants(productions);
-		checkLeftRecursion(productions);
-
-		productions = rewriteGroupsToEphemeral(productions);
-		productions = decorateWithTaggedParts(productions);
-		productions = decorateWithTypes(productions);
-		return productions;
+		return builder.build();
 	}
 
 	private static Vect<Production> rewriteGroupsToEphemeral(Vect<Production> productions) {
@@ -260,7 +281,8 @@ abstract class Production implements WithProduction {
 				}
 
 				Predicate<Alternative> hasSingleReference =
-						a -> a.parts().<Boolean>when()
+						a -> a.parts()
+								.<Boolean>when()
 								.single(this::subtypingReference)
 								.otherwise(false)
 								.get();

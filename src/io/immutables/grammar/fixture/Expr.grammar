@@ -10,10 +10,10 @@ operator
 	| '-'
 
 variable
-	<id>
+	name:<id>
 
 constant
-	<constant>
+	value:<constant>
 
 terminal
 	| variable
@@ -25,7 +25,7 @@ list
   | '[' elem:terminal (',' elem:terminal)* ']'
 
 expression
-	left: terminal operator:operator right:terminal
+	left: terminal operator:operator right:terminal ('//' variable)?
 
 expressions
 	first: terminal (operator:operator right:terminal)*

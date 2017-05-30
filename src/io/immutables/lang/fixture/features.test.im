@@ -10,19 +10,19 @@ type Position() :: DirectionalMover {
   x, y Int~ := 0
 
   up {
-    // y++
+	  y++
   }
 
   down {
-    // y--
+    y--
   }
 
   left {
-    // x--
+    x--
   }
 
   right {
-    // x++
+    x++
   }
 }
 

@@ -1,4 +1,24 @@
 
+type Position() :: DirectionalMover {
+	x, y Int~ := 0
+
+	up {
+		y++
+	}
+
+	down {
+		y--
+	}
+
+	left {
+		x--
+	}
+
+	right {
+		x++
+	}
+}
+
 // Mixed content of compilation unit
 
 //x, y, z = 1, 2, 3
@@ -8,8 +28,8 @@ packageFeature String {
   //
 }
 
-type Position() {
-  x, y Int~ := 0
+type Position {
+	x, y Int~ := 0
 }
 
 // void function
@@ -18,7 +38,7 @@ packageDefinition(a Int, b String) {
 }
 
 main {
-  //println
+	//println
 }
 
 concept Breathes{}
@@ -40,11 +60,11 @@ type Complex{re, im Int}
 //  }
 //}
 
-//concept ComplexAble {
-//  re Complex
-//  im Complex
-//  my(z Bool) Complex
-//}
+concept ComplexAble {
+	re Complex
+	im Complex
+	my(z Bool) Complex
+}
 
 //impl t Int :: ComplexAble {
 //  re Complex {

@@ -9,6 +9,7 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
+import static com.google.common.base.Preconditions.checkPositionIndex;
 import static com.google.common.base.Preconditions.checkState;
 
 @Enclosing
@@ -45,6 +46,10 @@ public interface Source {
 			return "";
 		}
 
+		public CharSequence highlight() {
+			return new Source.Excerpt(source()).get(this);
+		}
+
 		@Override
 		public String toString() {
 			return "[" + (begin().equals(end())
@@ -70,6 +75,13 @@ public interface Source {
 		@Override
 		public String toString() {
 			return line() + ":" + column();
+		}
+
+		@Check
+		void check() {
+			checkState(position() >= 0, "position is [0..)");
+			checkState(line() >= 1, "line is [1..)");
+			checkState(column() >= 1, "column is [1..)");
 		}
 
 		public static Position of(int position, int line, int column) {
@@ -169,5 +181,47 @@ public interface Source {
 			}
 			return sb.toString();
 		}
+	}
+
+	static CharSequence wrap(char[] input) {
+		class Wrapper implements CharSequence {
+			private final char[] input;
+			private final int begin;
+			private final int end;
+
+			Wrapper(char[] input) {
+				this(input, 0, input.length);
+			}
+
+			Wrapper(char[] input, int begin, int end) {
+				this.input = input;
+				this.begin = begin;
+				this.end = end;
+			}
+
+			@Override
+			public CharSequence subSequence(int begin, int end) {
+				int newBegin = checkPositionIndex(this.begin + begin, input.length);
+				int newEnd = checkPositionIndex(this.begin + end, input.length);
+				return new Wrapper(input, newBegin, newEnd);
+			}
+
+			@Override
+			public int length() {
+				return end - begin;
+			}
+
+			@Override
+			public char charAt(int index) {
+				return input[begin + index];
+			}
+
+			@Override
+			public String toString() {
+				return String.valueOf(input, begin, end - begin);
+			}
+		}
+
+		return new Wrapper(input);
 	}
 }

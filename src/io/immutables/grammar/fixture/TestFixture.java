@@ -24,7 +24,7 @@ public class TestFixture {
 	}
 
 	private String terms(String input) {
-		return SomeLexTerms.from(input.toCharArray()).traverse().show();
+		return SomeLexTerms.from(input.toCharArray()).show();
 	}
 
 	@Test
@@ -35,7 +35,8 @@ public class TestFixture {
 		ExprParser parser = new ExprParser(terms);
 		Expression expr = parser.expression();
 		that(expr).hasToString(
-				"Expression{left=Constant{}, operator=Operator{}, right=List{elem=[Constant{}, Constant{}, Variable{}]}}");
+				"Expression{left=Constant{value=1}, operator=Operator{},"
+						+ " right=List{elem=[Constant{value=2}, Constant{value=3}, Variable{name=vvgg}]}}");
 	}
 
 	@Test
@@ -45,18 +46,18 @@ public class TestFixture {
 
 		that().not(terms.ok());
 		that().is(terms.hasUnexpected());
-		Source.Range range = terms.getFirstUnrecognized();
+		Source.Range range = terms.firstUnexpectedRange();
 		that(range.begin()).equalTo(Source.Position.of(7, 1, 8));
 		that(range.end()).equalTo(Source.Position.of(8, 1, 9));
 	}
 
 	@Test
-	public void prematureEof() {
+	public void unexpectedLeftover() {
 		char[] input = "1\0\0".toCharArray();
 		ExprTerms terms = ExprTerms.from(input);
 
 		that().not(terms.ok());
-		that().is(terms.hasPrematureEof());
+		that().is(terms.hasUnexpected());
 	}
 
 	@Test
@@ -81,9 +82,8 @@ public class TestFixture {
 		// String input = "1__] ";
 		ExprTerms terms = ExprTerms.from(input.toCharArray());
 		terms.ok();
-		Source.Range range = terms.getFirstUnrecognized();
+		Source.Range range = terms.firstUnexpectedRange();
 		System.out.println(range);
-		Source.Excerpt excerpt = new Source.Excerpt(terms.getSource());
-		System.out.println(excerpt.get(range));
+		System.out.println(range.highlight());
 	}
 }

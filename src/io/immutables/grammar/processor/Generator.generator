@@ -1,16 +1,26 @@
 [template public generate]
-[let termsClassName][name]Terms[/let]
-[output.java pack termsClassName]
-[generateTerms termsClassName]
-[/output.java]
-[let parserClassName][name]Parser[/let]
-[output.java pack parserClassName]
-[generateParser parserClassName]
-[/output.java]
-[let treesClassName][name]Trees[/let]
-[output.java pack treesClassName]
-[generateTrees treesClassName]
-[/output.java]
+
+	[let termsClass][name]Terms[/let]
+	[let parserClass][name]Parser[/let]
+	[let productionsClass][name]Productions[/let]
+	[let treesClass][name]Trees[/let]
+
+	[output.java pack termsClass]
+[generateTerms termsClass]
+	[/output.java]
+
+	[output.java pack parserClass]
+[generateParser parserClass termsClass treesClass]
+	[/output.java]
+
+	[output.java pack productionsClass]
+[generateProductions productionsClass termsClass]
+	[/output.java]
+
+	[output.java pack treesClass]
+[generateTrees treesClass]
+	[/output.java]
+
 [/template]
 
 [template generateTerms String className]
@@ -21,20 +31,20 @@ package [pack];
 public final class [className] extends [grmp].Terms {
 	[tokenConstants]
 
-	private [className](Lexer lexer) { super(lexer); }
+	private [className](Tokenizer tokenizer) { super(tokenizer); }
 
 	public static [className] from(char[arr] input) {
-		Lexer l = new Lexer(input);
+		Tokenizer l = new Tokenizer(input);
 		l.tokenize();
 		return new [className](l);
 	}
 
-  private static final class Lexer extends [grmp].Terms.Lexer {
+  private static final class Tokenizer extends [grmp].Terms.Tokenizer {
 		[smallTableDispatch]
 		[smallTableMatchers]
 		[charMatchesMatchers]
 
-		Lexer(char[arr] input) { super(input); }
+		Tokenizer(char[arr] input) { super(input); }
 		[readTokens]
 		[matchTokens]
 	}
@@ -44,15 +54,15 @@ public final class [className] extends [grmp].Terms {
 			[nextNonIgnore]
 		};
 	}
-	[showToken]
-	[kindToken]
+	[showTerm]
+	[kindTerm]
 }
 [/template]
 
 [template tokenConstants]
 	[for d in dispatch.terms]
 /** [d] */
-public static final int TOKEN_[asConstant d.name] = [literal.hex for.index];
+public static final int TERM_[asConstant d.name] = [literal.hex for.index];
 	[/for]
 	[for k in dispatch.termsByKind.keySet if k ne unkinded]
 /** [k] */
@@ -61,14 +71,14 @@ public static final int KIND_[asConstant k] = [literal.hex for.index];
 public static final int UNKINDED = -1;
 [/template]
 
-[template kindToken]
+[template kindTerm]
 
 @Override
-protected int kindToken(int token) {
+protected int kindTerm(int token) {
 	switch (token) {
 	[for e in dispatch.termsByKind.asMap.entrySet if e.key ne unkinded]
 		[for d in e.value]
-	case TOKEN_[asConstant d.name]: // [d]
+	case TERM_[asConstant d.name]: // [d]
 		[/for]
 		 return KIND_[asConstant e.key];
 	[/for]
@@ -77,13 +87,13 @@ protected int kindToken(int token) {
 }
 [/template]
 
-[template showToken]
+[template showTerm]
 
 @Override
-protected String showToken(int token) {
+protected String showTerm(int token) {
 	switch (token) {
 	[for d in dispatch.terms]
-	case TOKEN_[asConstant d.name]: return "[d.id]";
+	case TERM_[asConstant d.name]: return "[d.id]";
 	[/for]
 	case EOF: return "EOF";
 	default: return "?";
@@ -96,7 +106,7 @@ protected String showToken(int token) {
 public int advance() {
 	int t = next();
 	[for ddd in dispatch.terms if ddd.ignored][if for.first]
-	while ([for d in dispatch.terms if d.ignored][if not for.first] | [/if]t == TOKEN_[asConstant d.name][/for]) {
+	while ([for d in dispatch.terms if d.ignored][if not for.first] | [/if]t == TERM_[asConstant d.name][/for]) {
 		t = next();
 	}
 	[/if][/for]
@@ -213,14 +223,14 @@ private int read_[asVar d.name](char c, int p) {
 [template readTokens]
 
 @Override
-protected int readToken(char c) {
+protected int read(char c) {
 	int p = this.position;
 	if (c < 128) {
 		switch(FIRST_SIMPLE[acc]c[/acc]) {
 	[for g in dispatch.simpleGroups]
 		case [g.index]:
 		[for d in g.terms]
-			if (p != read_[asVar d.name](c, p)) return commit(TOKEN_[asConstant d.name]);
+			if (p != read_[asVar d.name](c, p)) return commit(TERM_[asConstant d.name]);
 		[/for]
 			break;
 	[/for]
@@ -230,19 +240,157 @@ protected int readToken(char c) {
 		}
 	}
 	[for d in dispatch.complexGroup.terms]
-	if (p != read_[asVar d.name](c, p)) return commit(TOKEN_[asConstant d.name]);
+	if (p != read_[asVar d.name](c, p)) return commit(TERM_[asConstant d.name]);
 	[/for]
 	nextChar();
 	return commit(UNRECOGNIZED);
 }
 [/template]
 
-[template generateParser String className]
-[let termsClass][name]Terms[/let]
+[template generateProductions String className String termsClass]
+package [pack];
+
+import static [pack].[termsClass].*;
+
+@SuppressWarnings("all")
+@javax.annotation.Generated({"[grmp].Generator", "[name].grammar"})
+public final class [className] extends [grmp].Productions {
+	[for p in productions if not (p.ephemeral or p.subtypes)]
+	/** Production {@code [p.id]}. */
+	public static final short KIND_[asConstant p.id] = ~[for.index];
+	[/for]
+	[for t in uniqueParts]
+	/** Part code {@code [t]}. */
+	public static final short PART_[asConstant t] = 1 + [for.index];
+	[/for]
+
+	private [className]([termsClass] terms, Parser parser) {
+		super(terms, parser);
+	}
+	[for p in productions if not p.ephemeral]
+
+	public static [className] [asVar p.id]([termsClass] terms) {
+		Parser parser = new Parser(terms);
+		parser.[asVar p.id](ANY_PART);
+		return new [className](terms, parser);
+	}
+	[/for]
+
+	private static final class Parser extends [grmp].Productions.Parser {
+		private final [termsClass] input;
+
+		Parser([termsClass] input) {
+			super(input);
+			this.input = input;
+		}
+		[for p in productions, String v = asVar p.id]
+
+		boolean [v](short part) {
+		[if p.subtypes]
+			return [for s in p.subtypes][if not for.first]
+					|| [/if][asVar s](part)[/for];
+		[else]
+			int i = terms.index(), p = position;
+			[for a in p.alternatives]
+			[if not p.ephemeral]
+			production(part, KIND_[asConstant p.id]);
+			[/if]
+				[let altVar]l[for.index][/let]
+				[if p.alwaysSucceedingAlternatives.empty]
+			[altVar]: {
+				[alternativeBodyProd p a altVar]
+				return [if p.ephemeral]true[else]end(part, p)[/if];
+			}
+			terms.reset(i); position = p;
+				[else]
+			[alternativeBodyProd p a altVar]
+			return [if p.ephemeral]true[else]end(part, p)[/if];
+				[/if]
+			[/for]
+			[if p.alwaysSucceedingAlternatives.empty]
+			return false;
+			[/if]
+		[/if]
+		}
+		[/for]
+
+		@Override
+		public String toString() {
+			return new [className](input, this).show();
+		}
+	}
+
+	@Override
+	public String showKind(short kind) {
+		if (kind >= 0) return "term-" + kind;
+		switch (kind) {
+		[for p in productions if not (p.ephemeral or p.subtypes)]
+		case KIND_[asConstant p.id]: return [literal.string p.id];
+		[/for]
+		default: return "?";
+		}
+	}
+
+	@Override
+	public String showPart(short part) {
+		switch (part) {
+		[for t in uniqueParts]
+		case PART_[asConstant t]: return [literal.string t];
+		[/for]
+		default: return "?";
+		}
+	}
+}
+[/template]
+
+[template alternativeBodyProd Prod prod Alt alt String altVar]
+[for part in alt.parts if part.mode.notConsume][if for.first]
+int j;
+[/if][/for]
+	[for part in alt.parts, Part p = asPartCase part]
+		[if p.not]
+j = terms.index();
+if ([inlineMatch p for.index]) break [altVar];
+terms.reset(j);
+		[else if p.and]
+j = terms.index();
+if (![inlineMatch p for.index]) break [altVar];
+terms.reset(j);
+		[else]
+[if p.cardinality.maybeOne]
+[inlineMatch p for.index]; // 0 or 1
+[/if]
+[if p.cardinality.atLeastOne]
+if (![inlineMatch p for.index]) break [altVar]; // 1 or more
+[/if]
+[if p.cardinality.multiple]
+while ([inlineMatch p for.index]); // 0 or more
+[/if]
+		[/if]
+	[/for]
+[/template]
+
+[template inlineMatch Part p Integer partIndex][output.trim]
+	[if p.literal]
+term([if p.tagged]part != 0 ? PART_[asConstant p.tag] : NO_PART[else]NO_PART[/if], TERM_[asTokenConstant p.literal])
+	[else if p.reference]
+		[if p.reference.ephemeral]
+[asVar p.reference.id](part != 0 ? ANY_PART : NO_PART)
+		[else if p.tagged]
+[asVar p.reference.id](part != 0 ? PART_[asConstant p.tag] : NO_PART)
+		[else]
+[asVar p.reference.id](NO_PART)
+		[/if]
+	[/if]
+[/output.trim][/template]
+
+[template altPartVar String altPrefix Part p Integer partIndex][if p.tagged][p.var][else]part[partIndex][/if]_[altPrefix][/template]
+
+[template generateParser String className String termsClass String treesClass]
 package [pack];
 
 import javax.annotation.Nullable;
-import [pack].[name]Trees.*;
+import [pack].[treesClass].*;
 import static [pack].[termsClass].*;
 
 @SuppressWarnings("all")
@@ -283,14 +431,14 @@ public final class [className] extends [grmp].ParserBase {
 		int i = lex.index();
 			[/if]
 		[if not p.ephemeral][if for.first][t].Builder [/if]b = new [t].Builder().beginTokenIndex(i + 2);[/if]
-		if (alt_[v]_[for.index](b)) return [if p.ephemeral]true[else]b.endTokenIndex(lex.index()).build()[/if];
+		if ([v]_alt_[for.index](b)) return [if p.ephemeral]true[else]b.endTokenIndex(lex.index()).build()[/if];
 		lex.reset(i);
 		[/for]
 	[/if]
 		return [if p.ephemeral]false[else]null[/if];
 	}
 	[for a in p.alternatives if not p.subtypes]
-	[let altPrefix]alt_[v]_[for.index][/let]
+	[let altPrefix][v]_alt_[for.index][/let]
 	[let consumerType][output.trim]
 		[if p.ephemeral and p.parts]
 			Init_[t]
@@ -345,13 +493,13 @@ private boolean [altPartIden altPrefix for.index]([consumerType] b) {
 [if p.literal]
   int i = lex.index();
   int t = lex.advance();
-	if (t == TOKEN_[asTokenConstant p.literal]) {
+	if (t == TERM_[asTokenConstant p.literal]) {
 		[if p.tagged]
 		b.[p.var](lex.getSymbol());
 		[/if]
 		return true;
 	}
-	mismatchAt(lex.index(), TOKEN_[asTokenConstant p.literal], t);
+	mismatchAt(lex.index(), TERM_[asTokenConstant p.literal], t);
 	lex.reset(i);
 	return false;
 [else if p.reference]

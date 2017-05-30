@@ -3,11 +3,10 @@ package io.immutables.grammar;
 import io.immutables.grammar.Source.Position;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import javax.annotation.concurrent.Immutable;
 import javax.annotation.concurrent.NotThreadSafe;
-import static com.google.common.base.Preconditions.checkPositionIndex;
+import javax.annotation.concurrent.ThreadSafe;
 
-@Immutable
+@ThreadSafe
 public abstract class Terms {
 	private final char[] input;
 	private final CharSequence source;
@@ -15,38 +14,37 @@ public abstract class Terms {
 	private final int tokenEnd;
 	private final int[] lines;
 	private final int lineCount;
-	private final int unexpectedIndex;
-	private final boolean prematureEof;
+	private final int unexpectedAt;
 
-	protected Terms(Lexer lexer) {
-		this.input = lexer.input;
-		this.tokens = lexer.tokens;
-		this.tokenEnd = lexer.index;
-		this.lines = lexer.lines;
-		this.lineCount = lexer.lineCount;
-		this.unexpectedIndex = lexer.firstUnrecognizedIndex;
-		this.prematureEof = lexer.hasPrematureEof();
-		this.source = new ArrayCharSequence(input);
+	protected Terms(Tokenizer tokenizer) {
+		this.input = tokenizer.input;
+		this.tokens = tokenizer.tokens;
+		this.tokenEnd = tokenizer.index;
+		this.lines = tokenizer.lines;
+		this.lineCount = tokenizer.lineCount;
+		this.unexpectedAt = tokenizer.firstUnexpectedAt;
+		this.source = Source.wrap(input);
 	}
 
-	protected abstract int kindToken(int token);
-	protected abstract String showToken(int token);
+	protected abstract int kindTerm(int term);
+	protected abstract String showTerm(int term);
 	protected abstract Traversal newTraversal(int[] tokens, int tokenEnd);
 
 	public final boolean ok() {
-		return !hasUnexpected() && !hasPrematureEof();
+		return !hasUnexpected();
 	}
 
 	public final boolean hasUnexpected() {
-		return unexpectedIndex >= 0;
+		return unexpectedAt >= 0;
 	}
 
-	public final boolean hasPrematureEof() {
-		return prematureEof;
-	}
-
-	public final CharSequence getSource() {
+	public final CharSequence source() {
 		return source;
+	}
+
+	/** Number of terms. */
+	public final int count() {
+		return tokenEnd >> 1;
 	}
 
 	private Source.Position toSourcePosition(int position) {
@@ -70,27 +68,47 @@ public abstract class Terms {
 		return tokens[index + 1];
 	}
 
-	public final Source.Range tokenRange(int index) {
-		int beforePosition = beforePosition(index);
-		int afterPosition = afterPosition(index);
+	public final Source.Range range(int index) {
+		return rangePositions(
+				beforePosition(index),
+				afterPosition(index));
+	}
 
+	public final Source.Range rangeInclusive(int fromIndex, int toIndex) {
+		return rangePositions(
+				beforePosition(fromIndex),
+				afterPosition(toIndex));
+	}
+
+	private Source.Range rangePositions(int beforePosition, int afterPosition) {
 		Source.Range.Builder builder = new Source.Range.Builder();
-		builder.source(getSource());
+		builder.source(source());
 		builder.begin(toSourcePosition(beforePosition));
 		if (afterPosition > beforePosition) {
 			builder.end(toSourcePosition(afterPosition));
 		}
 		return builder.build();
 	}
-	
-	public Source.Range getPrematureEof() {
-		if (!hasPrematureEof()) throw new NoSuchElementException();
-		return tokenRange(tokenEnd);
+
+	public Source.Range firstUnexpectedRange() {
+		if (!hasUnexpected()) throw new NoSuchElementException();
+		return range(unexpectedAt);
 	}
 
-	public Source.Range getFirstUnrecognized() {
-		if (!hasUnexpected()) throw new NoSuchElementException();
-		return tokenRange(unexpectedIndex);
+	public String show() {
+		StringBuilder b = new StringBuilder();
+
+		Traversal traversal = traverse();
+		for (int t; (t = traversal.next()) != EOF;) {
+			int before = traversal.beforePosition();
+			int after = traversal.afterPosition();
+			String range = String.valueOf(input, before, after - before);
+			String escapedRange = Escapes.escaperRange().escape(range);
+			b.append(showTerm(t)).append(escapedRange).append(' ');
+		}
+
+		b.setLength(Math.max(0, b.length() - 1)); // cut out trailing space
+		return b.toString();
 	}
 
 	public final Traversal traverse() {
@@ -137,40 +155,27 @@ public abstract class Terms {
 			return Terms.this.afterPosition(index);
 		}
 
+		@Deprecated
 		public Symbol getSymbol() {
 			return Symbol.from(input, beforePosition(), afterPosition());
 		}
 
 		public Source.Range getCurrentRange() {
-			return tokenRange(index);
-		}
-
-		public String show() {
-			StringBuilder b = new StringBuilder();
-
-			for (int t; (t = next()) != EOF;) {
-				int before = beforePosition();
-				int after = afterPosition();
-				String range = String.valueOf(input, before, after - before);
-				String escapedRange = Escapes.escaperRange().escape(range);
-				b.append(showToken(t)).append(escapedRange).append(' ');
-			}
-
-			b.setLength(Math.max(0, b.length() - 1)); // cut out trailing space
-			return b.toString();
+			return range(index);
 		}
 
 		@Override
 		public String toString() {
-			return Terms.this.getClass().getSimpleName() + "." + getClass().getSimpleName() + getCurrentRange();
+			return Terms.this.getClass().getSimpleName()
+					+ "." + Traversal.class.getSimpleName() + getCurrentRange();
 		}
 	}
 
-	protected static abstract class Lexer {
+	protected static abstract class Tokenizer {
 		private final char[] input;
-		protected int position;
+		protected int position = -1; // before nextChar
 
-		private int[] tokens = new int[0];
+		private int[] tokens = ZERO_INT_ARRAY;
 		private int[] lines = new int[128];
 		{
 			// last position before first line is -1
@@ -184,41 +189,40 @@ public abstract class Terms {
 		private int index;
 		private int commitedPosition;
 		private char current;
-		private int firstUnrecognizedIndex;
+		private int firstUnexpectedAt = -1;
 
-		protected Lexer(char[] input) {
+		protected Tokenizer(char[] input) {
 			this.input = input;
-			this.tokens = ensureCapacityFor(tokens, 0, input.length >> 1); // XXX is good approximation?
+			this.tokens = Capacity.ensure(tokens, 0, input.length / 2); // XXX is good approximation?
 		}
 
-		protected abstract int readToken(char current);
+		protected abstract int read(char current);
 
 		public final void tokenize() {
-			position = -1; // before nextChar
-			firstUnrecognizedIndex = -1;
 			nextChar();
 			for (;;) {
-				int t = readNextToken();
+				int t = readNext();
 				if (t >= 0) continue;
 				if (t == UNRECOGNIZED) {
-					if (firstUnrecognizedIndex < 0) {
-						// track first unrecognized for now
-						firstUnrecognizedIndex = index - INDEX_STEP;
+					if (firstUnexpectedAt < 0) {
+						// track first unexpected for now
+						firstUnexpectedAt = index - INDEX_STEP;
 					}
 					continue;
 				}
 				break;
 			}
+			// Track any unconsumed as unexpected
+			// (if unrecognized have not been reported before)
+			if (position < input.length && firstUnexpectedAt < 0) {
+				firstUnexpectedAt = position;
+			}
 		}
 
-		final boolean hasPrematureEof() {
-			return position < input.length;
-		}
-
-		private int readNextToken() {
+		private int readNext() {
 			char c = current;
 			if (c == '\0') return EOF;
-			return readToken(c);
+			return read(c);
 		}
 
 		protected final char nextChar() {
@@ -231,81 +235,21 @@ public abstract class Terms {
 				char c = input[p];
 				if (c == '\n') {
 					// recording end of the line
-					lines = ensureCapacityFor(lines, lineCount, 1);
+					lines = Capacity.ensure(lines, lineCount, 1);
 					lines[lineCount++] = p;
 				}
 			}
 			this.commitedPosition = position;
 
 			int i = index;
-			tokens = ensureCapacityFor(tokens, i, INDEX_STEP);
+			tokens = Capacity.ensure(tokens, i, INDEX_STEP);
 			tokens[i++] = token;
 			tokens[i++] = position;
 			index = i;
 			return token;
 		}
 
-		private static int[] ensureCapacityFor(int[] elements, int limit, int increment) {
-			int oldCapacity = elements.length;
-			// check is made this way to avoid overflow
-			if (oldCapacity - limit < increment) {
-				int requiredCapacity = oldCapacity + increment;
-				int newCapacity;
-				// checking for overflow
-				if (requiredCapacity < oldCapacity) {
-					newCapacity = Integer.MAX_VALUE;
-				} else {
-					newCapacity = oldCapacity << 1;
-					if (newCapacity < requiredCapacity) {
-						newCapacity = Integer.highestOneBit(requiredCapacity - 1) << 1;
-					}
-					if (newCapacity < 0) {
-						newCapacity = Integer.MAX_VALUE;
-					}
-				}
-				elements = Arrays.copyOf(elements, newCapacity);
-			}
-			return elements;
-		}
-	}
-
-	private static final class ArrayCharSequence implements CharSequence {
-		private final char[] input;
-		private final int begin;
-		private final int end;
-
-		ArrayCharSequence(char[] input) {
-			this(input, 0, input.length);
-		}
-
-		ArrayCharSequence(char[] input, int begin, int end) {
-			this.input = input;
-			this.begin = begin;
-			this.end = end;
-		}
-
-		@Override
-		public CharSequence subSequence(int begin, int end) {
-			return new ArrayCharSequence(
-					input,
-					checkPositionIndex(this.begin + begin, input.length),
-					checkPositionIndex(this.begin + end, input.length));
-		}
-
-		@Override
-		public int length() {
-			return end - begin;
-		}
-
-		@Override
-		public char charAt(int index) {
-			return input[index];
-		}
-
-		@Override
-		public String toString() {
-			return String.valueOf(input, begin, end - begin);
-		}
+		private static final int[] ZERO_INT_ARRAY = new int[0];
 	}
 
 	private static final int INDEX_STEP = 2;

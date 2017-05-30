@@ -44,13 +44,11 @@ public class UnitCompiler {
 
 	public boolean compile() {
 		this.unit = parser.unit();
-		if (terms.hasUnexpected() || terms.hasPrematureEof() || unit == null) {
+		if (terms.hasUnexpected()|| unit == null) {
 			if (unit == null && parser.hasMismatchedToken()) {
 				this.message = buildMismatchMessage();
 			} else if (terms.hasUnexpected()) {
 				this.message = buildUnexpectedMessage();
-			} else if (terms.hasPrematureEof()) {
-				this.message = buildPrematureEofMessage();
 			}
 			return false;
 		}
@@ -65,16 +63,8 @@ public class UnitCompiler {
 		return true;
 	}
 
-	private CharSequence buildPrematureEofMessage() {
-		Source.Range range = terms.getPrematureEof();
-		return sourceName + ":" + range.begin()
-				+ " Unexpected tokens starting with `" + range.get() + "` "
-				+ printExcerpt(range)
-				+ "\n\tUnconsumed tokens left which does not conform to any production";
-	}
-
 	private CharSequence buildUnexpectedMessage() {
-		Source.Range range = terms.getFirstUnrecognized();
+		Source.Range range = terms.firstUnexpectedRange();
 		return sourceName + ":" + range.begin()
 				+ " Unexpected characters `" + range.get() + "`"
 				+ printExcerpt(range)
@@ -96,11 +86,10 @@ public class UnitCompiler {
 	}
 
 	private String printExcerpt(Source.Range range) {
-		StringBuilder excerpt = new Source.Excerpt(terms.getSource()).get(range);
 		return Joiner.on("\n\t").join(FluentIterable.of("").append(
 				Splitter.on('\n')
 						.omitEmptyStrings()
-						.split(excerpt)));
+						.split(range.highlight())));
 	}
 
 	private CharSequence generate() {

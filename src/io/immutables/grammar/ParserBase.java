@@ -31,12 +31,12 @@ public abstract class ParserBase {
 
 	public String getMismatchedExpectedToken() {
 		if (!hasMismatchedToken()) throw new NoSuchElementException();
-		return terms.showToken(mismatchedExpectedToken);
+		return terms.showTerm(mismatchedExpectedToken);
 	}
 
 	public String getMismatchedActualToken() {
 		if (!hasMismatchedToken()) throw new NoSuchElementException();
-		return terms.showToken(mismatchedActualToken);
+		return terms.showTerm(mismatchedActualToken);
 	}
 
 	public AstProduction.Id getFarthestMismatchedProduction() {
@@ -50,6 +50,6 @@ public abstract class ParserBase {
 
 	public Source.Range getFarthestMismatchedToken() {
 		if (!hasMismatchedToken()) throw new NoSuchElementException();
-		return terms.tokenRange(mismatchedTokenIndex);
+		return terms.range(mismatchedTokenIndex);
 	}
 }
