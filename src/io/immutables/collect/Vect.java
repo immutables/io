@@ -53,6 +53,11 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 			public E next() {
 				return (E) elements[index++];
 			}
+
+			@Override
+			public String toString() {
+				return Vect.class.getSimpleName() + ".Iterator(at " + index + ")";
+			}
 		};
 	}
 

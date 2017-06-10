@@ -6,8 +6,10 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
- * Inspired by a patch from Alex Chaffee (alex@purpletech.com)
+ * Note: Inspired by JUnit's implementation
+ * Original note: Inspired by a patch from Alex Chaffee (alex@purpletech.com)
  * @author JUnit authors
+ * @author Alex Chaffee (alex@purpletech.com)
  * @author Ievgen Lukash
  */
 final class Diff {

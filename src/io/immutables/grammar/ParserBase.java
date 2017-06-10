@@ -9,8 +9,8 @@ public abstract class ParserBase {
 	private int mismatchedTokenIndex = -1;
 	private AstProduction.Id mismatchedProduction;
 	private AstProduction.Id production;
-	private int mismatchedExpectedToken = Terms.UNRECOGNIZED;
-	private int mismatchedActualToken = Terms.UNRECOGNIZED;
+	private int mismatchedExpectedToken = Terms.UNEXPECTED;
+	private int mismatchedActualToken = Terms.UNEXPECTED;
 
 	public ParserBase(Terms terms) {
 		this.terms = terms;

@@ -16,7 +16,7 @@ type Person{
 } impl {
   name String { // return name
   }
-  age Bool { // return age
+  name Bool { // return age
   }
 }
 

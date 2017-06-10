@@ -34,4 +34,11 @@ public class TestVect {
 		that(Vect.of(1, 1, 1).fold(10, (a, b) -> a + b)).is(13);
 		that(Vect.of(2, 2, 2).reduce((a, b) -> a * b)).is(8);
 	}
+
+	@Test
+	public void range() {
+		that(Vect.of(1, 2, 3).rangeFrom(2)).isOf(3);
+		that(Vect.of(1, 2, 3).range(0, 1)).isOf(1);
+		that(Vect.of(1, 2, 3).range(2, 3)).isOf(3);
+	}
 }

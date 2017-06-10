@@ -3,18 +3,19 @@ package io.immutables.grammar;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import io.immutables.Unreachable;
+import java.util.Arrays;
 import java.util.List;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkPositionIndex;
 import static com.google.common.base.Preconditions.checkState;
 
 @Enclosing
 public interface Source {
-
 	@Immutable
 	abstract class Range {
 		public abstract Position begin();
@@ -42,7 +43,7 @@ public interface Source {
 		}
 
 		@Default
-		public CharSequence source() {
+		CharSequence source() {
 			return "";
 		}
 
@@ -52,12 +53,13 @@ public interface Source {
 
 		@Override
 		public String toString() {
-			return "[" + (begin().equals(end())
-					? begin()
-					: (begin() + "\u2025" + end())) + ")";
+			if (begin().equals(end())) {
+				return "[" + begin() + ")";
+			}
+			return "[" + begin() + "\u2025" + end() + ")";
 		}
 
-		public static class Builder extends ImmutableSource.Range.Builder {}
+		static class Builder extends ImmutableSource.Range.Builder {}
 	}
 
 	@Immutable
@@ -79,9 +81,9 @@ public interface Source {
 
 		@Check
 		void check() {
-			checkState(position() >= 0, "position is [0..)");
-			checkState(line() >= 1, "line is [1..)");
-			checkState(column() >= 1, "column is [1..)");
+			checkState(position() >= 0, "position is [0..): %s", this);
+			checkState(line() >= 1, "line is [1..): %s", this);
+			checkState(column() >= 1, "column is [1..) %s", this);
 		}
 
 		public static Position of(int position, int line, int column) {
@@ -107,58 +109,30 @@ public interface Source {
 
 		public StringBuilder get(Range range) {
 			int lineNumber = range.begin().line();
-			int columnNumber = range.begin().column();
+			int columnStart = range.begin().column();
 
-			lineNumber = Math.max(lineNumber, 1);
-			columnNumber = Math.max(columnNumber, 0);
-
-			// This is not so good, need to revise
-			int columnEnd = 0;
+			int columnEnd;
 			if (range.end().line() == lineNumber
-					&& range.end().column() != columnNumber) {
+					&& range.end().column() != columnStart) {
 				columnEnd = range.end().column();
+			} else {
+				columnEnd = columnStart + 1;
 			}
 
 			StringBuilder sb = new StringBuilder();
 
-			int line = lineNumber - 1;
+			int lineIndex = lineNumber - 1;
 
-			if (line - 1 >= 0) {
-				if (line - 2 == 0) {
-					gutter(sb, line - 2).append(lines.get(line - 2)).append('\n');
-				} else if (line - 2 > 0) {
-					// sb.append('\n').append("..");
-					gutter(sb, line - 2).append("...").append('\n');
-				}
-				gutter(sb, line - 1).append(lines.get(line - 1)).append('\n');
-			}
-
-			gutter(sb, line).append(lines.get(line)).append('\n');
-
-			gutterFill(sb, '^');
-			int charCount = columnEnd > 0 ? Math.abs(columnEnd - columnNumber) : 1;
-			// As it was in parboiled
-			// Math.max(Math.min(endIndex - startIndex, StringUtils.length(lineText) - column + 2), 1);
-			for (int i = 0; i < columnNumber - 1; i++) {
-				sb.append(' ');
-			}
-			for (int i = 0; i < charCount; i++) {
-				sb.append('^');
-			}
-			sb.append('\n');
-
-			if (line + 1 < lines.size()) {
-				gutter(sb, line + 1).append(lines.get(line + 1)).append('\n');
-
-				if (line + 2 == lines.size() - 1) {
-					gutter(sb, line + 2).append(lines.get(line + 2)).append('\n');
-				} else if (line + 2 < lines.size() - 1) {
-					// sb.append('\n').append("..");
-					gutter(sb, line + 2).append("...").append('\n');
-				}
-			}
+			printLinesAbove(sb, lineIndex);
+			printCurrentLine(sb, lineIndex);
+			printSquiggles(columnStart, columnEnd, sb);
+			printLinesBelow(sb, lineIndex);
 
 			return sb;
+		}
+
+		private void printCurrentLine(StringBuilder sb, int lineIndex) {
+			gutter(sb, lineIndex).append(lines.get(lineIndex)).append('\n');
 		}
 
 		private StringBuilder gutter(StringBuilder sb, int lineIndex) {
@@ -173,6 +147,43 @@ public interface Source {
 			return sb.append(Strings.repeat(c + "", gutterWidth)).append(" |");
 		}
 
+		private void printSquiggles(int columnStart, int columnEnd, StringBuilder sb) {
+			gutterFill(sb, '^');
+			int charCount = columnEnd > 0 ? Math.abs(columnEnd - columnStart) : 1;
+			for (int i = 0; i < columnStart - 1; i++) {
+				sb.append(' ');
+			}
+			for (int i = 0; i < charCount; i++) {
+				sb.append('^');
+			}
+			sb.append('\n');
+		}
+
+		private void printLinesBelow(StringBuilder sb, int line) {
+			if (line + 1 < lines.size()) {
+				gutter(sb, line + 1).append(lines.get(line + 1)).append('\n');
+
+				if (line + 2 == lines.size() - 1) {
+					gutter(sb, line + 2).append(lines.get(line + 2)).append('\n');
+				} else if (line + 2 < lines.size() - 1) {
+					// sb.append('\n').append("..");
+					gutter(sb, line + 2).append("...").append('\n');
+				}
+			}
+		}
+
+		private void printLinesAbove(StringBuilder sb, int line) {
+			if (line - 1 >= 0) {
+				if (line - 2 == 0) {
+					gutter(sb, line - 2).append(lines.get(line - 2)).append('\n');
+				} else if (line - 2 > 0) {
+					// sb.append('\n').append("..");
+					gutter(sb, line - 2).append("...").append('\n');
+				}
+				gutter(sb, line - 1).append(lines.get(line - 1)).append('\n');
+			}
+		}
+
 		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
@@ -180,6 +191,89 @@ public interface Source {
 				gutter(sb, line).append(lines.get(line));
 			}
 			return sb.toString();
+		}
+	}
+
+	final class Lines {
+		private int[] lines;
+		private int count;
+
+		private Lines(int[] lines, int count) {
+			this.lines = lines;
+			this.count = count;
+		}
+
+		public int count() {
+			return count;
+		}
+
+		public Range getLine(CharSequence source, int lineNumber) {
+			checkPositionIndex(lineNumber - 1, count);
+			int before = lines[lineNumber - 1];
+			int after = lines[lineNumber];
+			if (after == 0) {
+				after = source.length();
+			}
+			return new Range.Builder()
+					.source(source)
+					.begin(Position.of(before + 1, lineNumber, 1))
+					.end(Position.of(after, lineNumber, after - before))
+					.build();
+		}
+
+		public Position get(int position) {
+			checkArgument(position >= 0, "position >= 0");
+			int lineIndex = Arrays.binarySearch(lines, 0, count, position);
+			if (lineIndex < 0) {
+				lineIndex = -lineIndex - 2;
+			}
+			int lineNumber = lineIndex + 1;
+			int columnNumber = position - lines[lineIndex];
+			// we've got at newline
+			if (columnNumber == 0) {
+				columnNumber = position - lines[lineIndex - 1];
+				lineNumber--;
+			}
+			return Position.of(position, lineNumber, columnNumber);
+		}
+
+		public static Lines from(char[] input) {
+			Tracker t = new Tracker();
+			for (int i = 0; i < input.length; i++) {
+				if (input[i] == '\n') {
+					t.addNewlineAt(i);
+				}
+			}
+			return t.lines();
+		}
+
+		public static class Tracker {
+			private int[] lines = new int[128];
+			{
+				// last position before first line is -1
+				// i.e. non-existing zero line ends on -1 position, on the next, 0
+				// position first line starts.
+				lines[0] = -1;
+			}
+			// at least one line is available starting from 0 position, even if
+			// input is empty
+			private int count = 1;
+
+			public int addNewlineAt(int position) {
+				// recording end of the line
+				lines = Capacity.ensure(lines, count, 1);
+				lines[count++] = position;
+				return count;
+			}
+
+			public Lines lines() {
+				return new Lines(lines, count);
+			}
+		}
+
+		@Override
+		public String toString() {
+			return getClass().getSimpleName() + "[" + count + "]";
 		}
 	}
 

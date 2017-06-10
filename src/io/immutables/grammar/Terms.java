@@ -1,7 +1,5 @@
 package io.immutables.grammar;
 
-import io.immutables.grammar.Source.Position;
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
@@ -12,16 +10,14 @@ public abstract class Terms {
 	private final CharSequence source;
 	private final int[] tokens;
 	private final int tokenEnd;
-	private final int[] lines;
-	private final int lineCount;
+	private final Source.Lines lines;
 	private final int unexpectedAt;
 
 	protected Terms(Tokenizer tokenizer) {
 		this.input = tokenizer.input;
 		this.tokens = tokenizer.tokens;
 		this.tokenEnd = tokenizer.index;
-		this.lines = tokenizer.lines;
-		this.lineCount = tokenizer.lineCount;
+		this.lines = tokenizer.lines.lines();
 		this.unexpectedAt = tokenizer.firstUnexpectedAt;
 		this.source = Source.wrap(input);
 	}
@@ -45,16 +41,6 @@ public abstract class Terms {
 	/** Number of terms. */
 	public final int count() {
 		return tokenEnd >> 1;
-	}
-
-	private Source.Position toSourcePosition(int position) {
-		int lineIndex = Arrays.binarySearch(lines, 0, lineCount, position);
-		if (lineIndex < 0) {
-			lineIndex = -lineIndex - 2;
-		}
-		int lineNumber = lineIndex + 1;
-		int columnNumber = position - lines[lineIndex];
-		return Position.of(position, lineNumber, columnNumber);
 	}
 
 	private final int beforePosition(int index) {
@@ -83,9 +69,9 @@ public abstract class Terms {
 	private Source.Range rangePositions(int beforePosition, int afterPosition) {
 		Source.Range.Builder builder = new Source.Range.Builder();
 		builder.source(source());
-		builder.begin(toSourcePosition(beforePosition));
+		builder.begin(lines.get(beforePosition));
 		if (afterPosition > beforePosition) {
-			builder.end(toSourcePosition(afterPosition));
+			builder.end(lines.get(afterPosition));
 		}
 		return builder.build();
 	}
@@ -172,20 +158,12 @@ public abstract class Terms {
 	}
 
 	protected static abstract class Tokenizer {
+		private final Source.Lines.Tracker lines = new Source.Lines.Tracker();
+
 		private final char[] input;
 		protected int position = -1; // before nextChar
 
 		private int[] tokens = ZERO_INT_ARRAY;
-		private int[] lines = new int[128];
-		{
-			// last position before first line is -1
-			// i.e. non-existing zero line ends on -1 position, on the next, 0
-			// position first line starts.
-			lines[0] = -1;
-		}
-		// at least one line is available starting from 0 position, even if
-		// input is empty
-		private int lineCount = 1;
 		private int index;
 		private int commitedPosition;
 		private char current;
@@ -203,14 +181,11 @@ public abstract class Terms {
 			for (;;) {
 				int t = readNext();
 				if (t >= 0) continue;
-				if (t == UNRECOGNIZED) {
-					if (firstUnexpectedAt < 0) {
-						// track first unexpected for now
-						firstUnexpectedAt = index - INDEX_STEP;
-					}
-					continue;
+				if (t != UNEXPECTED) break;
+				if (firstUnexpectedAt < 0) {
+					// track first unexpected for now
+					firstUnexpectedAt = index - INDEX_STEP;
 				}
-				break;
 			}
 			// Track any unconsumed as unexpected
 			// (if unrecognized have not been reported before)
@@ -232,11 +207,8 @@ public abstract class Terms {
 
 		protected final int commit(int token) {
 			for (int p = this.commitedPosition; p < position; p++) {
-				char c = input[p];
-				if (c == '\n') {
-					// recording end of the line
-					lines = Capacity.ensure(lines, lineCount, 1);
-					lines[lineCount++] = p;
+				if (input[p] == '\n') {
+					lines.addNewlineAt(p);
 				}
 			}
 			this.commitedPosition = position;
@@ -255,5 +227,5 @@ public abstract class Terms {
 	private static final int INDEX_STEP = 2;
 
 	public static final int EOF = -1;
-	public static final int UNRECOGNIZED = -2;
+	public static final int UNEXPECTED = -2;
 }

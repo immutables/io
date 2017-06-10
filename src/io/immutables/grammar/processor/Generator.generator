@@ -236,14 +236,14 @@ protected int read(char c) {
 	[/for]
 		default:
 			nextChar();
-			return commit(UNRECOGNIZED);
+			return commit(UNEXPECTED);
 		}
 	}
 	[for d in dispatch.complexGroup.terms]
 	if (p != read_[asVar d.name](c, p)) return commit(TERM_[asConstant d.name]);
 	[/for]
 	nextChar();
-	return commit(UNRECOGNIZED);
+	return commit(UNEXPECTED);
 }
 [/template]
 
