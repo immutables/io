@@ -21,6 +21,7 @@ public class TestProductions {
 		that(Productions.decodeTermEnd(l2)).is(545454);
 	}
 
+	// make sure we're having no problems with sign bit while masking and shifting
 	@Test
 	public void bitsCodingNegative() {
 		long l1 = 0, l2 = 0;

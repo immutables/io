@@ -20,13 +20,16 @@ import javax.annotation.Nullable;
 public interface That<T, S extends That<T, S>> {
 	/**
 	 * This is not a matcher method. Always throws {@link UnsupportedOperationException}.
-	 * Use {@link Object#equalTo(java.lang.Object)} instead.
+	 * @deprecated Use {@link Object#equalTo(java.lang.Object)} instead.
 	 */
 	@Deprecated
 	@Override
 	boolean equals(java.lang.Object obj);
 
-	/** This is not a matcher method. Always throws {@link UnsupportedOperationException}. */
+	/**
+	 * This is not a matcher method. Always throws {@link UnsupportedOperationException}.
+	 * @deprecated don't use this method
+	 */
 	@Deprecated
 	@Override
 	int hashCode();
@@ -181,6 +184,15 @@ public interface That<T, S extends That<T, S>> {
 	}
 
 	interface Object<T> extends That<T, Object<T>> {
+
+		/**
+		 * @deprecated Already regular object matcher.
+		 * @return always {@code this}
+		 */
+		@Deprecated
+		default Object<T> just() {
+			return this;
+		}
 
 		default void isNull() {
 			@Nullable T actual = What.getNullable(this);
@@ -393,7 +405,8 @@ public interface That<T, S extends That<T, S>> {
 				}
 			}
 			if (!missingElements.isEmpty()) {
-				throw What.newAssertionError("expected has all: " + What.showElements(expectedElements),
+				throw What.newAssertionError(
+						"expected has all: " + What.showElements(expectedElements),
 						"actual: missing " + What.showElements(missingElements) + " — " + Diff.trim(actualElements));
 			}
 		}
@@ -416,7 +429,7 @@ public interface That<T, S extends That<T, S>> {
 				}
 			}
 
-			if (missingElements.isEmpty() && !remainingElements.isEmpty()) {
+			if (!missingElements.isEmpty() || !remainingElements.isEmpty()) {
 				java.lang.String actual = "";
 				if (!missingElements.isEmpty()) {
 					actual += "missing " + What.showElements(missingElements) + "; ";
@@ -433,20 +446,18 @@ public interface That<T, S extends That<T, S>> {
 
 	interface Double extends That<java.lang.Double, Double> {
 
+		default void bitwiseIs(double expected) {
+			double actual = What.get(this);
+			if (java.lang.Double.doubleToRawLongBits(actual) != java.lang.Double.doubleToRawLongBits(expected)) {
+				throw What.newAssertionError("expected: " + expected, "actual: " + actual);
+			}
+		}
+
 		default void is(DoublePredicate predicate) {
 			double actual = What.get(this);
 			if (!predicate.test(actual)) {
 				throw What.newAssertionError(
 						"expected matching predicate " + What.showNonDefault(predicate),
-						"actual: " + actual);
-			}
-		}
-
-		default void not(DoublePredicate predicate) {
-			double actual = What.get(this);
-			if (predicate.test(actual)) {
-				throw What.newAssertionError(
-						"expected not matching predicate" + What.showNonDefault(predicate),
 						"actual: " + actual);
 			}
 		}
@@ -457,13 +468,6 @@ public interface That<T, S extends That<T, S>> {
 				throw What.newAssertionError(
 						"expected within ±" + epsilon + " of " + expected,
 						"actual: " + actual);
-			}
-		}
-
-		default void isBitwise(double expected) {
-			double actual = What.get(this);
-			if (java.lang.Double.doubleToRawLongBits(actual) != java.lang.Double.doubleToRawLongBits(expected)) {
-				throw What.newAssertionError("expected: " + expected, "actual: " + actual);
 			}
 		}
 
@@ -499,15 +503,6 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
-		default void not(IntPredicate predicate) {
-			int actual = What.get(this);
-			if (predicate.test(actual)) {
-				throw What.newAssertionError(
-						"expected not matching predicate " + What.showNonDefault(predicate),
-						"actual: " + actual);
-			}
-		}
-
 		default void is(int expected) {
 			int actual = What.get(this);
 			if (actual != expected) {
@@ -522,15 +517,6 @@ public interface That<T, S extends That<T, S>> {
 			if (!predicate.test(actual)) {
 				throw What.newAssertionError(
 						"expected matching predicate " + What.showNonDefault(predicate),
-						"actual: " + actual);
-			}
-		}
-
-		default void not(LongPredicate predicate) {
-			long actual = What.get(this);
-			if (predicate.test(actual)) {
-				throw What.newAssertionError(
-						"expected not matching predicate " + What.showNonDefault(predicate),
 						"actual: " + actual);
 			}
 		}
@@ -615,7 +601,7 @@ public interface That<T, S extends That<T, S>> {
 		}
 
 		private static java.lang.String showReference(java.lang.Object ref) {
-			return ref == null ? "null" : (ref.getClass().getName() + identityHashCodeSuffix(ref));
+			return ref == null ? "null" : (ref.getClass().getSimpleName() + identityHashCodeSuffix(ref));
 		}
 
 		private static java.lang.String identityHashCodeSuffix(java.lang.Object ref) {

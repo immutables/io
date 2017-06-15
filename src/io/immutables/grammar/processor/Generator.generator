@@ -4,17 +4,14 @@
 	[let parserClass][name]Parser[/let]
 	[let productionsClass][name]Productions[/let]
 	[let treesClass][name]Trees[/let]
+	[let constructClass][name]Construct[/let]
 
 	[output.java pack termsClass]
 [generateTerms termsClass]
 	[/output.java]
 
-	[output.java pack parserClass]
-[generateParser parserClass termsClass treesClass]
-	[/output.java]
-
 	[output.java pack productionsClass]
-[generateProductions productionsClass termsClass]
+[generateProductions productionsClass termsClass treesClass]
 	[/output.java]
 
 	[output.java pack treesClass]
@@ -27,7 +24,7 @@
 package [pack];
 
 @SuppressWarnings("all")
-@javax.annotation.Generated({"[grmp].Generator", "[name].grammar"})
+@javax.annotation.Generated({"[grmp].processor.Generator", "[name].grammar"})
 public final class [className] extends [grmp].Terms {
 	[tokenConstants]
 
@@ -247,14 +244,14 @@ protected int read(char c) {
 }
 [/template]
 
-[template generateProductions String className String termsClass]
+[template generateProductions String className String termsClass String treesClass]
 package [pack];
 
 import static [pack].[termsClass].*;
 
 @SuppressWarnings("all")
-@javax.annotation.Generated({"[grmp].Generator", "[name].grammar"})
-public final class [className] extends [grmp].Productions {
+@javax.annotation.Generated({"[grmp].processor.Generator", "[name].grammar"})
+public final class [className]<T extends [grmp].TreeProduction<[treesClass]>> extends [grmp].Productions<[treesClass], T> {
 	[for p in productions if not (p.ephemeral or p.subtypes)]
 	/** Production {@code [p.id]}. */
 	public static final short KIND_[asConstant p.id] = ~[for.index];
@@ -264,15 +261,15 @@ public final class [className] extends [grmp].Productions {
 	public static final short PART_[asConstant t] = 1 + [for.index];
 	[/for]
 
-	private [className]([termsClass] terms, Parser parser) {
-		super(terms, parser);
+	private [className]([termsClass] terms, Parser parser, TreeConstructor<T> constructor) {
+		super(terms, parser, constructor);
 	}
-	[for p in productions if not p.ephemeral]
+	[for p in productions if not p.ephemeral, String t = asType p.id, String v = asVar p.id]
 
-	public static [className] [asVar p.id]([termsClass] terms) {
+	public static [className]<[treesClass].[t]> [v]([termsClass] terms) {
 		Parser parser = new Parser(terms);
-		parser.[asVar p.id](ANY_PART);
-		return new [className](terms, parser);
+		parser.[v](ANY_PART);
+		return new [className]<[treesClass].[t]>(terms, parser, [className]::[v]);
 	}
 	[/for]
 
@@ -313,11 +310,6 @@ public final class [className] extends [grmp].Productions {
 		[/if]
 		}
 		[/for]
-
-		@Override
-		public String toString() {
-			return new [className](input, this).show();
-		}
 	}
 
 	@Override
@@ -340,6 +332,7 @@ public final class [className] extends [grmp].Productions {
 		default: return "?";
 		}
 	}
+	[generateConstructTrees treesClass]
 }
 [/template]
 
@@ -358,13 +351,15 @@ if (![inlineMatch p for.index]) break [altVar];
 terms.reset(j);
 		[else]
 [if p.cardinality.maybeOne]
-[inlineMatch p for.index]; // 0 or 1
+[inlineMatch p for.index];[-- single optional --]
 [/if]
+[-- Here we do loop peeling: We're separating first required match from
+    the rest multiple optional occurenses, so 1..* becomes 1 and 0..* --]
 [if p.cardinality.atLeastOne]
-if (![inlineMatch p for.index]) break [altVar]; // 1 or more
+if (![inlineMatch p for.index]) break [altVar];[-- single required --]
 [/if]
 [if p.cardinality.multiple]
-while ([inlineMatch p for.index]); // 0 or more
+while ([inlineMatch p for.index]);[-- multiple optional --]
 [/if]
 		[/if]
 	[/for]
@@ -384,146 +379,55 @@ term([if p.tagged]part != 0 ? PART_[asConstant p.tag] : NO_PART[else]NO_PART[/if
 	[/if]
 [/output.trim][/template]
 
-[template altPartVar String altPrefix Part p Integer partIndex][if p.tagged][p.var][else]part[partIndex][/if]_[altPrefix][/template]
-
-[template generateParser String className String termsClass String treesClass]
-package [pack];
-
-import javax.annotation.Nullable;
-import [pack].[treesClass].*;
-import static [pack].[termsClass].*;
-
-@SuppressWarnings("all")
-@javax.annotation.Generated({"[grmp].Generator", "[name].grammar"})
-public final class [className] extends [grmp].ParserBase {
-	public final [termsClass].Traversal lex; // should be private
-
-	public [className]([termsClass] terms) {
-		super(terms);
-		this.lex = terms.traverse();
-	}
-	[for p in productions,
-			String v = asVar p.id,
-			String t = asType p.id]
-
-		[if p.ephemeral]
-	[-- when no tagged parts in ephemeral, init will not be generated --]
-	private boolean [v]([if p.parts]Init_[t][else][grmp].AstProduction.Builder[/if] b) {
-		[else]
-	public @Nullable [t] [v]() {
-		[/if]
-	[if p.subtypes]
-		production([t].ID);
-		[t] t;
-		[for s in p.subtypes]
-			[if for.first]
-		int i = lex.index();
-			[/if]
-		if ((t = [asVar s]()) != null) return t;
-		lex.reset(i);
-		[/for]
-	[else]
-		[if not p.ephemeral]
-		production([t].ID);
-		[/if]
-		[for a in p.alternatives]
-			[if for.first]
-		int i = lex.index();
-			[/if]
-		[if not p.ephemeral][if for.first][t].Builder [/if]b = new [t].Builder().beginTokenIndex(i + 2);[/if]
-		if ([v]_alt_[for.index](b)) return [if p.ephemeral]true[else]b.endTokenIndex(lex.index()).build()[/if];
-		lex.reset(i);
-		[/for]
-	[/if]
-		return [if p.ephemeral]false[else]null[/if];
-	}
-	[for a in p.alternatives if not p.subtypes]
-	[let altPrefix][v]_alt_[for.index][/let]
-	[let consumerType][output.trim]
-		[if p.ephemeral and p.parts]
-			Init_[t]
-		[else if p.ephemeral]
-			[grmp].AstProduction.Builder
-		[else]
-			[t].Builder
-		[/if]
-  [/output.trim][/let]
-
-	private boolean [altPrefix]([consumerType] b) {
-		[alternativeBody p a altPrefix]
-		return true;
-	}
-	[alternativePartMatch p a altPrefix consumerType]
-	[/for]
-	[/for]
-}
-[/template]
-
-[template alternativeBody Prod prod Alt alt String altPrefix]
-	[for part in alt.parts if part.mode.notConsume or part.cardinality.maybeOne][if for.first]
-int i;
-	[/if][/for]
-	[for part in alt.parts, Part p = asPartCase part]
-		[if p.not]
-i = lex.index();
-if ([altPartIden altPrefix for.index](b)) return false;
-lex.reset(i);
-		[else if p.and]
-i = lex.index();
-if (![altPartIden altPrefix for.index](b)) return false;
-lex.reset(i);
-		[else]
-[if p.cardinality.maybeOne]
-[altPartIden altPrefix for.index](b); // 0 or 1
-[/if]
-[if p.cardinality.atLeastOne]
-if (![altPartIden altPrefix for.index](b)) return false; // 1 or more
-[/if]
-[if p.cardinality.multiple]
-while ([altPartIden altPrefix for.index](b)); // 0 or more
-[/if]
-		[/if]
-	[/for]
-[/template]
-
-[template alternativePartMatch Prod prod Alt alt String altPrefix String consumerType]
-[for part in alt.parts, Part p = asPartCase part]
-
-private boolean [altPartIden altPrefix for.index]([consumerType] b) {
-[if p.literal]
-  int i = lex.index();
-  int t = lex.advance();
-	if (t == TERM_[asTokenConstant p.literal]) {
-		[if p.tagged]
-		b.[p.var](lex.getSymbol());
-		[/if]
-		return true;
-	}
-	mismatchAt(lex.index(), TERM_[asTokenConstant p.literal], t);
-	lex.reset(i);
-	return false;
-[else if p.reference]
-	[if p.reference.ephemeral]
-	return [asVar p.reference.id](b);
-	[else]
-	@Nullable [asType p.reference.id] p = [asVar p.reference.id]();
-	if (p != null) {
-		[if p.tagged]
-		b.[p.var](p);
-		[/if]
-		return true;
-	}
-	return false;
-	[/if]
-[/if]
-}
-[/for]
-[/template]
-
-[template altPartIden String altPrefix Integer partIndex]part_[partIndex]_of_[altPrefix][/template]
-
 [-- we don't add it as import because don't want clashes with node names --]
 [template grmp]io.immutables.grammar[/template]
+
+[template generateConstructTrees String treesClass]
+[for p in productions if not p.ephemeral,
+	String type = asType p.id, String var = asVar p.id]
+	[if p.terminalSubtypes]
+
+private static [treesClass].[type] [var](Traversal in) {
+	switch (in.kind()) {
+		[for s in p.terminalSubtypes]
+	case KIND_[asConstant s]: return [asVar s](in);
+		[/for]
+	default: throw io.immutables.Unreachable.exhaustive();
+	}
+}
+	[else]
+
+private static [treesClass].[type] [var](Traversal in) {
+	assert in.current() == Traversal.At.PRODUCTION_BEGIN;
+	assert in.kind() == KIND_[asConstant p.id];
+
+	[treesClass].[type].Builder builder =
+			new [treesClass].[type].Builder()
+					.termBegin(in.termBegin())
+					.termEnd(in.termEnd());
+
+	while (in.next() != Traversal.At.PRODUCTION_END)[if not p.parts];[else] {
+		switch (in.part()) {
+	[for t in p.parts, String n = asVar t.tag, String c = asConstant t.tag]
+		case PART_[c]:
+		[if t.reference.present]
+			builder.[n]([asVar t.reference.get](in));
+		[else if t.literal.present]
+			builder.[n](in.term());
+		[else]
+			[--Impossible--]
+		[/if]
+			break;
+	[/for]
+		default: throw io.immutables.Unreachable.exhaustive();
+		}
+	}[/if]
+
+	return builder.build();
+}
+	[/if]
+[/for]
+[/template]
 
 [template generateTrees String className]
 package [pack];
@@ -536,27 +440,17 @@ public interface [className] {
 	[for p in productions if not p.ephemeral,
 		String type = asType p.id]
 	[if p.subtypes]
-	interface [type] extends [grmp].AstProduction[for s in p.supertypes], [asType s][/for] {
+	interface [type] extends [grmp].TreeProduction<[className]>[for s in p.supertypes], [asType s][/for] {
 		[taggedPartsAttributes p]
-
-		[grmp].AstProduction.Id ID = new [grmp].AstProduction.Id("[p.id]");
 	}
 	[else]
 	@[grmp].Node
-	interface [type] extends [className]Nodes.With[type], [grmp].AstProduction[for s in p.supertypes], [asType s][/for] {
+	interface [type] extends [className]Nodes.With[type], [grmp].TreeProduction<[className]>[for s in p.supertypes], [asType s][/for] {
 		[taggedPartsAttributes p]
 
-		[grmp].AstProduction.Id ID = new [grmp].AstProduction.Id("[p.id]");
-		class Builder extends [className]Nodes.[type].Builder
-				implements [grmp].AstProduction.Builder[for s in p.ephemerals], Init_[asType s][/for] {}
+		class Builder extends [className]Nodes.[type].Builder implements [grmp].TreeProduction.Builder {}
 	}
 	[/if]
-	[/for]
-
-	[for p in productions if p.ephemeral and (not p.parts.empty)]
-	interface Init_[asType p.id] extends [grmp].AstProduction.Builder[for s in p.ephemerals], Init_[asType s][/for] {
-		[taggedPartsInitAttributes p]
-	}
 	[/for]
 }
 [/template]
@@ -577,9 +471,9 @@ io.immutables.collect.Vect<[partTypeName]> [n]();
 [template taggedPartsInitAttributes Prod p]
 [for t in p.parts, String n = asVar t.tag]
 	[if t.literal.present]
-[grmp].AstProduction.Builder [n]([grmp].Symbol [n]);
+[grmp].TreeProduction.Builder [n]([grmp].Symbol [n]);
 	[else if t.reference.present]
-[grmp].AstProduction.Builder [n]([asType t.reference.get] [n]);
+[grmp].TreeProduction.Builder [n]([asType t.reference.get] [n]);
 	[/if]
 [/for]
 [/template]

@@ -414,7 +414,7 @@ goro(a T, y T?) T where T : Name   {
 goro(a X, y Y?) => T where T, Z: Commutative<T, Z> {
 }
 
-min<T, Z>(a A, b A) => A :: T, Commutative<T, Z>, T == A {
+min<T, Z>(a A, b A) -> A :: T, Commutative<T, Z>, T == A {
 
 }
 
@@ -719,7 +719,7 @@ aaa int~ = 1
 aaa := 1
 
 type Type111<S> :: Self<S> {
-  method (param T) T :: T == Optional<S> {
+  method (param T) -> T :: T == Optional<S> {
 
   }
 }
@@ -861,6 +861,12 @@ case stream.write() {
 }
 
 case object.mopject() {
+	[] -> 0
+	[a, b int] -> a + b
+	[a, b, c, ...d int] -> a + b + c + d.count
+}
+
+method case -> String {
 	[] -> 0
 	[a, b int] -> a + b
 	[a, b, c, ...d int] -> a + b + c + d.count

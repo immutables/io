@@ -123,15 +123,15 @@ public interface Source {
 
 			int lineIndex = lineNumber - 1;
 
-			printLinesAbove(sb, lineIndex);
-			printCurrentLine(sb, lineIndex);
-			printSquiggles(columnStart, columnEnd, sb);
-			printLinesBelow(sb, lineIndex);
+			appendLinesAbove(sb, lineIndex);
+			appendCurrentLine(sb, lineIndex);
+			appendSquiggles(columnStart, columnEnd, sb);
+			appendLinesBelow(sb, lineIndex);
 
 			return sb;
 		}
 
-		private void printCurrentLine(StringBuilder sb, int lineIndex) {
+		private void appendCurrentLine(StringBuilder sb, int lineIndex) {
 			gutter(sb, lineIndex).append(lines.get(lineIndex)).append('\n');
 		}
 
@@ -147,7 +147,7 @@ public interface Source {
 			return sb.append(Strings.repeat(c + "", gutterWidth)).append(" |");
 		}
 
-		private void printSquiggles(int columnStart, int columnEnd, StringBuilder sb) {
+		private void appendSquiggles(int columnStart, int columnEnd, StringBuilder sb) {
 			gutterFill(sb, '^');
 			int charCount = columnEnd > 0 ? Math.abs(columnEnd - columnStart) : 1;
 			for (int i = 0; i < columnStart - 1; i++) {
@@ -159,7 +159,7 @@ public interface Source {
 			sb.append('\n');
 		}
 
-		private void printLinesBelow(StringBuilder sb, int line) {
+		private void appendLinesBelow(StringBuilder sb, int line) {
 			if (line + 1 < lines.size()) {
 				gutter(sb, line + 1).append(lines.get(line + 1)).append('\n');
 
@@ -172,7 +172,7 @@ public interface Source {
 			}
 		}
 
-		private void printLinesAbove(StringBuilder sb, int line) {
+		private void appendLinesAbove(StringBuilder sb, int line) {
 			if (line - 1 >= 0) {
 				if (line - 2 == 0) {
 					gutter(sb, line - 2).append(lines.get(line - 2)).append('\n');

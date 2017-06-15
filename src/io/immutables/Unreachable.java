@@ -12,4 +12,8 @@ public interface Unreachable {
 	static AssertionError contractual() {
 		throw new AssertionError("code should be unreachable by design contract");
 	}
+	
+	static void when(boolean condition) {
+		if (condition) throw new AssertionError("condition must never be true here");
+	}
 }

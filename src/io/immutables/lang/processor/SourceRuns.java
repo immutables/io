@@ -1,8 +1,10 @@
 package io.immutables.lang.processor;
 
-import com.google.common.base.Throwables;
 import com.google.common.base.CaseFormat;
-import io.immutables.lang.UnitCompiler;
+import com.google.common.base.Throwables;
+import io.immutables.lang.SyntaxProductions;
+import io.immutables.lang.SyntaxTerms;
+import io.immutables.lang.SyntaxTrees.Unit;
 import java.util.ArrayList;
 import java.util.List;
 import org.immutables.generator.AbstractTemplate;
@@ -33,15 +35,25 @@ abstract class SourceRuns extends AbstractTemplate {
 
 	void process(String name, String filename, String content) {
 		try {
-			UnitCompiler compiler = new UnitCompiler(packageName, filename, content);
-			boolean success = compiler.compile();
-			boolean failed = compiler.isFailed();
-			assert success ^ failed;
-			String message = compiler.message().toString();
-			sources.add(new Source(name, content, failed, message));
+			SyntaxTerms terms = SyntaxTerms.from(content.toCharArray());
+			SyntaxProductions<Unit> productions = SyntaxProductions.unit(terms);
+			if (productions.ok()) {
+				// this should not fail in theory, but any exceptions will be caught by exception
+				// handlers
+				productions.construct();
+
+				sources.add(new Source(name, content, false, ""));
+			} else {
+				String message = formatMessage(filename, productions);
+				sources.add(new Source(name, content, true, message));
+			}
 		} catch (Exception ex) {
 			sources.add(new Source(name, content, true, Throwables.getStackTraceAsString(ex)));
 		}
+	}
+
+	private String formatMessage(String filename, SyntaxProductions<Unit> productions) {
+		return filename + ":" + productions.message();
 	}
 
 	abstract Templates.Invokable generate();

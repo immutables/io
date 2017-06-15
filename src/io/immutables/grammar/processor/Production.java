@@ -2,7 +2,6 @@ package io.immutables.grammar.processor;
 
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import io.immutables.Unreachable;
@@ -45,31 +44,44 @@ import static com.google.common.base.Preconditions.checkState;
 abstract class Production implements WithProduction {
 	/** Production Id/type and it base for AST type names. */
 	abstract Identifier id();
+
 	/**
 	 * Ephemeral is synthetic, intermediate inserted production indicator. It is used for AST
 	 * insignificant productions and to expand groups inside production alternatives.
 	 */
 	abstract boolean ephemeral();
+
 	/** One or more alternatives which production is comprised from. */
 	abstract Vect<Alternative> alternatives();
+
 	/** AST-significant (tagged) parts. */
 	abstract Vect<TaggedPart> parts();
+
 	/**
 	 * AST production ids/types which are derived from alternatives, empty if having only 1
 	 * alternative or if alternatives do not considered variant types, but just some syntactic
 	 * deviations.
 	 */
 	abstract Vect<Identifier> subtypes();
+
 	/**
 	 * Supertypes are reverse binding of {@link #subtypes()}.
 	 */
 	abstract Vect<Identifier> supertypes();
+	
 	/**
 	 * Alternatives contain references to the following ephemeral productions so that
 	 * any tagged parts present in ephemeral productions can be accepted by this production's AST
 	 * type. Think of it as supertypes to the AST object builder, supertypes.
 	 */
 	abstract Vect<Identifier> ephemerals();
+
+	/**
+	 * All terminal subtupes: all unique non-abstract (terminal) subtypes including transitive
+	 * subtypes of abstract subtypes.
+	 */
+	abstract Vect<Identifier> terminalSubtypes();
+
 	/**
 	 * Indicates if production has tagged parts, which, essentially, are AST object's attributes.
 	 */
@@ -81,7 +93,7 @@ abstract class Production implements WithProduction {
 	Vect<Alternative> alwaysSucceedingAlternatives() {
 		return alternatives().filter(Production::isAlwaysSucceding);
 	}
-	
+
 	static class Builder extends ImmutableProduction.Builder {}
 
 	@Immutable
@@ -240,26 +252,50 @@ abstract class Production implements WithProduction {
 	private static Vect<Production> decorateWithTypes(Vect<Production> productions) {
 		class Decorator {
 			final Map<Identifier, Production> byIdentifier = Maps.uniqueIndex(productions, Production::id);
-			final Multimap<Identifier, Identifier> subtypes = LinkedHashMultimap.create();
-			final Multimap<Identifier, Identifier> supertypes = LinkedHashMultimap.create();
-			final Multimap<Identifier, Identifier> ephemerals = LinkedHashMultimap.create();
+			final SetMultimap<Identifier, Identifier> subtypes = LinkedHashMultimap.create();
+			final SetMultimap<Identifier, Identifier> supertypes = LinkedHashMultimap.create();
+			final SetMultimap<Identifier, Identifier> ephemerals = LinkedHashMultimap.create();
+			final SetMultimap<Identifier, Identifier> terminalSubtypes = LinkedHashMultimap.create();
 
 			Vect<Production> decorate() {
 				for (Production p : productions) {
-					if (!p.ephemeral()) {
-						Vect<Identifier> choices = asIfChoiceReferences(p.alternatives());
-						subtypes.putAll(p.id(), choices);
-						for (Identifier t : choices) {
-							supertypes.put(t, p.id());
-						}
-					}
-					ephemerals.putAll(p.id(), asIfEphemeralReferences(p.alternatives()));
+					collectSubtypesAndEphemerals(p);
+				}
+
+				// Depends on collectSubtypesAndEphemerals for all productions
+				// to be executed before
+				for (Production p : productions) {
+					collectLeafSubtypes(p.id(), p.id());
 				}
 
 				return productions.map(p -> p
 						.withSubtypes(subtypes.get(p.id()))
 						.withSupertypes(supertypes.get(p.id()))
-						.withEphemerals(ephemerals.get(p.id())));
+						.withEphemerals(ephemerals.get(p.id()))
+						.withTerminalSubtypes(terminalSubtypes.get(p.id())));
+			}
+
+			void collectSubtypesAndEphemerals(Production p) {
+				if (!p.ephemeral()) {
+					Vect<Identifier> choices = asIfChoiceReferences(p.alternatives());
+					subtypes.putAll(p.id(), choices);
+					for (Identifier t : choices) {
+						supertypes.put(t, p.id());
+					}
+				}
+				ephemerals.putAll(p.id(), asIfEphemeralReferences(p.alternatives()));
+			}
+
+			void collectLeafSubtypes(Identifier originSupertype, Identifier currentSupertype) {
+				Set<Identifier> directSubtypes = subtypes.get(currentSupertype);
+				if (directSubtypes.isEmpty()) {
+					if (!originSupertype.equals(currentSupertype)) {
+						terminalSubtypes.put(originSupertype, currentSupertype);
+					}
+				}
+				for (Identifier s : directSubtypes) {
+					collectLeafSubtypes(originSupertype, s);
+				}
 			}
 
 			Vect<Identifier> asIfEphemeralReferences(Vect<Alternative> alternatives) {

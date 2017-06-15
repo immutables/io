@@ -23,6 +23,9 @@ final class Capacity {
 				if (newCapacity < requiredCapacity) {
 					newCapacity = Integer.highestOneBit(requiredCapacity - 1) << 1;
 				}
+				if (newCapacity == 0) {
+					newCapacity = requiredCapacity;
+				}
 				if (newCapacity < 0) {
 					newCapacity = Integer.MAX_VALUE;
 				}
@@ -45,6 +48,9 @@ final class Capacity {
 				newCapacity = oldCapacity << 1;
 				if (newCapacity < requiredCapacity) {
 					newCapacity = Integer.highestOneBit(requiredCapacity - 1) << 1;
+				}
+				if (newCapacity == 0) {
+					newCapacity = requiredCapacity;
 				}
 				if (newCapacity < 0) {
 					newCapacity = Integer.MAX_VALUE;

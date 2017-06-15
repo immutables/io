@@ -55,52 +55,47 @@ public final class Assert {
 	}
 
 	@CheckReturnValue
-	public static That.String that(String actual) {
+	public static That.String that(@Nullable String actual) {
 		class Tested extends That.What<String, That.String> implements That.String {}
 		return new Tested().set(actual);
 	}
 
 	@CheckReturnValue
-	public static That.Boolean that(Boolean actual) {
+	public static That.Boolean that(@Nullable Boolean actual) {
 		class Tested extends That.What<Boolean, That.Boolean> implements That.Boolean {}
 		return new Tested().set(actual);
 	}
 
 	@CheckReturnValue
-	public static That.Double that(Double actual) {
+	public static That.Double that(@Nullable Double actual) {
 		class Tested extends That.What<Double, That.Double> implements That.Double {}
 		return new Tested().set(actual);
 	}
 
 	@CheckReturnValue
-	public static That.Long that(Long actual) {
+	public static That.Long that(@Nullable Long actual) {
 		class Tested extends That.What<Long, That.Long> implements That.Long {}
 		return new Tested().set(actual);
 	}
 
 	@CheckReturnValue
-	public static That.Int that(Integer actual) {
+	public static That.Int that(@Nullable Integer actual) {
 		class Tested extends That.What<Integer, That.Int> implements That.Int {}
 		return new Tested().set(actual);
 	}
 
 	@CheckReturnValue
-	public static That.Boolean that(boolean actual) {
-		return that((Boolean) actual);
+	public static That.Int that(@Nullable Short actual) {
+		return that(actual == null ? null : actual.intValue());
 	}
 
 	@CheckReturnValue
-	public static That.Double that(double actual) {
-		return that((Double) actual);
+	public static That.Int that(@Nullable Character actual) {
+		return that(actual == null ? null : (int) actual.charValue());
 	}
 
 	@CheckReturnValue
-	public static That.Long that(long actual) {
-		return that((Long) actual);
-	}
-
-	@CheckReturnValue
-	public static That.Int that(int actual) {
-		return that((Integer) actual);
+	public static That.Double that(@Nullable Float actual) {
+		return that(actual == null ? null : actual.doubleValue());
 	}
 }

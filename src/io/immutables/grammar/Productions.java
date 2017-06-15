@@ -2,6 +2,7 @@ package io.immutables.grammar;
 
 import com.google.common.base.Strings;
 import com.google.common.primitives.Shorts;
+import java.util.NoSuchElementException;
 
 /**
  * Productions coded as flat tree encoded in {@code long} array.
@@ -17,7 +18,7 @@ import com.google.common.primitives.Shorts;
  * </ul>
  * <p>
  */
-public abstract class Productions {
+public abstract class Productions<K, T extends TreeProduction<K>> {
 	private final long[] elements;
 	/** Exclusive end position. */
 	private final int endPosition;
@@ -27,9 +28,11 @@ public abstract class Productions {
 	private final int mismatchTermExpected;
 	private final short mismatchProduction;
 	private final boolean completed;
+	private final TreeConstructor<T> constructor;
 
-	protected Productions(Terms terms, Parser parser) {
+	protected Productions(Terms terms, Parser parser, TreeConstructor<T> constructor) {
 		this.terms = terms;
+		this.constructor = constructor;
 		this.elements = parser.elements;
 		this.endPosition = parser.position;
 		this.completed = parser.checkCompleted();
@@ -39,45 +42,203 @@ public abstract class Productions {
 		this.mismatchProduction = parser.mismatchProduction;
 	}
 
+	@FunctionalInterface
+	protected interface TreeConstructor<T> {
+		T construct(Traversal traversal);
+	}
+
+	public final T construct() {
+		Traversal traverse = traverse();
+		Traversal.At at = traverse.next();
+		assert at != Traversal.At.EOP;
+		T result = constructor.construct(traverse);
+		at = traverse.next();
+		assert at == Traversal.At.EOP;
+		return result;
+	}
+
 	public String show() {
 		StringBuilder builder = new StringBuilder();
 		for (int i = 0; i < endPosition; i += 2) {
-			long l1 = elements[i];
-			long l2 = elements[i + 1];
-			int nextSibling = decodeNextSibling(l1);
-			short kind = decodeKind(l1);
-			short part = decodePart(l1);
-			int termBegin = decodeTermBegin(l2);
-			int termEnd = decodeTermEnd(l2);
-
-			builder.append(Strings.padStart(Integer.toHexString(i), 4, '0'))
-					.append("—")
-					.append(Strings.padStart(Integer.toHexString(nextSibling), 4, '0'))
-					.append("| ")
-					.append(Strings.padEnd((part >= 0 ? showPart(part) + ":" : "*:") + showKind(kind), 20, ' '))
-					.append(" |")
-					.append(l2 < 0 ? "????" : terms.rangeInclusive(termBegin, termEnd).get())
-					.append("\n");
+			appendPosition(builder, i);
+			builder.append('\n');
 		}
 		return builder.toString();
+	}
+
+	private void appendPosition(StringBuilder builder, int position) {
+		long l1 = elements[position];
+		long l2 = elements[position + 1];
+		int nextSibling = decodeNextSibling(l1);
+		short kind = decodeKind(l1);
+		short part = decodePart(l1);
+		int termBegin = decodeTermBegin(l2);
+		int termEnd = decodeTermEnd(l2);
+
+		builder.append(Strings.padStart(Integer.toHexString(position), 4, '0'))
+				.append("—")
+				.append(Strings.padStart(Integer.toHexString(nextSibling), 4, '0'))
+				.append("| ")
+				.append(Strings.padEnd((part >= 0 ? showPart(part) + ":" : "*:") + showKind(kind), 20, ' '))
+				.append(" |")
+				.append(l2 < 0 ? "????" : terms.rangeInclusive(termBegin, termEnd).get());
 	}
 
 	public abstract String showKind(short kind);
 
 	public abstract String showPart(short part);
 
-	public abstract class Traversal {
+	public Traversal traverse() {
+		return new Traversal(this);
+	}
+
+	/**
+	 * Pull style traversal over productions.
+	 */
+	public static final class Traversal {
+		public enum At {
+			PRODUCTION_BEGIN, PRODUCTION_END, TERM, EOP
+		}
+
+		private final Productions<?, ?> productions;
+		private final long[] elements;
+		private final int endPosition;
+
+		private At current = At.EOP;
+		private int position = -POSITION_INCREMENT;
+		private int[] stack = new int[0];
+		private int stackPointer = -1;
+		private int prodEndCount = 0;
+
+		private Traversal(Productions<?, ?> productions) {
+			this.productions = productions;
+			this.elements = productions.elements;
+			this.endPosition = productions.endPosition;
+		}
+
+		public At current() {
+			checkBegin();
+			return current;
+		}
+
+		public At next() {
+			// Give away any enqued/remaining PRODUCTION_ENDs
+			if (prodEndCount > 0) {
+				prodEndCount--;
+				return current = At.PRODUCTION_END;
+			}
+
+			position += POSITION_INCREMENT;
+
+			if (position >= endPosition) {
+				return current = At.EOP;
+			}
+
+			long l1 = elements[position];
+			int nextSibling = decodeNextSibling(l1);
+			boolean isTerm = decodeKind(l1) >= 0;
+
+			int nextPosition = position + POSITION_INCREMENT;
+			// If we're ending on the next position,
+			// without having nested nodes
+			if (nextSibling == nextPosition) {
+				if (!isTerm) {
+					// if not term (when we're suppose to return PRODUCTION_BEGIN
+					// we enque END_PROD to be returned
+					prodEndCount++;
+				}
+				// Checking if we have have to enque PRODUCTION_ENDs for any
+				// stacked productions which end on the same next position
+				while (stackPointer >= 0 && stack[stackPointer] == nextPosition) {
+					prodEndCount++;
+					stackPointer--;
+				}
+			} else {
+				assert !isTerm : "term always have nextSibling == nextPosition";
+				// We're having nested production or terms so
+				// we stack this position awating for when nextPosition
+				// will reach nextSibling so that we'll enque corresponding
+				// PRODUCTION_END events
+				stackPointer++;
+				stack = Capacity.ensure(stack, stackPointer, 1);
+				stack[stackPointer] = nextSibling;
+			}
+			if (isTerm) return current = At.TERM;
+			return current = At.PRODUCTION_BEGIN;
+		}
+
+		public short kind() {
+			checkBegin();
+			checkEnd();
+			return decodeKind(elements[position]);
+		}
+
+		public short part() {
+			checkBegin();
+			checkEnd();
+			return decodePart(elements[position]);
+		}
+
+		public int termBegin() {
+			checkBegin();
+			checkEnd();
+			return decodeTermBegin(elements[position + 1]);
+		}
+
+		public int termEnd() {
+			checkBegin();
+			checkEnd();
+			return decodeTermEnd(elements[position + 1]);
+		}
+
+		public Source.Range range() {
+			return productions.terms.rangeInclusive(termBegin(), termEnd());
+		}
+
+		public CharSequence source() {
+			return productions.terms.source();
+		}
+
+		public Symbol term() {
+			if (current != At.TERM) throw new NoSuchElementException();
+			return Symbol.from(productions.terms.rangeInclusive(termBegin(), termEnd()).get().toString());
+		}
+
+		private void checkBegin() {
+			if (position < 0) throw new IllegalStateException("Need to call next() first");
+		}
+
+		private void checkEnd() {
+			if (position >= endPosition) throw new IllegalStateException("");
+		}
+
+		public String show() {
+			StringBuilder b = new StringBuilder();
+			productions.appendPosition(b, position);
+			return b.append(" // ").append(current).toString();
+		}
+
 		@Override
 		public String toString() {
-			return super.toString();
+			String where;
+			if (position < 0) {
+				where = "not started";
+			} else if (position >= endPosition) {
+				where = "end";
+			} else {
+				where = current + ":" + position;
+			}
+			return Productions.class.getSimpleName()
+					+ '.' + Traversal.class.getSimpleName()
+					+ '(' + where + ')';
 		}
 	}
 
-	public static abstract class Parser {
+	protected static abstract class Parser {
 		private static final int NO_MISMATCH = -1;
 		protected final Terms.Traversal terms;
-		// TODO maybe smartly reuse segments
-		protected long[] elements = ZERO_LONG_ARRAY;
+		// TODO maybe reuse smartly segmented arrays?
+		protected long[] elements = EMPTY_LONG_ARRAY;
 		protected int position = 0;
 
 		int mismatchAt = NO_MISMATCH;
@@ -91,7 +252,7 @@ public abstract class Productions {
 			this.elements = Capacity.ensure(elements, 0, input.count() / 4); // XXX approximation ok?
 		}
 
-		public boolean checkCompleted() {
+		boolean checkCompleted() {
 			// if we're reached EOF, then we're done
 			if (terms.advance() == Terms.EOF) return true;
 			if (mismatchAt == NO_MISMATCH) {
@@ -167,20 +328,20 @@ public abstract class Productions {
 			// Climbing upwards to backfill begin term for productions not yet marked with such.
 			// We expect that any preceeding sibling would already have been marked
 			// by the same routine. So this bubbling will always occur for the
-			// first sibling up to each parent recursively up when necessary
-			// Here we iteration backwards over each second long
+			// first sibling up to each parent up until no longer necessary.
+			// Here we iterate backwards over each second long
 			for (int p = position - 1; p > 0; p -= POSITION_INCREMENT) {
 				// Stop if already marked with begin token
 				// Everything is already marked upwards and backwards
 				if (elements[p] >= 0) break;
 				elements[p] = encodeTermBegin(0L, index);
 			}
-			// clearing mismatch if we succeeded further
+			// clearing mismatch if we succeeded any further
 			if (index > mismatchAt) {
-				// we expect either exhaust input or fail even further
-				// if not doing this we're can report problem in the wrong place
-				// for the case where we have successfully matched everything
-				// but have unmatching trailing input
+				// we expect either exhaust input or fail even further.
+				// when not doing this we're reporting a problem in the wrong place
+				// for the case where we have successfully matched everything,
+				// yet have unmatching trailing input
 				mismatchAt = NO_MISMATCH;
 				mismatchProduction = 0;
 			}
@@ -205,9 +366,6 @@ public abstract class Productions {
 
 			return true;
 		}
-
-		private static final int POSITION_INCREMENT = 2;
-		private static final long[] ZERO_LONG_ARRAY = new long[0];
 	}
 
 	public boolean ok() {
@@ -215,13 +373,24 @@ public abstract class Productions {
 	}
 
 	public CharSequence message() {
-		return ok() ? "" : buildDiagnosticMessage();
-	}
-
-	private CharSequence buildDiagnosticMessage() {
+		if (ok()) return "";
 		if (terms.hasUnexpected()) return buildUnexpectedMessage();
 		if (hasUnconsumed()) return buildUnconsumedMessage();
 		return buildMismatchMessage();
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName();
+	}
+
+	public boolean hasUnmatched() {
+		return mismatchAt >= 0;
+	}
+
+	public Source.Range getUnmatched() {
+		if (!hasUnmatched()) throw new NoSuchElementException();
+		return terms.range(mismatchAt);
 	}
 
 	private boolean hasUnconsumed() {
@@ -296,4 +465,7 @@ public abstract class Productions {
 	static long encodeTermEnd(long l2, int tokenIndex) {
 		return l2 | (Integer.toUnsignedLong(tokenIndex) << Integer.SIZE);
 	}
+
+	private static final int POSITION_INCREMENT = 2;
+	private static final long[] EMPTY_LONG_ARRAY = new long[0];
 }

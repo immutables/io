@@ -6,11 +6,11 @@ import javax.annotation.concurrent.ThreadSafe;
 
 @ThreadSafe
 public abstract class Terms {
-	private final char[] input;
 	private final CharSequence source;
+	private final Source.Lines lines;
+	private final char[] input;
 	private final int[] tokens;
 	private final int tokenEnd;
-	private final Source.Lines lines;
 	private final int unexpectedAt;
 
 	protected Terms(Tokenizer tokenizer) {
