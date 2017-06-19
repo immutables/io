@@ -106,7 +106,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 		private At current = At.EOP;
 		private int position = -POSITION_INCREMENT;
-		private int[] stack = new int[0];
+		private int[] stack = new int[32]; // should be fine enouph to avoid initial reallocation.
 		private int stackPointer = -1;
 		private int prodEndCount = 0;
 
@@ -348,10 +348,10 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		}
 
 		private final boolean markTerm(short part, int term) {
-			long l1 = 0, l2 = 0;
 			int p = position;
 			int index = terms.index();
 
+			long l1 = 0, l2 = 0;
 			l1 = encodePart(l1, part);
 			l1 = encodeKind(l1, Shorts.checkedCast(term)); // term is positive, productions negative
 			l1 = encodeNextSibling(l1, p + POSITION_INCREMENT);
@@ -372,11 +372,15 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		return terms.ok() && completed;
 	}
 
-	public CharSequence message() {
-		if (ok()) return "";
+	public String message() {
+		if (ok()) return "ok";
 		if (terms.hasUnexpected()) return buildUnexpectedMessage();
 		if (hasUnconsumed()) return buildUnconsumedMessage();
 		return buildMismatchMessage();
+	}
+
+	public String messageForFile(String file) {
+		return file + ":" + message();
 	}
 
 	@Override
@@ -397,7 +401,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		return mismatchAt >= 0 && mismatchProduction == 0;
 	}
 
-	private CharSequence buildUnconsumedMessage() {
+	private String buildUnconsumedMessage() {
 		Source.Range range = terms.range(mismatchAt);
 		return range.begin()
 				+ " Unexpected terms starting with `" + range.get() + "` "
@@ -405,7 +409,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 				+ "Unconsumed terms which are not forming any construct";
 	}
 
-	private CharSequence buildUnexpectedMessage() {
+	private String buildUnexpectedMessage() {
 		Source.Range range = terms.firstUnexpectedRange();
 		return range.begin()
 				+ " Unexpected characters `" + range.get() + "`"
@@ -413,7 +417,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 				+ "Characters are not forming any recognized token";
 	}
 
-	private CharSequence buildMismatchMessage() {
+	private String buildMismatchMessage() {
 		Source.Range range = terms.range(mismatchAt);
 		return range.begin()
 				+ " Stumbled on `" + range.get() + "`"
@@ -422,9 +426,6 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 				+ "\n\t" + range.highlight().toString().replace("\n", "\n\t")
 				+ "Cannot parse production because of mismatched term";
 	}
-
-	public static final short ANY_PART = (short) 0xffff;
-	public static final short NO_PART = (short) 0x0000;
 
 	static int decodeNextSibling(long l1) {
 		return (int) l1;
@@ -467,5 +468,8 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 	}
 
 	private static final int POSITION_INCREMENT = 2;
-	private static final long[] EMPTY_LONG_ARRAY = new long[0];
+	private static final long[] EMPTY_LONG_ARRAY = {};
+	
+	protected static final short ANY_PART = (short) 0xffff;
+	protected static final short NO_PART = (short) 0x0000;
 }

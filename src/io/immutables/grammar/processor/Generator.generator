@@ -4,7 +4,6 @@
 	[let parserClass][name]Parser[/let]
 	[let productionsClass][name]Productions[/let]
 	[let treesClass][name]Trees[/let]
-	[let constructClass][name]Construct[/let]
 
 	[output.java pack termsClass]
 [generateTerms termsClass]
@@ -295,12 +294,12 @@ public final class [className]<T extends [grmp].TreeProduction<[treesClass]>> ex
 				[let altVar]l[for.index][/let]
 				[if p.alwaysSucceedingAlternatives.empty]
 			[altVar]: {
-				[alternativeBodyProd p a altVar]
+				[alternativeBody p a altVar]
 				return [if p.ephemeral]true[else]end(part, p)[/if];
 			}
 			terms.reset(i); position = p;
 				[else]
-			[alternativeBodyProd p a altVar]
+			[alternativeBody p a altVar]
 			return [if p.ephemeral]true[else]end(part, p)[/if];
 				[/if]
 			[/for]
@@ -336,7 +335,7 @@ public final class [className]<T extends [grmp].TreeProduction<[treesClass]>> ex
 }
 [/template]
 
-[template alternativeBodyProd Prod prod Alt alt String altVar]
+[template alternativeBody Prod prod Alt alt String altVar]
 [for part in alt.parts if part.mode.notConsume][if for.first]
 int j;
 [/if][/for]
@@ -437,8 +436,7 @@ package [pack];
 @SuppressWarnings("all")
 @javax.annotation.Generated({"[grmp].processor.Generator", "[name].grammar"})
 public interface [className] {
-	[for p in productions if not p.ephemeral,
-		String type = asType p.id]
+	[for p in productions if not p.ephemeral, String type = asType p.id]
 	[if p.subtypes]
 	interface [type] extends [grmp].TreeProduction<[className]>[for s in p.supertypes], [asType s][/for] {
 		[taggedPartsAttributes p]

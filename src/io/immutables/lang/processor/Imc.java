@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 
 public class Imc {
 	public static void main(String... args) throws Exception {
-		String sourceName = "debug.im";
+		String sourceName = "/io/immutables/lang/fixture/debug.im";
 
 		String content = Resources.toString(
 				Resources.getResource(Imc.class, sourceName),
@@ -16,10 +16,11 @@ public class Imc {
 
 		SyntaxTerms terms = SyntaxTerms.from(content.toCharArray());
 		SyntaxProductions<Unit> productions = SyntaxProductions.unit(terms);
+		System.out.println(productions.show());
 		if (productions.ok()) {
 			System.out.println(productions.construct());
 		} else {
-			System.out.println(sourceName + ":" + productions.message());
+			System.out.println(productions.messageForFile(sourceName));
 			System.out.println(productions.show());
 		}
 	}

@@ -1,5 +1,0 @@
-java_package('emit',
-  deps = [
-    '//src/io/immutables/collect:collect',
-  ],
-)

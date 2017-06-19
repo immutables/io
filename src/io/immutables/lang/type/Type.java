@@ -92,7 +92,7 @@ public interface Type {
 	}
 
 	/**
-	 * Parameters are used in the context of type/method declaration and constrains.
+	 * Parameters are used in the context of type/method declaration and constraints.
 	 * Parameter have no methods/associated, however, projected {@link Variable}s
 	 * which reference it will have them given there's some knowledge
 	 * of the structure and conformance of the types were given in contraint
@@ -125,23 +125,6 @@ public interface Type {
 		@Override
 		public default <R> R accept(Visitor<R> visitor) {
 			return visitor.variable(this);
-		}
-
-		static Variable allocate(Name name) {
-			return new Variable() {
-				@Override
-				public Name name() {
-					return name;
-				}
-				@Override
-				public Vect<Feature> features() {
-					return Vect.of();
-				}
-				@Override
-				public String toString() {
-					return name.toString();
-				}
-			};
 		}
 	}
 
@@ -250,4 +233,34 @@ public interface Type {
 	abstract class DeclaredImpl implements Declared {
 		static class Builder extends ImmutableType.DeclaredImpl.Builder {}
 	}
+
+	Type Undefined = new Type() {
+		@Override
+		public Vect<Feature> features() {
+			return Vect.of();
+		}
+
+		@Override
+		public String toString() {
+			return "Type.Undefined";
+		}
+
+		public <R> R accept(Visitor<R> visitor) {
+			throw new UnsupportedOperationException("Cannot visit " + this);
+		}
+
+		@Override
+		public int hashCode() {
+			return 0;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return false;
+		}
+
+		public boolean eq(Type type) {
+			return false;
+		}
+	};
 }

@@ -2,7 +2,7 @@ let l = require('./.prj.lib')
 
 l.project({
 	lib: {
-		guava: 'com.google.guava:guava:21.0',
+		guava: 'com.google.guava:guava:22.0',
 		jsr305: 'com.google.code.findbugs:jsr305:3.0.1',
 		junit: 'junit:junit:4.12',
 		hamcrest: 'org.hamcrest:hamcrest-core:1.3',

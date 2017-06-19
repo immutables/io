@@ -1,56 +1,27 @@
 package io.immutables.lang.type;
 
-public final class Name implements CharSequence {
-	private final String string;
+import org.immutables.value.Value.Default;
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 
-	private Name(String string) {
-		this.string = string;
+@Immutable(singleton = true, builder = false, copy = false)
+public abstract class Name {
+	@Parameter
+	@Default
+	String value() {
+		return "";
 	}
-
 	public static Name empty() {
-		return EMPTY;
+		return ImmutableName.of();
 	}
-
-	public static Name of(CharSequence name) {
-		if (name.length() == 0) return EMPTY;
-		return new Name(name.toString());
+	public static Name of(String value) {
+		return ImmutableName.of(value);
 	}
-
-	@Override
-	public Name subSequence(int begin, int end) {
-		return of(string.substring(begin, end));
-	}
-
 	public boolean isEmpty() {
-		return this == EMPTY;
+		return value().isEmpty();
 	}
-
 	@Override
 	public String toString() {
-		return string;
+		return value();
 	}
-
-	@Override
-	public int length() {
-		return string.length();
-	}
-
-	@Override
-	public char charAt(int index) {
-		return string.charAt(index);
-	}
-
-	@Override
-	public boolean equals(Object other) {
-		return other instanceof Name
-				? ((Name) other).string.equals(string)
-				: false;
-	}
-
-	@Override
-	public int hashCode() {
-		return string.hashCode();
-	}
-
-	private static final Name EMPTY = new Name("");
 }

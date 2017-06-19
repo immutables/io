@@ -38,22 +38,16 @@ abstract class SourceRuns extends AbstractTemplate {
 			SyntaxTerms terms = SyntaxTerms.from(content.toCharArray());
 			SyntaxProductions<Unit> productions = SyntaxProductions.unit(terms);
 			if (productions.ok()) {
-				// this should not fail in theory, but any exceptions will be caught by exception
-				// handlers
+				// this should not fail in theory,
+				// but any exceptions will be caught by the exception handler
 				productions.construct();
-
 				sources.add(new Source(name, content, false, ""));
 			} else {
-				String message = formatMessage(filename, productions);
-				sources.add(new Source(name, content, true, message));
+				sources.add(new Source(name, content, true, productions.messageForFile(filename)));
 			}
 		} catch (Exception ex) {
 			sources.add(new Source(name, content, true, Throwables.getStackTraceAsString(ex)));
 		}
-	}
-
-	private String formatMessage(String filename, SyntaxProductions<Unit> productions) {
-		return filename + ":" + productions.message();
 	}
 
 	abstract Templates.Invokable generate();
