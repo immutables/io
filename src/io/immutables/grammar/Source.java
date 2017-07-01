@@ -91,7 +91,7 @@ public interface Source {
 		}
 	}
 
-	static final class Excerpt {
+	final class Excerpt {
 		private final List<String> lines;
 		private final int gutterWidth;
 
@@ -192,6 +192,8 @@ public interface Source {
 			}
 			return sb.toString();
 		}
+
+		private static final int TAB_LENGTH = Integer.getInteger("im.source.tab-length", 2);
 	}
 
 	final class Lines {
