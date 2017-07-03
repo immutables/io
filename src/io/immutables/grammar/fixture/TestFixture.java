@@ -88,7 +88,7 @@ public class TestFixture {
 		that(range.end()).equalTo(Source.Position.of(17, 1, 18));
 	}
 
-	public static void main1(String... args) {
+	public static void main1() {
 		String input = Strings.repeat("1 + \n", 10000) + " [2 ___!,3,vvgg ] ";
 
 		// String input = "\n[1\n, 2,\n,3, 4\n, 5, 6, 7,\n n,\n__!] \n\n\n";

@@ -57,7 +57,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		return result;
 	}
 
-	public String show() {
+	public final String show() {
 		StringBuilder builder = new StringBuilder();
 		for (int i = 0; i < endPosition; i += 2) {
 			appendPosition(builder, i);
@@ -88,12 +88,12 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 	public abstract String showPart(short part);
 
-	public Traversal traverse() {
+	public final Traversal traverse() {
 		return new Traversal(this);
 	}
 
 	/**
-	 * Pull style traversal over productions.
+	 * Pull-style traversal over productions.
 	 */
 	public static final class Traversal {
 		public enum At {
@@ -323,7 +323,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 			}
 		}
 
-		private final void markTermBegin() {
+		private void markTermBegin() {
 			int index = terms.index();
 			// Climbing upwards to backfill begin term for productions not yet marked with such.
 			// We expect that any preceeding sibling would already have been marked
@@ -347,7 +347,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 			}
 		}
 
-		private final boolean markTerm(short part, int term) {
+		private boolean markTerm(short part, int term) {
 			int p = position;
 			int index = terms.index();
 
@@ -368,31 +368,37 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		}
 	}
 
-	public boolean ok() {
+	/** the total number of parsed productions and terms. */
+	public final int length() {
+		return endPosition / POSITION_INCREMENT;
+	}
+
+	/** If parsing input succeeded. */
+	public final boolean ok() {
 		return terms.ok() && completed;
 	}
 
-	public String message() {
+	public final String message() {
 		if (ok()) return "ok";
 		if (terms.hasUnexpected()) return buildUnexpectedMessage();
 		if (hasUnconsumed()) return buildUnconsumedMessage();
 		return buildMismatchMessage();
 	}
 
-	public String messageForFile(String file) {
+	public final String messageForFile(String file) {
 		return file + ":" + message();
 	}
 
 	@Override
-	public String toString() {
-		return getClass().getSimpleName();
+	public final String toString() {
+		return getClass().getSimpleName() + "(" + length() + ")";
 	}
 
-	public boolean hasUnmatched() {
+	public final boolean hasUnmatched() {
 		return mismatchAt >= 0;
 	}
 
-	public Source.Range getUnmatched() {
+	public final Source.Range getUnmatched() {
 		if (!hasUnmatched()) throw new NoSuchElementException();
 		return terms.range(mismatchAt);
 	}
@@ -469,7 +475,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 	private static final int POSITION_INCREMENT = 2;
 	private static final long[] EMPTY_LONG_ARRAY = {};
-	
+
 	protected static final short ANY_PART = (short) 0xffff;
 	protected static final short NO_PART = (short) 0x0000;
 }
