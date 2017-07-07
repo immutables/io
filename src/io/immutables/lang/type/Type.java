@@ -7,48 +7,6 @@ import org.immutables.value.Value.Immutable;
 
 @Enclosing
 public interface Type {
-	interface Visitor<R> {
-		default R parameter(Parameter p) {
-			return any(p);
-		}
-
-		default R variable(Variable v) {
-			return any(v);
-		}
-
-		default R declared(Declared d) {
-			return any(d);
-		}
-
-		default R empty(Empty v) {
-			return any(v);
-		}
-
-		default R product(Product p) {
-			return any(p);
-		}
-
-		default R record(Record r) {
-			return any(r);
-		}
-
-		default R variant(Variant v) {
-			return any(v);
-		}
-
-		default R sequence(Sequence s) {
-			return any(s);
-		}
-
-		default R function(Function f) {
-			return any(f);
-		}
-
-		default R any(Type t) {
-			throw new UnsupportedOperationException("cannot handle type: " + t);
-		}
-	}
-
 	Vect<Feature> features();
 
 	default <R> R accept(Visitor<R> visitor) {
@@ -72,9 +30,11 @@ public interface Type {
 
 	@Immutable
 	interface Feature extends Arrow, Parameterized, Named {
+
 		class Builder extends ImmutableType.Feature.Builder {}
 	}
 
+	/** This is not type constructor, just constructor */
 	interface Constructor extends Arrow, Named {}
 
 	/**
@@ -121,16 +81,30 @@ public interface Type {
 		}
 	}
 
-	interface Variable extends Type, Named {
-		@Override
-		public default <R> R accept(Visitor<R> visitor) {
-			return visitor.variable(this);
-		}
-	}
-
 	interface Structural extends Type {}
 
-	interface Unresolved extends Type {}
+	interface Unresolved extends Type, Named {
+		@Override
+		default <R> R accept(Visitor<R> visitor) {
+			return visitor.unresolved(this);
+		}
+		static Unresolved of(Name name) {
+			return new Unresolved() {
+				@Override
+				public Name name() {
+					return name;
+				}
+				@Override
+				public Vect<Feature> features() {
+					return Vect.of();
+				}
+				@Override
+				public String toString() {
+					return "(!" + name + ")";
+				}
+			};
+		}
+	}
 
 	interface Declared extends Type, Parameterized, Named {
 		Vect<Type> arguments();
@@ -138,13 +112,26 @@ public interface Type {
 		Vect<Constructor> constructors();
 
 		/** @param arguments */
-		default Declared apply(Vect<Type> arguments) {
-			throw new UnsupportedOperationException();
-		}
+		Declared applyArguments(Vect<Type> arguments);
 
 		@Override
 		public default <R> R accept(Visitor<R> visitor) {
 			return visitor.declared(this);
+		}
+	}
+
+	// Not thought out well
+	@Immutable
+	interface Impl extends Parameterized {
+		Vect<Feature> features();
+
+		class Builder extends ImmutableType.Impl.Builder {}
+	}
+
+	interface Variable extends Type, Named {
+		@Override
+		public default <R> R accept(Visitor<R> visitor) {
+			return visitor.variable(this);
 		}
 	}
 
@@ -168,7 +155,11 @@ public interface Type {
 		class Builder extends ImmutableType.Variant.Builder {}
 
 		static Variant of(Type... alternatives) {
-			return ImmutableType.Variant.of(Vect.of(alternatives));
+			return of(Vect.of(alternatives));
+		}
+
+		static Variant of(Iterable<? extends Type> alternatives) {
+			return ImmutableType.Variant.of(alternatives);
 		}
 
 		@Override
@@ -185,7 +176,11 @@ public interface Type {
 		class Builder extends ImmutableType.Product.Builder {}
 
 		static Product of(Type... components) {
-			return ImmutableType.Product.of(Vect.of(components));
+			return of(Vect.of(components));
+		}
+
+		static Product of(Iterable<? extends Type> components) {
+			return ImmutableType.Product.of(components);
 		}
 
 		@Override
@@ -200,7 +195,8 @@ public interface Type {
 		// as a bag of attributes/features or full fledged interface-like things with a
 		// operations/methods
 		// later: isn't this is the same
-		Vect<Feature> attributes();
+		@Override
+		Vect<Feature> features();
 
 		class Builder extends ImmutableType.Record.Builder {}
 
@@ -229,11 +225,6 @@ public interface Type {
 		}
 	}
 
-	@Immutable
-	abstract class DeclaredImpl implements Declared {
-		static class Builder extends ImmutableType.DeclaredImpl.Builder {}
-	}
-
 	Type Undefined = new Type() {
 		@Override
 		public Vect<Feature> features() {
@@ -241,10 +232,6 @@ public interface Type {
 		}
 
 		@Override
-		public String toString() {
-			return "Type.Undefined";
-		}
-
 		public <R> R accept(Visitor<R> visitor) {
 			throw new UnsupportedOperationException("Cannot visit " + this);
 		}
@@ -259,8 +246,80 @@ public interface Type {
 			return false;
 		}
 
+		@Override
 		public boolean eq(Type type) {
 			return false;
 		}
+
+		@Override
+		public String toString() {
+			return Type.class.getSimpleName() + ".Undefined";
+		}
 	};
+
+	@FunctionalInterface
+	interface Resolver extends java.util.function.Function<Name, Type> {
+		@Override
+		Type apply(Name name);
+	}
+
+	interface Visitor<R> {
+		default R parameter(Parameter p) {
+			return any(p);
+		}
+
+		default R variable(Variable v) {
+			return any(v);
+		}
+
+		default R declared(Declared d) {
+			return any(d);
+		}
+
+		default R empty(Empty v) {
+			return any(v);
+		}
+
+		default R product(Product p) {
+			return any(p);
+		}
+
+		default R record(Record r) {
+			return any(r);
+		}
+
+		default R variant(Variant v) {
+			return any(v);
+		}
+
+		default R sequence(Sequence s) {
+			return any(s);
+		}
+
+		default R function(Function f) {
+			return any(f);
+		}
+
+		default R unresolved(Unresolved f) {
+			return any(f);
+		}
+
+		default R any(Type t) {
+			throw new UnsupportedOperationException("cannot handle type: " + t);
+		}
+	}
+
+	interface Transformer extends Visitor<Type> {
+
+		@Override
+		default Type any(Type t) {
+			return t;
+		}
+
+		@Override
+		default Type record(Record r) {
+			// TODO
+			throw new UnsupportedOperationException("unimplemented");
+		}
+	}
 }

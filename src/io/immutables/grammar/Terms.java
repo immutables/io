@@ -1,5 +1,6 @@
 package io.immutables.grammar;
 
+import io.immutables.Capacity;
 import java.util.NoSuchElementException;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;

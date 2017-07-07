@@ -241,10 +241,10 @@ public final class Ip4 extends DiscreteDomain<Ip4.Address> {
 
 	public static Address address(int b1, int b2, int b3, int b4) {
 		return address(Ints.fromBytes(
-				UnsignedBytes.saturatedCast(b1),
-				UnsignedBytes.saturatedCast(b2),
-				UnsignedBytes.saturatedCast(b3),
-				UnsignedBytes.saturatedCast(b4)));
+				UnsignedBytes.checkedCast(b1),
+				UnsignedBytes.checkedCast(b2),
+				UnsignedBytes.checkedCast(b3),
+				UnsignedBytes.checkedCast(b4)));
 	}
 
 	public static Mask mask(int bits) {

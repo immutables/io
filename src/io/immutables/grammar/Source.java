@@ -2,6 +2,7 @@ package io.immutables.grammar;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import io.immutables.Capacity;
 import io.immutables.Unreachable;
 import java.util.Arrays;
 import java.util.List;

@@ -1,5 +1,6 @@
 package io.immutables.collect;
 
+import io.immutables.Capacity;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -24,8 +25,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Minimalistic wrapper around array. We use it over ImmutableList because we want monomorphic call
- * sites, no unsupported mutation methods, minimum memory overhead, no views, have mini-pattern
- * matching, shorter classname.
+ * sites, no unsupported mutation methods, minimum memory overhead, no views, have simplistic
+ * pattern matching capability and short classname.
  * @param <E> element type
  */
 @Immutable
@@ -326,24 +327,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		}
 
 		private void ensureCapacityFor(int increment) {
-			int oldCapacity = elements.length;
-			if (oldCapacity - size < increment) {
-				int requiredCapacity = oldCapacity + increment;
-				int newCapacity;
-				// checking for overflow
-				if (requiredCapacity < oldCapacity) {
-					newCapacity = Integer.MAX_VALUE;
-				} else {
-					newCapacity = oldCapacity + (oldCapacity >> 1) + 1;
-					if (newCapacity < requiredCapacity) {
-						newCapacity = Integer.highestOneBit(requiredCapacity - 1) << 1;
-					}
-					if (newCapacity < 0) {
-						newCapacity = Integer.MAX_VALUE;
-					}
-				}
-				elements = Arrays.copyOf(elements, newCapacity);
-			}
+			elements = Capacity.ensure(elements, size, increment);
 		}
 
 		public Vect<E> build() {

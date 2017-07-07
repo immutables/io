@@ -93,16 +93,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_jar',
-  out = 'value-2.5.2.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.2/value-2.5.2.jar',
-  sha1 = '585a3c2ebd089ccadce31342c7d7b40d500c931a'
+  out = 'value-2.5.6.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.6/value-2.5.6.jar',
+  sha1 = '0dfe48bb1214750b932cd59e6953a32a038b74fd'
 )
 
 remote_file(
   name = 'immutables_src',
-  out = 'value-2.5.2-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.2/value-2.5.2-sources.jar',
-  sha1 = 'd4e122b5a00b1bcbe37b5521933284ac10b71f2b'
+  out = 'value-2.5.6-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.6/value-2.5.6-sources.jar',
+  sha1 = '02b7b4d8da9dba792f9e9afc81febd63e4cbc500'
 )
 
 prebuilt_jar(
@@ -114,16 +114,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_trees_jar',
-  out = 'trees-2.5.2.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.5.2/trees-2.5.2.jar',
-  sha1 = '8ee23be4cef75a9c9f2ec0b0cd433e6cb56e8741'
+  out = 'trees-2.5.6.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.5.6/trees-2.5.6.jar',
+  sha1 = '3c5921d31118720447f70cab5a76fb9e5791f71d'
 )
 
 remote_file(
   name = 'immutables_trees_src',
-  out = 'trees-2.5.2-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.5.2/trees-2.5.2-sources.jar',
-  sha1 = '1b6a616defcb2836b446b13d3a2b5a02c401e66b'
+  out = 'trees-2.5.6-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.5.6/trees-2.5.6-sources.jar',
+  sha1 = '9eed1438eeef67a401db2be3daea3b5dcd8b0d84'
 )
 
 prebuilt_jar(
@@ -135,16 +135,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_ordinal_jar',
-  out = 'ordinal-2.5.2.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.5.2/ordinal-2.5.2.jar',
-  sha1 = '27ff49b5106535835b39145330d59170991ad232'
+  out = 'ordinal-2.5.6.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.5.6/ordinal-2.5.6.jar',
+  sha1 = '3713d9be1e86b4ea6169b0ea37a9a5c5db787616'
 )
 
 remote_file(
   name = 'immutables_ordinal_src',
-  out = 'ordinal-2.5.2-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.5.2/ordinal-2.5.2-sources.jar',
-  sha1 = 'd70e506a99534b0d979d9643035b629c5b1ff387'
+  out = 'ordinal-2.5.6-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.5.6/ordinal-2.5.6-sources.jar',
+  sha1 = 'c7e928d2247cdcf9ef9a5302d63adff8ebb6dee0'
 )
 
 prebuilt_jar(
@@ -156,16 +156,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_annotations_jar',
-  out = 'value-2.5.2-annotations.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.2/value-2.5.2-annotations.jar',
-  sha1 = '8f015c5d9c27554db6d1746a6f1a8dd8fae792ee'
+  out = 'value-2.5.6-annotations.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.6/value-2.5.6-annotations.jar',
+  sha1 = 'b6a247a2b31a87f0d20d854308e48708b203a0e4'
 )
 
 remote_file(
   name = 'immutables_annotations_src',
-  out = 'value-2.5.2-annotations-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.2/value-2.5.2-annotations-sources.jar',
-  sha1 = '382f9817f79ede57155dbac7b34543d1ca1a35c3'
+  out = 'value-2.5.6-annotations-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.6/value-2.5.6-annotations-sources.jar',
+  sha1 = '7c2a910c05f63191ada34b193c815bb119e68f6f'
 )
 
 prebuilt_jar(
@@ -178,14 +178,14 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_generator_jar',
-  out = 'generator-processor-2.5.2-luggage.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.5.2/generator-processor-2.5.2-luggage.jar',
-  sha1 = '5bb8a4fdf28b90288308dd6736c47117f219a0e9'
+  out = 'generator-processor-2.5.6-luggage.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.5.6/generator-processor-2.5.6-luggage.jar',
+  sha1 = 'b8d70c5b0b34d1d8da21365f315d4e15b0687577'
 )
 
 remote_file(
   name = 'immutables_generator_src',
-  out = 'generator-processor-2.5.2-luggage-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.5.2/generator-processor-2.5.2-luggage-sources.jar',
-  sha1 = 'fd719e055aa6b0f0af03775577624908404c7169'
+  out = 'generator-processor-2.5.6-luggage-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.5.6/generator-processor-2.5.6-luggage-sources.jar',
+  sha1 = '687608df93b7f7d6263cd8f088faa319348f8ae2'
 )

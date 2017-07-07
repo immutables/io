@@ -26,10 +26,10 @@
   <classpathentry kind="lib" path="buck-out/gen/lib/jsr305_jar/jsr305-3.0.1.jar" sourcepath="buck-out/gen/lib/jsr305_src/jsr305-3.0.1-sources.jar"/>
   <classpathentry kind="lib" path="buck-out/gen/lib/junit_jar/junit-4.12.jar" sourcepath="buck-out/gen/lib/junit_src/junit-4.12-sources.jar"/>
   <classpathentry kind="lib" path="buck-out/gen/lib/hamcrest_jar/hamcrest-core-1.3.jar" sourcepath="buck-out/gen/lib/hamcrest_src/hamcrest-core-1.3-sources.jar"/>
-  <classpathentry kind="lib" path="buck-out/gen/lib/immutables_trees_jar/trees-2.5.2.jar" sourcepath="buck-out/gen/lib/immutables_trees_src/trees-2.5.2-sources.jar"/>
-  <classpathentry kind="lib" path="buck-out/gen/lib/immutables_ordinal_jar/ordinal-2.5.2.jar" sourcepath="buck-out/gen/lib/immutables_ordinal_src/ordinal-2.5.2-sources.jar"/>
-  <classpathentry kind="lib" path="buck-out/gen/lib/immutables_annotations_jar/value-2.5.2-annotations.jar" sourcepath="buck-out/gen/lib/immutables_annotations_src/value-2.5.2-annotations-sources.jar"/>
-  <classpathentry kind="lib" path="buck-out/gen/lib/immutables_generator_jar/generator-processor-2.5.2-luggage.jar" sourcepath="buck-out/gen/lib/immutables_generator_src/generator-processor-2.5.2-luggage-sources.jar"/>
+  <classpathentry kind="lib" path="buck-out/gen/lib/immutables_trees_jar/trees-2.5.6.jar" sourcepath="buck-out/gen/lib/immutables_trees_src/trees-2.5.6-sources.jar"/>
+  <classpathentry kind="lib" path="buck-out/gen/lib/immutables_ordinal_jar/ordinal-2.5.6.jar" sourcepath="buck-out/gen/lib/immutables_ordinal_src/ordinal-2.5.6-sources.jar"/>
+  <classpathentry kind="lib" path="buck-out/gen/lib/immutables_annotations_jar/value-2.5.6-annotations.jar" sourcepath="buck-out/gen/lib/immutables_annotations_src/value-2.5.6-annotations-sources.jar"/>
+  <classpathentry kind="lib" path="buck-out/gen/lib/immutables_generator_jar/generator-processor-2.5.6-luggage.jar" sourcepath="buck-out/gen/lib/immutables_generator_src/generator-processor-2.5.6-luggage-sources.jar"/>
   <classpathentry kind="output" path=".classes"/>
 </classpath>
 	
