@@ -7,18 +7,20 @@ import org.immutables.value.Value.Immutable;
 
 @Enclosing
 public interface Type {
-	Vect<Feature> features();
-
-	default <R> R accept(Visitor<R> visitor) {
-		return visitor.any(this);
+	default <I, O> O accept(Visitor<I, O> v, I in) {
+		return v.any(in, this);
 	}
 
-	default boolean eq(Type type) {
-		return equals(type);
+	default Vect<Feature> features() {
+		return Vect.of();
+	}
+
+	default boolean eq(Type t) {
+		return equals(t);
 	}
 
 	interface Parameterized {
-		Vect<Parameter> parameters();
+		Vect<Variable> parameters();
 		Vect<Constraint> constraints();
 	}
 
@@ -28,11 +30,7 @@ public interface Type {
 		class Builder extends ImmutableType.Concept.Builder {}
 	}
 
-	@Immutable
-	interface Feature extends Arrow, Parameterized, Named {
-
-		class Builder extends ImmutableType.Feature.Builder {}
-	}
+	interface Feature extends Arrow, Named {}
 
 	/** This is not type constructor, just constructor */
 	interface Constructor extends Arrow, Named {}
@@ -42,40 +40,36 @@ public interface Type {
 	 * type tranforming arrow. This can be methods,
 	 * operators as well as extraction of elements from collection in for comprehension etc.
 	 */
-	interface Arrow {
+	interface Arrow extends Parameterized {
 		Type in();
 		Type out();
+
+		Arrow with(Type in, Type out);
 	}
 
 	interface Named {
 		Name name();
 	}
 
-	/**
-	 * Parameters are used in the context of type/method declaration and constraints.
-	 * Parameter have no methods/associated, however, projected {@link Variable}s
-	 * which reference it will have them given there's some knowledge
-	 * of the structure and conformance of the types were given in contraint
-	 */
-	interface Parameter extends Type, Named {
+	interface Variable extends Type, Named {
 		@Override
-		public default <R> R accept(Visitor<R> visitor) {
-			return visitor.parameter(this);
+		default <I, O> O accept(Visitor<I, O> v, I in) {
+			return v.variable(in, this);
 		}
 
-		static Parameter allocate(Name name) {
-			return new Parameter() {
+		static Variable allocate(Name name) {
+			return new Variable() {
 				@Override
 				public Name name() {
 					return name;
 				}
 				@Override
-				public Vect<Feature> features() {
-					return Vect.of();
-				}
-				@Override
 				public String toString() {
 					return "<" + name + ">";
+				}
+				@Override
+				public boolean eq(Type t) {
+					return this == t;
 				}
 			};
 		}
@@ -85,8 +79,8 @@ public interface Type {
 
 	interface Unresolved extends Type, Named {
 		@Override
-		default <R> R accept(Visitor<R> visitor) {
-			return visitor.unresolved(this);
+		default <I, O> O accept(Visitor<I, O> v, I in) {
+			return v.unresolved(in, this);
 		}
 		static Unresolved of(Name name) {
 			return new Unresolved() {
@@ -95,12 +89,8 @@ public interface Type {
 					return name;
 				}
 				@Override
-				public Vect<Feature> features() {
-					return Vect.of();
-				}
-				@Override
 				public String toString() {
-					return "(!" + name + ")";
+					return "!" + name + ")";
 				}
 			};
 		}
@@ -115,8 +105,8 @@ public interface Type {
 		Declared applyArguments(Vect<Type> arguments);
 
 		@Override
-		public default <R> R accept(Visitor<R> visitor) {
-			return visitor.declared(this);
+		default <I, O> O accept(Visitor<I, O> v, I in) {
+			return v.declared(in, this);
 		}
 	}
 
@@ -126,25 +116,6 @@ public interface Type {
 		Vect<Feature> features();
 
 		class Builder extends ImmutableType.Impl.Builder {}
-	}
-
-	interface Variable extends Type, Named {
-		@Override
-		public default <R> R accept(Visitor<R> visitor) {
-			return visitor.variable(this);
-		}
-	}
-
-	@Immutable(copy = false, singleton = true, builder = false)
-	interface Empty extends Structural {
-		static Empty of() {
-			return ImmutableType.Empty.of();
-		}
-
-		@Override
-		public default <R> R accept(Visitor<R> visitor) {
-			return visitor.empty(this);
-		}
 	}
 
 	@Immutable
@@ -163,12 +134,12 @@ public interface Type {
 		}
 
 		@Override
-		public default <R> R accept(Visitor<R> visitor) {
-			return visitor.variant(this);
+		default <I, O> O accept(Visitor<I, O> v, I in) {
+			return v.variant(in, this);
 		}
 	}
 
-	@Immutable
+	@Immutable(singleton = true)
 	interface Product extends Structural {
 		@Value.Parameter
 		Vect<Type> components();
@@ -184,8 +155,8 @@ public interface Type {
 		}
 
 		@Override
-		public default <R> R accept(Visitor<R> visitor) {
-			return visitor.product(this);
+		default <I, O> O accept(Visitor<I, O> v, I in) {
+			return v.product(in, this);
 		}
 	}
 
@@ -201,18 +172,15 @@ public interface Type {
 		class Builder extends ImmutableType.Record.Builder {}
 
 		@Override
-		public default <R> R accept(Visitor<R> visitor) {
-			return visitor.record(this);
+		default <I, O> O accept(Visitor<I, O> v, I in) {
+			return v.record(in, this);
 		}
 	}
 
-	@Immutable
 	interface Function extends Structural, Arrow {
-		class Builder extends ImmutableType.Function.Builder {}
-
 		@Override
-		public default <R> R accept(Visitor<R> visitor) {
-			return visitor.function(this);
+		default <I, O> O accept(Visitor<I, O> v, I in) {
+			return v.function(in, this);
 		}
 	}
 
@@ -220,10 +188,12 @@ public interface Type {
 	interface Sequence extends Structural {
 		// Sequence types are not thought out yet
 		@Override
-		public default <R> R accept(Visitor<R> visitor) {
-			return visitor.sequence(this);
+		default <I, O> O accept(Visitor<I, O> v, I in) {
+			return v.sequence(in, this);
 		}
 	}
+
+	Product Empty = Product.of();
 
 	Type Undefined = new Type() {
 		@Override
@@ -232,8 +202,8 @@ public interface Type {
 		}
 
 		@Override
-		public <R> R accept(Visitor<R> visitor) {
-			throw new UnsupportedOperationException("Cannot visit " + this);
+		public <I, O> O accept(Visitor<I, O> v, I in) {
+			throw new UnsupportedOperationException("Cannot visit undefined type");
 		}
 
 		@Override
@@ -253,9 +223,30 @@ public interface Type {
 
 		@Override
 		public String toString() {
-			return Type.class.getSimpleName() + ".Undefined";
+			return "???";
 		}
 	};
+
+	interface Capture extends Type {
+		Type in();
+
+		static Capture of(Type in) {
+			return new Capture() {
+				@Override
+				public Type in() {
+					return in;
+				}
+				@Override
+				public String toString() {
+					return "$" + in;
+				}
+				@Override
+				public boolean eq(Type t) {
+					return this == t;
+				}
+			};
+		}
+	}
 
 	@FunctionalInterface
 	interface Resolver extends java.util.function.Function<Name, Type> {
@@ -263,61 +254,57 @@ public interface Type {
 		Type apply(Name name);
 	}
 
-	interface Visitor<R> {
-		default R parameter(Parameter p) {
-			return any(p);
+	interface Visitor<I, O> {
+		default O variable(I in, Variable v) {
+			return any(in, v);
 		}
 
-		default R variable(Variable v) {
-			return any(v);
+		default O capture(I in, Capture c) {
+			return any(in, c);
 		}
 
-		default R declared(Declared d) {
-			return any(d);
+		default O declared(I in, Declared d) {
+			return any(in, d);
 		}
 
-		default R empty(Empty v) {
-			return any(v);
+		default O product(I in, Product p) {
+			return any(in, p);
 		}
 
-		default R product(Product p) {
-			return any(p);
+		default O record(I in, Record r) {
+			return any(in, r);
 		}
 
-		default R record(Record r) {
-			return any(r);
+		default O variant(I in, Variant v) {
+			return any(in, v);
 		}
 
-		default R variant(Variant v) {
-			return any(v);
+		default O sequence(I in, Sequence s) {
+			return any(in, s);
 		}
 
-		default R sequence(Sequence s) {
-			return any(s);
+		default O function(I in, Function f) {
+			return any(in, f);
 		}
 
-		default R function(Function f) {
-			return any(f);
+		default O unresolved(I in, Unresolved f) {
+			return any(in, f);
 		}
 
-		default R unresolved(Unresolved f) {
-			return any(f);
-		}
-
-		default R any(Type t) {
-			throw new UnsupportedOperationException("cannot handle type: " + t);
+		default O any(I in, Type t) {
+			throw new UnsupportedOperationException("cannot handle type: " + t + " and input " + in);
 		}
 	}
 
-	interface Transformer extends Visitor<Type> {
+	interface Transformer<I> extends Visitor<I, Type> {
 
 		@Override
-		default Type any(Type t) {
+		default Type any(I in, Type t) {
 			return t;
 		}
 
 		@Override
-		default Type record(Record r) {
+		default Type record(I in, Record r) {
 			// TODO
 			throw new UnsupportedOperationException("unimplemented");
 		}

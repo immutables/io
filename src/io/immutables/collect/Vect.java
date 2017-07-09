@@ -94,6 +94,15 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		return true;
 	}
 
+	public boolean contains(E element) {
+		for (Object e : elements) {
+			if (e.equals(element)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public void forEach(Consumer<? super E> consumer) {
 		for (Object e : elements) {
