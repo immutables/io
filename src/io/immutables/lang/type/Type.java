@@ -30,21 +30,29 @@ public interface Type {
 		class Builder extends ImmutableType.Concept.Builder {}
 	}
 
-	interface Feature extends Arrow, Named {}
+	interface Feature extends Arrow<Feature>, Named {
+
+	}
 
 	/** This is not type constructor, just constructor */
-	interface Constructor extends Arrow, Named {}
+	interface Constructor extends Arrow<Constructor>, Named {}
 
 	/**
 	 * Arrow is any program element that is being typechecked as
 	 * type tranforming arrow. This can be methods,
 	 * operators as well as extraction of elements from collection in for comprehension etc.
 	 */
-	interface Arrow extends Parameterized {
+	interface Arrow<A extends Arrow<A>> extends Parameterized {
 		Type in();
 		Type out();
 
-		Arrow with(Type in, Type out);
+		A with(Type in, Type out);
+
+		default <I> A with(Visitor<I, Type> v, I in) {
+			return with(
+					in().accept(v, in),
+					out().accept(v, in));
+		}
 	}
 
 	interface Named {
@@ -144,6 +152,8 @@ public interface Type {
 		@Value.Parameter
 		Vect<Type> components();
 
+		Product withComponents(Iterable<? extends Type> type);
+
 		class Builder extends ImmutableType.Product.Builder {}
 
 		static Product of(Type... components) {
@@ -158,6 +168,7 @@ public interface Type {
 		default <I, O> O accept(Visitor<I, O> v, I in) {
 			return v.product(in, this);
 		}
+
 	}
 
 	@Immutable
@@ -168,6 +179,7 @@ public interface Type {
 		// later: isn't this is the same
 		@Override
 		Vect<Feature> features();
+		Record withFeatures(Iterable<? extends Type.Feature> elements);
 
 		class Builder extends ImmutableType.Record.Builder {}
 
@@ -175,9 +187,10 @@ public interface Type {
 		default <I, O> O accept(Visitor<I, O> v, I in) {
 			return v.record(in, this);
 		}
+
 	}
 
-	interface Function extends Structural, Arrow {
+	interface Function extends Structural, Arrow<Function> {
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
 			return v.function(in, this);
@@ -305,8 +318,12 @@ public interface Type {
 
 		@Override
 		default Type record(I in, Record r) {
-			// TODO
-			throw new UnsupportedOperationException("unimplemented");
+			return r.withFeatures(r.features().map(f -> f.with(this, in)));
+		}
+
+		@Override
+		default Type product(I in, Product p) {
+			return p == Empty ? p : p.withComponents(p.components().map(c -> c.accept(this, in)));
 		}
 	}
 }

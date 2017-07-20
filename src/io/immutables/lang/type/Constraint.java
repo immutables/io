@@ -34,7 +34,7 @@ interface Constraint {
 	// T(a A, b B)
 	@Immutable
 	interface InstanceConstruction extends Constraint {
-		abstract @Parameter Type self();
+		abstract @Parameter Type.Variable self();
 		abstract @Parameter Type in();
 	}
 
