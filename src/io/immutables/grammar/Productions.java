@@ -82,7 +82,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 				.append("| ")
 				.append(Strings.padEnd((part >= 0 ? showPart(part) + ":" : "*:") + showKind(kind), 20, ' '))
 				.append(" |")
-				.append(l2 < 0 ? "????" : terms.rangeInclusive(termBegin, termEnd).get());
+				.append(l2 < 0 ? "????" : terms.rangeInclusive(termBegin, termEnd).get(terms.source()));
 	}
 
 	public abstract String showKind(short kind);
@@ -202,7 +202,8 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 		public Symbol term() {
 			if (current != At.TERM) throw new NoSuchElementException();
-			return Symbol.from(productions.terms.rangeInclusive(termBegin(), termEnd()).get().toString());
+			return Symbol
+					.from(productions.terms.rangeInclusive(termBegin(), termEnd()).get(productions.terms.source()).toString());
 		}
 
 		private void checkBegin() {
@@ -410,27 +411,27 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 	private String buildUnconsumedMessage() {
 		Source.Range range = terms.range(mismatchAt);
-		return range.begin()
-				+ " Unexpected terms starting with `" + range.get() + "` "
-				+ "\n\t" + range.highlight().toString().replace("\n", "\n\t")
+		return range.begin
+				+ " Unexpected terms starting with `" + range.get(terms.source()) + "` "
+				+ "\n\t" + terms.highlight(range).toString().replace("\n", "\n\t")
 				+ "Unconsumed terms which are not forming any construct";
 	}
 
 	private String buildUnexpectedMessage() {
 		Source.Range range = terms.firstUnexpectedRange();
-		return range.begin()
-				+ " Unexpected characters `" + range.get() + "`"
-				+ "\n\t" + range.highlight().toString().replace("\n", "\n\t")
+		return range.begin
+				+ " Unexpected characters `" + range.get(terms.source()) + "`"
+				+ "\n\t" + terms.highlight(range).toString().replace("\n", "\n\t")
 				+ "Characters are not forming any recognized token";
 	}
 
 	private String buildMismatchMessage() {
 		Source.Range range = terms.range(mismatchAt);
-		return range.begin()
-				+ " Stumbled on `" + range.get() + "`"
+		return range.begin
+				+ " Stumbled on `" + range.get(terms.source()) + "`"
 				+ terms.showTerm(mismatchTermActual) + " while expecting " + terms.showTerm(mismatchTermExpected)
 				+ " term in/after " + showKind(mismatchProduction) + ""
-				+ "\n\t" + range.highlight().toString().replace("\n", "\n\t")
+				+ "\n\t" + terms.highlight(range).toString().replace("\n", "\n\t")
 				+ "Cannot parse production because of mismatched term";
 	}
 

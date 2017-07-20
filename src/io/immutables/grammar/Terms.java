@@ -1,6 +1,8 @@
 package io.immutables.grammar;
 
 import io.immutables.Capacity;
+import io.immutables.grammar.Source.Position;
+import io.immutables.grammar.Source.Range;
 import java.util.NoSuchElementException;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
@@ -18,7 +20,7 @@ public abstract class Terms {
 		this.input = tokenizer.input;
 		this.tokens = tokenizer.tokens;
 		this.tokenEnd = tokenizer.index;
-		this.lines = tokenizer.lines.lines();
+		this.lines = tokenizer.lines.lines(this.input.length);
 		this.unexpectedAt = tokenizer.firstUnexpectedAt;
 		this.source = Source.wrap(input);
 	}
@@ -37,6 +39,10 @@ public abstract class Terms {
 
 	public final CharSequence source() {
 		return source;
+	}
+
+	public StringBuilder highlight(Range range) {
+		return new Source.Excerpt(source, lines).get(range);
 	}
 
 	/** Number of terms. */
@@ -68,13 +74,12 @@ public abstract class Terms {
 	}
 
 	private Source.Range rangePositions(int beforePosition, int afterPosition) {
-		Source.Range.Builder builder = new Source.Range.Builder();
-		builder.source(source());
-		builder.begin(lines.get(beforePosition));
+		Position begin = lines.get(beforePosition);
 		if (afterPosition > beforePosition) {
-			builder.end(lines.get(afterPosition));
+			Position end = lines.get(afterPosition);
+			return Range.of(begin, end);
 		}
-		return builder.build();
+		return Range.of(begin);
 	}
 
 	public Source.Range firstUnexpectedRange() {

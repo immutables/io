@@ -62,8 +62,8 @@ public class TestFixture {
 		that().not(terms.ok());
 		that().is(terms.hasUnexpected());
 		Source.Range range = terms.firstUnexpectedRange();
-		that(range.begin()).equalTo(Source.Position.of(7, 1, 8));
-		that(range.end()).equalTo(Source.Position.of(8, 1, 9));
+		that(range.begin).equalTo(Source.Position.of(7, 1, 8));
+		that(range.end).equalTo(Source.Position.of(8, 1, 9));
 	}
 
 	@Test
@@ -84,8 +84,8 @@ public class TestFixture {
 		that().not(productions.ok());
 		that().is(productions.hasUnmatched());
 		Source.Range range = productions.getUnmatched();
-		that(range.begin()).equalTo(Source.Position.of(14, 1, 15));
-		that(range.end()).equalTo(Source.Position.of(17, 1, 18));
+		that(range.begin).equalTo(Source.Position.of(14, 1, 15));
+		that(range.end).equalTo(Source.Position.of(17, 1, 18));
 	}
 
 	public static void main1() {
@@ -98,7 +98,7 @@ public class TestFixture {
 		terms.ok();
 		Source.Range range = terms.firstUnexpectedRange();
 		System.out.println(range);
-		System.out.println(range.highlight());
+		System.out.println(terms.highlight(range));
 	}
 
 	public static void main(String... args) {
@@ -107,7 +107,7 @@ public class TestFixture {
 		if (!terms.ok()) {
 			Source.Range range = terms.firstUnexpectedRange();
 			System.out.println(range);
-			System.out.println(range.highlight());
+			System.out.println(terms.highlight(range));
 			return;
 		}
 		ExprProductions<Expressions> expressions = ExprProductions.expressions(terms);
@@ -125,7 +125,7 @@ public class TestFixture {
 			}
 			if (at == At.PRODUCTION_BEGIN) ind++;
 			if (at == At.PRODUCTION_END) ind--;
-			System.out.println(t.range().highlight());
+			System.out.println(terms.highlight(t.range()));
 		}
 		t = expressions.traverse();
 
