@@ -89,6 +89,10 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 	public abstract String showPart(short part);
 
+	protected final String showTerm(short term) {
+		return terms.showTerm(term);
+	}
+
 	public final Traversal traverse() {
 		return new Traversal(this);
 	}

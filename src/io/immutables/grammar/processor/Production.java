@@ -72,12 +72,12 @@ abstract class Production implements WithProduction {
 	/**
 	 * Alternatives contain references to the following ephemeral productions so that
 	 * any tagged parts present in ephemeral productions can be accepted by this production's AST
-	 * type. Think of it as supertypes to the AST object builder, supertypes.
+	 * type. Think of it as supertypes to the AST object builder.
 	 */
 	abstract Vect<Identifier> ephemerals();
 
 	/**
-	 * All terminal subtupes: all unique non-abstract (terminal) subtypes including transitive
+	 * All terminal subtypes: all unique non-abstract (terminal) subtypes including transitive
 	 * subtypes of abstract subtypes.
 	 */
 	abstract Vect<Identifier> terminalSubtypes();

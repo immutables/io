@@ -20,6 +20,7 @@ import io.immutables.grammar.processor.GrammarsAst.LiteralPart;
 import io.immutables.grammar.processor.GrammarsAst.ReferencePart;
 import io.immutables.grammar.processor.GrammarsAst.SyntaxProduction;
 import io.immutables.grammar.processor.GrammarsAst.Unit;
+import io.immutables.grammar.processor.GrammarsAst.Upcasting;
 import org.immutables.trees.ast.Extractions;
 import org.parboiled.BaseParser;
 import org.parboiled.Rule;
@@ -42,6 +43,7 @@ class Parser extends BaseParser<Object> {
 				FirstOf(
 						LexicalKind(),
 						LexicalTerm(),
+						Upcasting(),
 						Production(),
 						Blank())),
 				Unit.build(), EOI);
@@ -62,6 +64,17 @@ class Parser extends BaseParser<Object> {
 								SyntaxProduction.addAlternatives(),
 								Newline())),
 				SyntaxProduction.build(), Unit.addParts());
+	}
+
+	Rule Upcasting() {
+		return Sequence(Upcasting.builder(),
+				Identifier(), Upcasting.name(),
+				Newline(),
+				OneOrMore(Identation(), "^", Spacing(),
+						Identifier(),
+						Upcasting.addAlternatives(),
+						Newline()),
+				Upcasting.build(), Unit.addParts());
 	}
 
 	Rule ProductionSingular() {

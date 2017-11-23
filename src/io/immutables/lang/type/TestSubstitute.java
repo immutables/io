@@ -5,7 +5,7 @@ import java.util.Map;
 import org.junit.Test;
 import static io.immutables.that.Assert.that;
 
-public class TestType {
+public class TestSubstitute {
 	final Map<Name, Type> types = new HashMap<>();
 	final Type.Resolver resolver = n -> types.computeIfAbsent(n, k -> Type.Unresolved.of(k));
 
@@ -32,7 +32,7 @@ public class TestType {
 	}
 
 	/**
-	 * the following check immutability and functional independence
+	 * the following checks immutability and functional independence
 	 * (regardless of implementation data sharing) of created copy
 	 * with additional mapping.
 	 */
@@ -74,10 +74,5 @@ public class TestType {
 		for (Type.Variable p : parameters) {
 			that(substitute.apply(p)).equalTo(Type.Empty);
 		}
-	}
-
-	@Test
-	public void typeCheck() {
-		// a = a.a(1, 2 + b)
 	}
 }

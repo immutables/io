@@ -21,6 +21,8 @@ import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.annotation.concurrent.NotThreadSafe;
+import static com.google.common.base.Preconditions.checkPositionIndex;
+import static com.google.common.base.Preconditions.checkPositionIndexes;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -63,6 +65,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	public <R> Vect<R> map(Function<E, R> to) {
+		if (this == EMPTY) return of();
 		Object[] newElements = new Object[elements.length];
 		for (int i = 0; i < elements.length; i++) {
 			newElements[i] = requireNonNull(to.apply((E) elements[i]));
@@ -111,6 +114,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	public Vect<E> filter(Predicate<? super E> is) {
+		if (this == EMPTY) return this;
 		Object[] newElements = elements.clone();
 		int size = 0;
 		for (Object e : elements) {
@@ -118,7 +122,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 				newElements[size++] = e;
 			}
 		}
-		return new Vect<>(Arrays.copyOf(newElements, size));
+		return size == 0 ? of() : new Vect<>(Arrays.copyOf(newElements, size));
 	}
 
 	@Override
@@ -131,8 +135,8 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	@Override
-	public <A> A fold(BiFunction<E, A, A> reducer, A folder) {
-		A a = requireNonNull(folder);
+	public <A> A fold(BiFunction<E, A, A> reducer, A right) {
+		A a = requireNonNull(right);
 		for (int i = elements.length - 1; i >= 0; i--) {
 			a = requireNonNull(reducer.apply((E) elements[i], a));
 		}
@@ -140,6 +144,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	public Vect<E> prepend(E element) {
+		if (this == EMPTY) return of(element);
 		return new Builder<E>(elements.length + 1)
 				.add(element)
 				.addAll((E[]) elements)
@@ -147,6 +152,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	public Vect<E> append(E element) {
+		if (this == EMPTY) return of(element);
 		return new Builder<E>(elements.length + 1)
 				.addAll((E[]) elements)
 				.add(element)
@@ -154,20 +160,23 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	public Vect<E> sort() {
+		if (elements.length <= 1) return this;
 		Object[] sorted = elements.clone();
 		Arrays.sort(sorted);
 		return new Vect<>(sorted);
 	}
 
 	public Vect<E> sort(Comparator<? super E> comparator) {
+		if (elements.length <= 1) return this;
 		Object[] sorted = elements.clone();
 		Arrays.sort((E[]) sorted, comparator);
 		return new Vect<>(sorted);
 	}
 
 	public Vect<E> reverse() {
+		if (this == EMPTY) return this;
 		Object[] reversed = elements.clone();
-		for (int i = 0, mid = reversed.length >> 1, j = reversed.length - 1; i < mid; i++, j--) {
+		for (int i = 0, j = reversed.length - 1, mid = reversed.length / 2; i < mid; i++, j--) {
 			Object t = reversed[i];
 			reversed[i] = reversed[j];
 			reversed[j] = t;
@@ -188,10 +197,14 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	public Vect<E> range(int from, int to) {
+		checkPositionIndexes(from, to, elements.length);
+		if (this == EMPTY) return this;
 		return new Vect<>(Arrays.copyOfRange(elements, from, to));
 	}
 
 	public Vect<E> rangeFrom(int from) {
+		checkPositionIndex(from, elements.length);
+		if (this == EMPTY) return this;
 		return new Vect<>(Arrays.copyOfRange(elements, from, elements.length));
 	}
 
@@ -354,7 +367,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 
 		@CheckReturnValue
 		public When<R> empty(Supplier<R> onEmpty) {
-			if (elements.length == 0) {
+			if (result == null && elements.length == 0) {
 				result = requireNonNull(onEmpty.get());
 			}
 			return this;
@@ -362,7 +375,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 
 		@CheckReturnValue
 		public When<R> single(Function<E, R> onSingle) {
-			if (elements.length == 1) {
+			if (result == null && elements.length == 1) {
 				result = requireNonNull(onSingle.apply((E) elements[0]));
 			}
 			return this;
@@ -370,7 +383,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 
 		@CheckReturnValue
 		public When<R> pair(BiFunction<E, E, R> onPair) {
-			if (elements.length == 2) {
+			if (result == null && elements.length == 2) {
 				result = requireNonNull(onPair.apply((E) elements[0], (E) elements[1]));
 			}
 			return this;
@@ -378,7 +391,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 
 		@CheckReturnValue
 		public When<R> head(BiFunction<E, Vect<E>, R> onHead) {
-			if (elements.length >= 1) {
+			if (result == null && elements.length >= 1) {
 				E head = (E) elements[0];
 				E[] tail = (E[]) Arrays.copyOfRange(elements, 1, elements.length);
 				result = requireNonNull(onHead.apply(head, new Vect<>(tail)));

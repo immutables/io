@@ -322,17 +322,44 @@ pattern-binding
 expression
   | expression-logical
 
+expression
+  ^ expression-logical
+  ^ expression-relational
+  ^ expression-additive
+  ^ expression-multiplicative
+  ^ expression-relational
+  ^ expression-ranging
+  ^ expression-unary
+  ^ expression-access
+  ^ expression-literal
+
 expression-logical
-  left:expression-relational (nl? operator-infix-logical nl? right:expression-relational)*
+  | expression-logical-itis
+  | expression-relational
+
+expression-logical-itis
+  left:expression-relational (nl? operator-infix-logical nl? right:expression-relational)+
 
 expression-relational
-  left:expression-additive (nl? operator-infix-relational nl? right:expression-additive)?
+  | expression-relational-itis
+  | expression-additive
+
+expression-relational-itis
+  left:expression-additive nl? operator-infix-relational nl? right:expression-additive
 
 expression-additive
-  left:expression-multiplicative (nl? operator-infix-additive nl? right:expression-multiplicative)*
+  | expression-additive-itis
+  | expression-multiplicative
 
 expression-multiplicative
-  left:expression-ranging (nl? operator-infix-multiplicative nl? right:expression-ranging)*
+  | expression-multiplicative-itis
+  | expression-ranging
+
+expression-additive-itis
+  left:expression-multiplicative (nl? operator-infix-additive nl? right:expression-multiplicative)+
+
+expression-multiplicative-itis
+  left:expression-ranging (nl? operator-infix-multiplicative nl? right:expression-ranging)+
 
 expression-ranging
   left:expression-unary (operator-infix-ranging right:expression-unary)?

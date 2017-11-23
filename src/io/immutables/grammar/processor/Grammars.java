@@ -145,6 +145,13 @@ interface Grammars {
 	}
 
 	@Immutable
+	interface Upcasting extends UnitPart {
+		Identifier name();
+		Vect<Identifier> alternatives();
+		class Builder extends ImmutableGrammars.Upcasting.Builder {}
+	}
+
+	@Immutable
 	interface LexicalTerm extends UnitPart {
 		Literal id();
 		Vect<TermPart> parts();

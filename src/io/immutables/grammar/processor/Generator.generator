@@ -313,7 +313,7 @@ public final class [className]<T extends [grmp].TreeProduction<[treesClass]>> ex
 
 	@Override
 	public String showKind(short kind) {
-		if (kind >= 0) return "term-" + kind;
+		if (kind >= 0) return showTerm(kind);
 		switch (kind) {
 		[for p in productions if not (p.ephemeral or p.subtypes)]
 		case KIND_[asConstant p.id]: return [literal.string p.id];
