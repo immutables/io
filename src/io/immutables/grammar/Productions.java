@@ -10,7 +10,7 @@ import java.util.NoSuchElementException;
  * <ul>
  * <li>Each production or term occupies 2 subsequent longs.
  * <li>Each production or term contains
- * <li>long1 bits 0-32: index of next sibling for easy skipping.
+ * <li>long1 bits 0-32: index increment (offset) of next sibling for easy skipping.
  * <li>long1 bits 32-48: code of field/part of parent production.
  * <li>long1 bits 48-64: code for production/term, for symbols positive value users, for
  * productions - negative values
@@ -70,7 +70,8 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 	private void appendPosition(StringBuilder builder, int position) {
 		long l1 = elements[position];
 		long l2 = elements[position + 1];
-		int nextSibling = decodeNextSibling(l1);
+		int nextIncrement = decodeLength(l1);
+		int nextSibling = position + nextIncrement;
 		short kind = decodeKind(l1);
 		short part = decodePart(l1);
 		int termBegin = decodeTermBegin(l2);
@@ -79,6 +80,8 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		builder.append(Strings.padStart(Integer.toHexString(position), 4, '0'))
 				.append("—")
 				.append(Strings.padStart(Integer.toHexString(nextSibling), 4, '0'))
+				.append(" +")
+				.append(Strings.padStart(Integer.toHexString(nextIncrement), 4, '0'))
 				.append("| ")
 				.append(Strings.padEnd((part >= 0 ? showPart(part) + ":" : "*:") + showKind(kind), 20, ' '))
 				.append(" |")
@@ -140,7 +143,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 			}
 
 			long l1 = elements[position];
-			int nextSibling = decodeNextSibling(l1);
+			int nextSibling = position + decodeLength(l1);
 			boolean isTerm = decodeKind(l1) >= 0;
 
 			int nextPosition = position + POSITION_INCREMENT;
@@ -205,9 +208,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		}
 
 		public Symbol term() {
-			if (current != At.TERM) throw new NoSuchElementException();
-			return Symbol
-					.from(productions.terms.rangeInclusive(termBegin(), termEnd()).get(productions.terms.source()).toString());
+			return Symbol.from(range().get(productions.terms.source()));
 		}
 
 		private void checkBegin() {
@@ -295,7 +296,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 			int termEnd = terms.index();
 
-			l1 = encodeNextSibling(l1, position);
+			l1 = encodeLength(l1, position - positionBegin);
 			l2 = encodeTermEnd(l2, termEnd);
 
 			elements[positionBegin] = l1;
@@ -360,7 +361,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 			long l1 = 0, l2 = 0;
 			l1 = encodePart(l1, part);
 			l1 = encodeKind(l1, Shorts.checkedCast(term)); // term is positive, productions negative
-			l1 = encodeNextSibling(l1, p + POSITION_INCREMENT);
+			l1 = encodeLength(l1, POSITION_INCREMENT);
 			l2 = encodeTermBegin(l2, index);
 			l2 = encodeTermEnd(l2, index);
 
@@ -439,7 +440,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 				+ "Cannot parse production because of mismatched term";
 	}
 
-	static int decodeNextSibling(long l1) {
+	static int decodeLength(long l1) {
 		return (int) l1;
 	}
 
@@ -459,8 +460,8 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		return (int) (l2 >> Integer.SIZE);
 	}
 
-	static long encodeNextSibling(long l1, int position) {
-		return l1 | Integer.toUnsignedLong(position);
+	static long encodeLength(long l1, int positionIncrement) {
+		return l1 | Integer.toUnsignedLong(positionIncrement);
 	}
 
 	static long encodePart(long l1, short part) {

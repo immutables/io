@@ -1,7 +1,5 @@
 package io.immutables.grammar;
 
-import static java.util.Objects.requireNonNull;
-
 public final class Symbol implements CharSequence {
 	private final String value;
 
@@ -43,8 +41,8 @@ public final class Symbol implements CharSequence {
 		return ((Symbol) obj).value.equals(value);
 	}
 
-	public static Symbol from(String value) {
-		return new Symbol(requireNonNull(value));
+	public static Symbol from(CharSequence value) {
+		return new Symbol(value.toString());
 	}
 
 	public static Symbol from(char[] chars, int begin, int end) {

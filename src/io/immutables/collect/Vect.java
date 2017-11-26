@@ -113,6 +113,20 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		}
 	}
 
+	// safe unchecked: runtime isInstance check
+	public <T> Vect<T> only(Class<T> type) {
+		return (Vect<T>) filter(type::isInstance);
+	}
+
+	public <R> R bipartition(Predicate<? super E> predicate, BiFunction<Vect<E>, Vect<E>, R> receiver) {
+		Builder<E> yes = new Builder<>(elements.length);
+		Builder<E> no = new Builder<>(elements.length);
+		for (E e : this) {
+			(predicate.test(e) ? yes : no).add(e);
+		}
+		return receiver.apply(yes.build(), no.build());
+	}
+
 	public Vect<E> filter(Predicate<? super E> is) {
 		if (this == EMPTY) return this;
 		Object[] newElements = elements.clone();
@@ -232,6 +246,13 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	@Override
 	public String toString() {
 		return stream().map(Object::toString).collect(Collectors.joining(", ", "[", "]"));
+	}
+
+	public Vect<E> concat(Vect<? extends E> v) {
+		return new Builder<E>(size() + v.size())
+				.addAll(this)
+				.addAll(v)
+				.build();
 	}
 
 	public static <E> Vect<E> of(E single) {
@@ -400,9 +421,9 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		}
 
 		@CheckReturnValue
-		public When<R> otherwise(Function<Vect<E>, R> onEmpty) {
+		public When<R> otherwise(Function<Vect<E>, R> onElse) {
 			if (result == null) {
-				result = requireNonNull(onEmpty.apply(Vect.this));
+				result = requireNonNull(onElse.apply(Vect.this));
 			}
 			return this;
 		}

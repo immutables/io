@@ -68,6 +68,7 @@ abstract class Generator extends AbstractTemplate {
 		return generate();
 	}
 
+	final int one = 1;
 	final Predicate<Integer> mod16 = i -> i % 16 == 0;
 
 	final Function<Object, String> asVar =

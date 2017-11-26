@@ -13,7 +13,6 @@ import io.immutables.grammar.processor.Grammars.Group;
 import io.immutables.grammar.processor.Grammars.Identifier;
 import io.immutables.grammar.processor.Grammars.Literal;
 import io.immutables.grammar.processor.Grammars.LiteralPart;
-import io.immutables.grammar.processor.Grammars.MatchMode;
 import io.immutables.grammar.processor.Grammars.ProductionPart;
 import io.immutables.grammar.processor.Grammars.ReferencePart;
 import io.immutables.grammar.processor.Grammars.SyntaxProduction;
@@ -26,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -68,7 +68,7 @@ abstract class Production implements WithProduction {
 	 * Supertypes are reverse binding of {@link #subtypes()}.
 	 */
 	abstract Vect<Identifier> supertypes();
-	
+
 	/**
 	 * Alternatives contain references to the following ephemeral productions so that
 	 * any tagged parts present in ephemeral productions can be accepted by this production's AST
@@ -102,12 +102,13 @@ abstract class Production implements WithProduction {
 		Cardinality cardinality();
 		Optional<Literal> literal();
 		Optional<Identifier> reference();
+		boolean symbol();
 
 		TaggedPart withCardinality(Cardinality cardinality);
 
 		default @Check void check() {
 			checkState(literal().isPresent() ^ reference().isPresent(),
-					"Eithe literal or reference must be present " + this);
+					"Either literal or reference must be present", this);
 		}
 
 		default boolean isCompatibleTo(TaggedPart part) {
@@ -116,13 +117,13 @@ abstract class Production implements WithProduction {
 		}
 
 		default TaggedPart span(TaggedPart part) {
-			assert isCompatibleTo(part);
+			checkState(isCompatibleTo(part), "Parts are not compatible across alternatives", this, part);
 			Cardinality span = cardinality().span(part.cardinality());
 			return withCardinality(span);
 		}
 
 		default TaggedPart append(TaggedPart part) {
-			assert isCompatibleTo(part);
+			checkState(isCompatibleTo(part), "Parts are not compatible across alternatives", this, part);
 			Cardinality joined = cardinality().append(part.cardinality());
 			return withCardinality(joined);
 		}
@@ -140,21 +141,21 @@ abstract class Production implements WithProduction {
 		checkOnlySingleAlwaysSucceedAlterntive(productions);
 
 		productions = rewriteGroupsToEphemeral(productions);
-		productions = decorateWithTaggedParts(productions);
 		productions = decorateWithTypes(productions);
+		productions = decorateWithTaggedParts(productions);
 		return productions;
 	}
 
 	private static void checkOnlySingleAlwaysSucceedAlterntive(Vect<Production> productions) {
 		for (Production p : productions) {
 			checkState(p.alwaysSucceedingAlternatives().size() <= 1,
-					"Production '%' contains more that one always succeeding alternatives where everything is optional",
+					"Production '%' contains more than one alternative which always succeeds (all parts are optional)",
 					p.id());
 		}
 	}
 
 	private static boolean isAlwaysSucceding(Alternative a) {
-		return a.parts().all(p -> p.mode() == MatchMode.CONSUME && p.cardinality().isZeroed());
+		return a.parts().all(p -> p.mode().consume() && p.cardinality().isZeroed());
 	}
 
 	private static Vect<Production> extractProductions(Unit unit) {
@@ -177,18 +178,18 @@ abstract class Production implements WithProduction {
 	}
 
 	private static Vect<Production> rewriteGroupsToEphemeral(Vect<Production> productions) {
-		final Vect.Builder<Production> rewritten = Vect.builder();
+		Vect.Builder<Production> rewritten = Vect.builder();
 
 		class Rewriter extends GrammarsTransformer {
 			final Production production;
-			int counter;
+			final AtomicInteger counter = new AtomicInteger();
 
 			Rewriter(Production production) {
 				this.production = production;
 			}
 
 			Identifier newSyntheticId() {
-				return Identifier.of(production.id().value() + "_" + (counter++));
+				return Identifier.of(production.id().value() + "_" + counter.getAndIncrement());
 			}
 
 			@Override
@@ -258,15 +259,11 @@ abstract class Production implements WithProduction {
 			final SetMultimap<Identifier, Identifier> terminalSubtypes = LinkedHashMultimap.create();
 
 			Vect<Production> decorate() {
-				for (Production p : productions) {
-					collectSubtypesAndEphemerals(p);
-				}
-
+				// here order matters so needed data would be available
+				productions.forEach(this::collectSubtypesAndEphemerals);
 				// Depends on collectSubtypesAndEphemerals for all productions
 				// to be executed before
-				for (Production p : productions) {
-					collectLeafSubtypes(p.id(), p.id());
-				}
+				productions.forEach(p -> collectLeafSubtypes(p.id(), p.id()));
 
 				return productions.map(p -> p
 						.withSubtypes(subtypes.get(p.id()))
@@ -428,8 +425,11 @@ abstract class Production implements WithProduction {
 
 				if (p instanceof LiteralPart) {
 					b.literal(((LiteralPart) p).literal());
+					b.symbol(true);
 				} else if (p instanceof ReferencePart) {
-					b.reference(((ReferencePart) p).reference());
+					Identifier r = ((ReferencePart) p).reference();
+					b.reference(r);
+					b.symbol(byIdentifier.get(r).ephemeral());
 				} else {
 					throw Unreachable.exhaustive();
 				}
@@ -466,23 +466,21 @@ abstract class Production implements WithProduction {
 						entry -> entry.getValue().size() > 1).keySet();
 
 		checkState(redefinitions.isEmpty(),
-				"Duplicate production definitions " + redefinitions);
+				"Duplicate production definitions %s", redefinitions);
 	}
 
 	private static void checkPartInvariants(Vect<Production> productions) {
-		GrammarsTransformer checker = new GrammarsTransformer() {
-			final Map<Identifier, Production> byIdentifier = Maps.uniqueIndex(productions, Production::id);
-
+		class Checker extends GrammarsTransformer {
 			void checkMatchMode(ProductionPart p) {
-				checkState(p.mode() == MatchMode.CONSUME || !p.tag().isPresent(),
-						"Tagged <&> and <!> are not supported " + p);
-				checkState(p.mode() == MatchMode.CONSUME || p.cardinality().isExactlyOne(),
-						"Not supporting <&> and <!> with cardinality that is not 1: " + p);
+				checkState(p.mode().consume() || !p.tag().isPresent(),
+						"Tagged <&> and <!> are not supported", p);
+				checkState(p.mode().consume() || p.cardinality().isExactlyOne(),
+						"Not supporting <&> and <!> with cardinality that is not 1", p);
 			}
 
 			@Override
 			protected ProductionPart asProductionPart(Group g) {
-				checkState(!g.tag().isPresent(), "Not supporting tagged groups: " + g);
+				checkState(!g.tag().isPresent(), "Tagged groups are not supported", g);
 				return toGroup(g);
 			}
 
@@ -507,20 +505,35 @@ abstract class Production implements WithProduction {
 			@Override
 			protected ProductionPart asProductionPart(ReferencePart r) {
 				checkMatchMode(r);
-				checkState(!r.tag().isPresent() || !byIdentifier.get(r.reference()).ephemeral(),
-						"Ephemeral references cannot be tagged: " + r.reference());
-
 				return r;
 			}
-		};
 
-		productions.flatMap(Production::alternatives)
-				.forEach(checker::toAlternative);
+			void check() {
+				StringBuilder errors = new StringBuilder();
+
+				for (Production p : productions) {
+					for (Alternative a : p.alternatives()) {
+						try {
+							toAlternative(a);
+						} catch (IllegalStateException ex) {
+							errors.append(p.id())
+									.append("\n\t")
+									.append(ex.getMessage())
+									.append("\n");
+						}
+					}
+				}
+
+				if (errors.length() > 0) throw new IllegalStateException(errors.toString());
+			}
+		}
+
+		new Checker().check();
 	}
 
 	private static void checkMissingReferences(Vect<Production> productions) {
 		Map<Identifier, Production> byIdentifier = Maps.uniqueIndex(productions, Production::id);
-		final Set<Identifier> missingReferences = new LinkedHashSet<>();
+		Set<Identifier> missingReferences = new LinkedHashSet<>();
 
 		GrammarsTransformer detector = new GrammarsTransformer() {
 			@Override
@@ -537,14 +550,12 @@ abstract class Production implements WithProduction {
 			production.alternatives().forEach(detector::toAlternative);
 		}
 
-		checkState(missingReferences.isEmpty(),
-				"Referenced productions are missing " + missingReferences);
+		checkState(missingReferences.isEmpty(), "Referenced productions are missing %s", missingReferences);
 	}
 
 	private static void checkLeftRecursion(Vect<Production> productions) {
 		Map<Identifier, Production> byIdentifier = Maps.uniqueIndex(productions, Production::id);
-
-		final Set<Identifier> recurseOffenders = new LinkedHashSet<>();
+		Set<Identifier> recurseOffenders = new LinkedHashSet<>();
 
 		class Detector extends GrammarsTransformer {
 			final Set<Identifier> scanned = new HashSet<>();
@@ -595,6 +606,6 @@ abstract class Production implements WithProduction {
 		}
 
 		checkState(recurseOffenders.isEmpty(),
-				"Productions have leftmost recursion and cannot terminate " + recurseOffenders);
+				"Productions have leftmost recursion and cannot terminate %s", recurseOffenders);
 	}
 }

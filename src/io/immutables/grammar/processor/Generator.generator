@@ -336,7 +336,7 @@ public final class [className]<T extends [grmp].TreeProduction<[treesClass]>> ex
 [/template]
 
 [template alternativeBody Prod prod Alt alt String altVar]
-[for part in alt.parts if part.mode.notConsume][if for.first]
+[for part in alt.parts if not part.mode.consume][if for.first]
 int j;
 [/if][/for]
 	[for part in alt.parts, Part p = asPartCase part]
@@ -409,12 +409,10 @@ private static [treesClass].[type] [var](Traversal in) {
 		switch (in.part()) {
 	[for t in p.parts, String n = asVar t.tag, String c = asConstant t.tag]
 		case PART_[c]:
-		[if t.reference.present]
-			builder.[n]([asVar t.reference.get](in));
-		[else if t.literal.present]
+		[if t.symbol]
 			builder.[n](in.term());
 		[else]
-			[--Impossible--]
+			builder.[n]([asVar t.reference.get](in));
 		[/if]
 			break;
 	[/for]
@@ -455,7 +453,13 @@ public interface [className] {
 
 [template taggedPartsAttributes Prod p]
 [for t in p.parts, String n = asVar t.tag]
-[let partTypeName][if t.literal.present][grmp].Symbol[else][asType t.reference.get][/if][/let]
+[let partTypeName][output.trim]
+	[if t.symbol]
+		[grmp].Symbol
+	[else]
+		[asType t.reference.get]
+	[/if]
+[/output.trim][/let]
 	[if t.cardinality.exactlyOne]
 [partTypeName] [n]();
 	[else if t.cardinality.atMostOne]
@@ -468,9 +472,9 @@ io.immutables.collect.Vect<[partTypeName]> [n]();
 
 [template taggedPartsInitAttributes Prod p]
 [for t in p.parts, String n = asVar t.tag]
-	[if t.literal.present]
+	[if t.symbol]
 [grmp].TreeProduction.Builder [n]([grmp].Symbol [n]);
-	[else if t.reference.present]
+	[else]
 [grmp].TreeProduction.Builder [n]([asType t.reference.get] [n]);
 	[/if]
 [/for]

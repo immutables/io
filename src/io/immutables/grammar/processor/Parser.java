@@ -20,7 +20,6 @@ import io.immutables.grammar.processor.GrammarsAst.LiteralPart;
 import io.immutables.grammar.processor.GrammarsAst.ReferencePart;
 import io.immutables.grammar.processor.GrammarsAst.SyntaxProduction;
 import io.immutables.grammar.processor.GrammarsAst.Unit;
-import io.immutables.grammar.processor.GrammarsAst.Upcasting;
 import org.immutables.trees.ast.Extractions;
 import org.parboiled.BaseParser;
 import org.parboiled.Rule;
@@ -43,7 +42,6 @@ class Parser extends BaseParser<Object> {
 				FirstOf(
 						LexicalKind(),
 						LexicalTerm(),
-						Upcasting(),
 						Production(),
 						Blank())),
 				Unit.build(), EOI);
@@ -64,17 +62,6 @@ class Parser extends BaseParser<Object> {
 								SyntaxProduction.addAlternatives(),
 								Newline())),
 				SyntaxProduction.build(), Unit.addParts());
-	}
-
-	Rule Upcasting() {
-		return Sequence(Upcasting.builder(),
-				Identifier(), Upcasting.name(),
-				Newline(),
-				OneOrMore(Identation(), "^", Spacing(),
-						Identifier(),
-						Upcasting.addAlternatives(),
-						Newline()),
-				Upcasting.build(), Unit.addParts());
 	}
 
 	Rule ProductionSingular() {
@@ -116,10 +103,10 @@ class Parser extends BaseParser<Object> {
 	}
 
 	Rule AlternativeGroupPart() {
-		return Sequence("(", Spacing(), Optional(Tag()), AlternativeGroup.builder(),
+		return Sequence("(", Spacing(), AlternativeGroup.builder(),
 				AlternativeGroupPartAlternative(), AlternativeGroup.addAlternatives(),
 				OneOrMore("|", Spacing(), AlternativeGroupPartAlternative(), AlternativeGroup.addAlternatives()),
-				AlternativeGroup.build(), tagged());
+				")", Spacing(), AlternativeGroup.build());
 	}
 
 	Rule AlternativeGroupPartAlternative() {
@@ -137,7 +124,9 @@ class Parser extends BaseParser<Object> {
 
 	Rule ReferencePart() {
 		return Sequence(ReferencePart.builder(),
-				Identifier(), ReferencePart.reference(), ReferencePart.build());
+				Identifier(), ReferencePart.reference(),
+				Optional("^", Spacing(), ReferencePart.lifted(true)),
+				ReferencePart.build());
 	}
 
 	Rule LexicalTerm() {

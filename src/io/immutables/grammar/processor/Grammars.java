@@ -96,7 +96,9 @@ interface Grammars {
 	@Immutable
 	interface ReferencePart extends ProductionPart {
 		Identifier reference();
-
+		default @Default boolean lifted() {
+			return false;
+		}
 		class Builder extends ImmutableGrammars.ReferencePart.Builder {}
 	}
 
@@ -142,13 +144,6 @@ interface Grammars {
 			return false;
 		}
 		class Builder extends ImmutableGrammars.SyntaxProduction.Builder {}
-	}
-
-	@Immutable
-	interface Upcasting extends UnitPart {
-		Identifier name();
-		Vect<Identifier> alternatives();
-		class Builder extends ImmutableGrammars.Upcasting.Builder {}
 	}
 
 	@Immutable
@@ -210,8 +205,8 @@ interface Grammars {
 		NOT,
 		AND;
 
-		boolean notConsume() {
-			return this != CONSUME;
+		boolean consume() {
+			return this == CONSUME;
 		}
 	}
 

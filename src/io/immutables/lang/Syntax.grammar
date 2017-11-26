@@ -320,45 +320,34 @@ pattern-binding
   | name-binding
 
 expression
-  | expression-logical
+  | expression-logical-sub
 
-expression
-  ^ expression-logical
-  ^ expression-relational
-  ^ expression-additive
-  ^ expression-multiplicative
-  ^ expression-relational
-  ^ expression-ranging
-  ^ expression-unary
-  ^ expression-access
-  ^ expression-literal
+expression-logical-sub
+  | expression-logical
+  | expression-relational-sub
 
 expression-logical
-  | expression-logical-itis
-  | expression-relational
+  left:expression-relational-sub (nl? operator-infix-logical nl? right:expression-relational-sub)+
 
-expression-logical-itis
-  left:expression-relational (nl? operator-infix-logical nl? right:expression-relational)+
+expression-relational-sub
+  | expression-relational
+  | expression-additive-sub
 
 expression-relational
-  | expression-relational-itis
-  | expression-additive
+  left:expression-additive-sub nl? operator-infix-relational nl? right:expression-additive-sub
 
-expression-relational-itis
-  left:expression-additive nl? operator-infix-relational nl? right:expression-additive
+expression-additive-sub
+  | expression-additive
+  | expression-multiplicative-sub
 
 expression-additive
-  | expression-additive-itis
-  | expression-multiplicative
+  left:expression-multiplicative-sub (nl? operator-infix-additive nl? right:expression-multiplicative-sub)+
 
-expression-multiplicative
-  | expression-multiplicative-itis
+expression-multiplicative-sub
+  | expression-multiplicative
   | expression-ranging
 
-expression-additive-itis
-  left:expression-multiplicative (nl? operator-infix-additive nl? right:expression-multiplicative)+
-
-expression-multiplicative-itis
+expression-multiplicative
   left:expression-ranging (nl? operator-infix-multiplicative nl? right:expression-ranging)+
 
 expression-ranging
