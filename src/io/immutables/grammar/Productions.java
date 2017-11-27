@@ -68,14 +68,23 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 	}
 
 	private void appendPosition(StringBuilder builder, int position) {
-		long l1 = elements[position];
-		long l2 = elements[position + 1];
-		int nextIncrement = decodeLength(l1);
+		if (position >= endPosition || position < 0) {
+			builder.append(Strings.padStart(Integer.toHexString(position), 4, '0'))
+					.append(Strings.repeat("—", 5))
+					.append(" +")
+					.append(Strings.padStart("", 4, '0'))
+					.append("| ");
+			return;
+		}
+
+		long l0 = elements[position];
+		long l1 = elements[position + 1];
+		int nextIncrement = decodeLength(l0);
 		int nextSibling = position + nextIncrement;
-		short kind = decodeKind(l1);
-		short part = decodePart(l1);
-		int termBegin = decodeTermBegin(l2);
-		int termEnd = decodeTermEnd(l2);
+		short kind = decodeKind(l0);
+		short part = decodePart(l0);
+		int termBegin = decodeTermBegin(l1);
+		int termEnd = decodeTermEnd(l1);
 
 		builder.append(Strings.padStart(Integer.toHexString(position), 4, '0'))
 				.append("—")
@@ -85,7 +94,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 				.append("| ")
 				.append(Strings.padEnd((part >= 0 ? showPart(part) + ":" : "*:") + showKind(kind), 20, ' '))
 				.append(" |")
-				.append(l2 < 0 ? "????" : terms.rangeInclusive(termBegin, termEnd).get(terms.source()));
+				.append(l1 < 0 ? "????" : terms.rangeInclusive(termBegin, termEnd).get(terms.source()));
 	}
 
 	public abstract String showKind(short kind);
@@ -115,9 +124,10 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 		private At current = At.EOP;
 		private int position = -POSITION_INCREMENT;
-		private int[] stack = new int[32]; // should be fine enouph to avoid initial reallocation.
+		// should be fine enouph to avoid initial reallocation.
+		private int[] stackEnds = new int[32];
+		private int[] stackPositions = new int[32];
 		private int stackPointer = -1;
-		private int prodEndCount = 0;
 
 		private Traversal(Productions<?, ?> productions) {
 			this.productions = productions;
@@ -126,14 +136,13 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		}
 
 		public At current() {
-			checkBegin();
 			return current;
 		}
 
 		public At next() {
-			// Give away any enqued/remaining PRODUCTION_ENDs
-			if (prodEndCount > 0) {
-				prodEndCount--;
+			// Give away any stacked PRODUCTION_ENDs at next position
+			if (stackPointer >= 0 && stackEnds[stackPointer] == position + POSITION_INCREMENT) {
+				stackPointer--;
 				return current = At.PRODUCTION_END;
 			}
 
@@ -147,74 +156,49 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 			int nextSibling = position + decodeLength(l0);
 			boolean isTerm = decodeKind(l0) >= 0;
 
-			int nextPosition = position + POSITION_INCREMENT;
-			// If we're ending on the next position,
-			// without having nested nodes
-			if (nextSibling == nextPosition) {
-				if (!isTerm) {
-					// if not term (when we're suppose to return PRODUCTION_BEGIN
-					// we enque END_PROD to be returned
-					prodEndCount++;
-				}
-				// Checking if we have have to enque PRODUCTION_ENDs for any
-				// stacked productions which end on the same next position
-				while (stackPointer >= 0 && stack[stackPointer] == nextPosition) {
-					prodEndCount++;
-					stackPointer--;
-				}
-			} else {
-				assert !isTerm : "term always have nextSibling == nextPosition";
-				// We're having nested production or terms so
-				// we stack this position awating for when nextPosition
-				// will reach nextSibling so that we'll enque corresponding
-				// PRODUCTION_END events
-				stackPointer++;
-				stack = Capacity.ensure(stack, stackPointer, 1);
-				stack[stackPointer] = nextSibling;
+			if (isTerm) {
+				return current = At.TERM;
 			}
-			if (isTerm) return current = At.TERM;
+
+			// if not term (when we're suppose to return PRODUCTION_BEGIN
+			// we stack END_PROD to be returned
+			stackPointer++;
+			stackEnds = Capacity.ensure(stackEnds, stackPointer, 1);
+			stackPositions = Capacity.ensure(stackPositions, stackPointer, 1);
+			stackEnds[stackPointer] = nextSibling;
+			stackPositions[stackPointer] = position;
+
 			return current = At.PRODUCTION_BEGIN;
 		}
 
 		public void skip() {
-			checkBegin();
-			checkEnd();
+			assert productionBeginOrTerm();
 			if (current != At.TERM) {
-				int length = decodeLength(elements[position]);
-				// if it is a position increment
-				if (length != POSITION_INCREMENT) {
-					// Checking if we have have to enque PRODUCTION_ENDs for any
-					// stacked productions which end on the same next position
-					while (stackPointer >= 0 && stack[stackPointer] == position + length) {
-						prodEndCount++;
-						stackPointer--;
-					}
-				}
-				position += length - POSITION_INCREMENT;
+				position += decodeLength(elements[position]) - POSITION_INCREMENT;
 			}
 		}
 
+		private boolean productionBeginOrTerm() {
+			return current == At.PRODUCTION_BEGIN || current == At.TERM;
+		}
+
 		public short kind() {
-			checkBegin();
-			checkEnd();
+			assert productionBeginOrTerm();
 			return decodeKind(elements[position]);
 		}
 
 		public short part() {
-			checkBegin();
-			checkEnd();
+			assert productionBeginOrTerm();
 			return decodePart(elements[position]);
 		}
 
 		public int termBegin() {
-			checkBegin();
-			checkEnd();
+			assert productionBeginOrTerm();
 			return decodeTermBegin(elements[position + 1]);
 		}
 
 		public int termEnd() {
-			checkBegin();
-			checkEnd();
+			assert productionBeginOrTerm();
 			return decodeTermEnd(elements[position + 1]);
 		}
 
@@ -230,18 +214,19 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 			return Symbol.from(range().get(productions.terms.source()));
 		}
 
-		private void checkBegin() {
-			if (position < 0) throw new IllegalStateException("Need to call next() first");
-		}
-
-		private void checkEnd() {
-			if (position >= endPosition) throw new IllegalStateException("");
-		}
-
 		public String show() {
 			StringBuilder b = new StringBuilder();
-			productions.appendPosition(b, position);
+			productions.appendPosition(b, referencePosition());
 			return b.append(" // ").append(current).toString();
+		}
+
+		private int referencePosition() {
+			if (current == At.PRODUCTION_END) {
+				// if we just returned production end, then me moved stack pointer below,
+				// but the stack itself still has position entry not overwritten
+				return stackPositions[stackPointer + 1];
+			}
+			return position;
 		}
 
 		@Override
@@ -310,16 +295,16 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		protected final boolean end(short part, int positionBegin) {
 			if (part == NO_PART) return true;
 
-			long l1 = elements[positionBegin];
-			long l2 = elements[positionBegin + 1];
+			long l0 = elements[positionBegin];
+			long l1 = elements[positionBegin + 1];
 
 			int termEnd = terms.index();
 
-			l1 = encodeLength(l1, position - positionBegin);
-			l2 = encodeTermEnd(l2, termEnd);
+			l0 = encodeLength(l0, position - positionBegin);
+			l1 = encodeTermEnd(l1, termEnd);
 
-			elements[positionBegin] = l1;
-			elements[positionBegin + 1] = l2;
+			elements[positionBegin] = l0;
+			elements[positionBegin + 1] = l1;
 
 			return true;
 		}
@@ -382,16 +367,16 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 			int p = position;
 			int index = terms.index();
 
-			long l1 = 0, l2 = 0;
-			l1 = encodePart(l1, part);
-			l1 = encodeKind(l1, Shorts.checkedCast(term)); // term is positive, productions negative
-			l1 = encodeLength(l1, POSITION_INCREMENT);
-			l2 = encodeTermBegin(l2, index);
-			l2 = encodeTermEnd(l2, index);
+			long l0 = 0, l1 = 0;
+			l0 = encodePart(l0, part);
+			l0 = encodeKind(l0, Shorts.checkedCast(term)); // term is positive, productions negative
+			l0 = encodeLength(l0, POSITION_INCREMENT);
+			l1 = encodeTermBegin(l1, index);
+			l1 = encodeTermEnd(l1, index);
 
 			elements = Capacity.ensure(elements, p, POSITION_INCREMENT);
-			elements[position] = l1;
-			elements[position + 1] = l2;
+			elements[position] = l0;
+			elements[position + 1] = l1;
 
 			position += POSITION_INCREMENT;
 
@@ -464,44 +449,44 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 				+ "Cannot parse production because of mismatched term";
 	}
 
-	static int decodeLength(long l1) {
+	static int decodeLength(long l0) {
+		return (int) l0;
+	}
+
+	static short decodePart(long l0) {
+		return (short) (l0 >> Integer.SIZE);
+	}
+
+	static short decodeKind(long l0) {
+		return (short) (l0 >> (Integer.SIZE + Short.SIZE));
+	}
+
+	static int decodeTermBegin(long l1) {
 		return (int) l1;
 	}
 
-	static short decodePart(long l1) {
-		return (short) (l1 >> Integer.SIZE);
+	static int decodeTermEnd(long l1) {
+		return (int) (l1 >> Integer.SIZE);
 	}
 
-	static short decodeKind(long l1) {
-		return (short) (l1 >> (Integer.SIZE + Short.SIZE));
+	static long encodeLength(long l0, int positionIncrement) {
+		return l0 | Integer.toUnsignedLong(positionIncrement);
 	}
 
-	static int decodeTermBegin(long l2) {
-		return (int) l2;
+	static long encodePart(long l0, short part) {
+		return l0 | (Short.toUnsignedLong(part) << Integer.SIZE);
 	}
 
-	static int decodeTermEnd(long l2) {
-		return (int) (l2 >> Integer.SIZE);
+	static long encodeKind(long l0, short kind) {
+		return l0 | (Short.toUnsignedLong(kind) << (Integer.SIZE + Short.SIZE));
 	}
 
-	static long encodeLength(long l1, int positionIncrement) {
-		return l1 | Integer.toUnsignedLong(positionIncrement);
+	static long encodeTermBegin(long l1, int tokenIndex) {
+		return l1 | Integer.toUnsignedLong(tokenIndex);
 	}
 
-	static long encodePart(long l1, short part) {
-		return l1 | (Short.toUnsignedLong(part) << Integer.SIZE);
-	}
-
-	static long encodeKind(long l1, short kind) {
-		return l1 | (Short.toUnsignedLong(kind) << (Integer.SIZE + Short.SIZE));
-	}
-
-	static long encodeTermBegin(long l2, int tokenIndex) {
-		return l2 | Integer.toUnsignedLong(tokenIndex);
-	}
-
-	static long encodeTermEnd(long l2, int tokenIndex) {
-		return l2 | (Integer.toUnsignedLong(tokenIndex) << Integer.SIZE);
+	static long encodeTermEnd(long l1, int tokenIndex) {
+		return l1 | (Integer.toUnsignedLong(tokenIndex) << Integer.SIZE);
 	}
 
 	private static final int POSITION_INCREMENT = 2;
