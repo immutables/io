@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.immutables.value.Value.Check;
+import org.immutables.value.Value.Derived;
 import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Lazy;
@@ -92,6 +93,25 @@ abstract class Production implements WithProduction {
 	@Lazy
 	Vect<Alternative> alwaysSucceedingAlternatives() {
 		return alternatives().filter(Production::isAlwaysSucceding);
+	}
+
+	/**
+	 * If this list is not empty, then production is a pure single-literal alternative list.
+	 */
+	@Derived
+	Vect<Literal> literalAlternatives() {
+		if (alternatives().size() > 1
+				&& alternatives().all(a -> !a.singular()
+						&& a.parts().size() == 1
+						&& a.parts().get(0).mode().consume()
+						&& a.parts().get(0) instanceof LiteralPart)
+				&& parts().all(p -> p.cardinality().isExactlyOne())) {
+			return alternatives()
+					.flatMap(Alternative::parts)
+					.only(LiteralPart.class)
+					.map(LiteralPart::literal);
+		}
+		return Vect.of();
 	}
 
 	static class Builder extends ImmutableProduction.Builder {}

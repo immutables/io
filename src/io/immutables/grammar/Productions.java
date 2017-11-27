@@ -102,6 +102,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 	/**
 	 * Pull-style traversal over productions.
+	 * Mechanic is to be revised
 	 */
 	public static final class Traversal {
 		public enum At {
@@ -142,9 +143,9 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 				return current = At.EOP;
 			}
 
-			long l1 = elements[position];
-			int nextSibling = position + decodeLength(l1);
-			boolean isTerm = decodeKind(l1) >= 0;
+			long l0 = elements[position];
+			int nextSibling = position + decodeLength(l0);
+			boolean isTerm = decodeKind(l0) >= 0;
 
 			int nextPosition = position + POSITION_INCREMENT;
 			// If we're ending on the next position,
@@ -173,6 +174,24 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 			}
 			if (isTerm) return current = At.TERM;
 			return current = At.PRODUCTION_BEGIN;
+		}
+
+		public void skip() {
+			checkBegin();
+			checkEnd();
+			if (current != At.TERM) {
+				int length = decodeLength(elements[position]);
+				// if it is a position increment
+				if (length != POSITION_INCREMENT) {
+					// Checking if we have have to enque PRODUCTION_ENDs for any
+					// stacked productions which end on the same next position
+					while (stackPointer >= 0 && stack[stackPointer] == position + length) {
+						prodEndCount++;
+						stackPointer--;
+					}
+				}
+				position += length - POSITION_INCREMENT;
+			}
 		}
 
 		public short kind() {
@@ -309,18 +328,23 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 			int i = terms.index();
 			int t = terms.advance();
 			if (t == term) {
-				markTermBegin();
-				if (part != NO_PART) {
-					markTerm(part, t);
-				}
+				match(part, t);
 				return true;
 			}
-			mismatch(terms.index(), term, t);
+			mismatch(term, t);
 			terms.reset(i);
 			return false;
 		}
 
-		private void mismatch(int index, int termExpected, int termActual) {
+		protected final void match(short part, int term) {
+			markTermBegin();
+			if (part != NO_PART) {
+				markTerm(part, term);
+			}
+		}
+
+		protected final void mismatch(int termExpected, int termActual) {
+			int index = terms.index();
 			// farthest or first (when equal) mismatch wins
 			if (index > mismatchAt) {
 				mismatchAt = index;

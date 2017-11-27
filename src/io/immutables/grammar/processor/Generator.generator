@@ -285,6 +285,8 @@ public final class [className]<T extends [grmp].TreeProduction<[treesClass]>> ex
 		[if p.subtypes]
 			return [for s in p.subtypes][if not for.first]
 					|| [/if][asVar s](part)[/for];
+		[else if p.literalAlternatives]
+			[literalAlternativesBody p]
 		[else]
 			int i = terms.index(), p = position;
 			[for a in p.alternatives]
@@ -335,6 +337,26 @@ public final class [className]<T extends [grmp].TreeProduction<[treesClass]>> ex
 }
 [/template]
 
+[template literalAlternativesBody Prod prod]
+int i = terms.index(), p = position;
+[if not prod.ephemeral]
+production(part, KIND_[asConstant prod.id]);
+[/if]
+int t = terms.advance();
+switch (t) {
+[for l in prod.literalAlternatives]
+case TERM_[asTokenConstant l]:
+[/for]
+	match([if prod.hasTagged]part != 0 ? [for tg in prod.parts][if for.first]PART_[asConstant tg.tag][/if][/for] : [/if]NO_PART, t);
+	return end(part, p);
+default:
+	[-- Just use first in alternatives do describe mismatch --]
+	mismatch([for l in prod.literalAlternatives][if for.first]TERM_[asTokenConstant l][/if][/for], t);
+	terms.reset(i); position = p;
+	return false;
+}
+[/template]
+
 [template alternativeBody Prod prod Alt alt String altVar]
 [for part in alt.parts if not part.mode.consume][if for.first]
 int j;
@@ -366,7 +388,7 @@ while ([inlineMatch p for.index]);[-- multiple optional --]
 
 [template inlineMatch Part p Integer partIndex][output.trim]
 	[if p.literal]
-term([if p.tagged]part != 0 ? PART_[asConstant p.tag] : NO_PART[else]NO_PART[/if], TERM_[asTokenConstant p.literal])
+term([if p.tagged]part != 0 ? PART_[asConstant p.tag] : [/if]NO_PART, TERM_[asTokenConstant p.literal])
 	[else if p.reference]
 		[if p.reference.ephemeral]
 [asVar p.reference.id](part != 0 ? ANY_PART : NO_PART)
@@ -416,7 +438,7 @@ private static [treesClass].[type] [var](Traversal in) {
 		[/if]
 			break;
 	[/for]
-		default: throw io.immutables.Unreachable.exhaustive();
+		default: throw io.immutables.Unreachable.contractual();
 		}
 	}[/if]
 

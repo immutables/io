@@ -90,7 +90,7 @@ abstract class Generator extends AbstractTemplate {
 			id -> asConstant.apply(dispatch.termsById().get(id).name().value());
 
 	final Function<Grammars.ProductionPart, PartCase> asPartCase = PartCase::new;
-
+	
 	class PartCase {
 		final Cardinality cardinality;
 		final boolean consume;
