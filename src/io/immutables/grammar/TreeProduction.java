@@ -10,7 +10,8 @@ import org.immutables.value.Value.Auxiliary;
 public interface TreeProduction<K> {
 	abstract @Auxiliary int termBegin();
 	abstract @Auxiliary int termEnd();
-	//abstract @Auxiliary int productionIndex();
+	abstract @Auxiliary int productionKind();
+	abstract @Auxiliary int productionIndex();
 
 	interface Builder {}
 }

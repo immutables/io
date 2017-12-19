@@ -10,7 +10,7 @@ import java.util.NoSuchElementException;
  * <ul>
  * <li>Each production or term occupies 2 subsequent longs.
  * <li>Each production or term contains
- * <li>long1 bits 0-32: index increment (offset) of next sibling for easy skipping.
+ * <li>long1 bits 0-32: length (including nested of the production to easy skipping to next sibling.
  * <li>long1 bits 32-48: code of field/part of parent production.
  * <li>long1 bits 48-64: code for production/term, for symbols positive value users, for
  * productions - negative values
@@ -69,6 +69,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 	private void appendPosition(StringBuilder builder, int position) {
 		if (position >= endPosition || position < 0) {
+			// show out of range position in a special way
 			builder.append(Strings.padStart(Integer.toHexString(position), 4, '0'))
 					.append(Strings.repeat("—", 5))
 					.append(" +")
@@ -92,7 +93,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 				.append(" +")
 				.append(Strings.padStart(Integer.toHexString(nextIncrement), 4, '0'))
 				.append("| ")
-				.append(Strings.padEnd((part >= 0 ? showPart(part) + ":" : "*:") + showKind(kind), 20, ' '))
+				.append(Strings.padEnd((part >= 0 ? showPart(part) + ":" : "*:") + showKind(kind), 32, ' '))
 				.append(" |")
 				.append(l1 < 0 ? "????" : terms.rangeInclusive(termBegin, termEnd).get(terms.source()));
 	}
@@ -200,6 +201,11 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		public int termEnd() {
 			assert productionBeginOrTerm();
 			return decodeTermEnd(elements[position + 1]);
+		}
+
+		public int index() {
+			assert productionBeginOrTerm();
+			return position / 2;
 		}
 
 		public Source.Range range() {

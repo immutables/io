@@ -4,8 +4,8 @@ import io.immutables.Capacity;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.BiFunction;
@@ -44,24 +44,8 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	@Override
-	public Iterator<E> iterator() {
-		return new Iterator<E>() {
-			int index = 0;
-			@Override
-			public boolean hasNext() {
-				return index < elements.length;
-			}
-
-			@Override
-			public E next() {
-				return (E) elements[index++];
-			}
-
-			@Override
-			public String toString() {
-				return Vect.class.getSimpleName() + ".Iterator(at " + index + ")";
-			}
-		};
+	public Iterator iterator() {
+		return new Iterator();
 	}
 
 	public <R> Vect<R> map(Function<E, R> to) {
@@ -81,6 +65,14 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 			}
 		}
 		return builder.build();
+	}
+
+	public Optional<E> findFirst(Predicate<? super E> is) {
+		for (Object o : elements) {
+			E e = (E) o;
+			if (is.test(e)) return Optional.of(e);
+		}
+		return Optional.empty();
 	}
 
 	public boolean any(Predicate<? super E> is) {
@@ -235,6 +227,18 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	@Override
+	public int hashCode() {
+		return Arrays.hashCode(elements);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return obj == this
+				|| (obj instanceof Vect<?>
+						&& Arrays.equals(elements, ((Vect<?>) obj).elements));
+	}
+
+	@Override
 	public Spliterator<E> spliterator() {
 		return Spliterators.spliterator(elements, Spliterator.IMMUTABLE);
 	}
@@ -308,6 +312,28 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 
 	public static <E> Builder<E> builderWithExpectedSize(int size) {
 		return new Builder<>(size);
+	}
+
+	public final class Iterator implements java.util.Iterator<E> {
+		int index = 0;
+		@Override
+		public boolean hasNext() {
+			return index < elements.length;
+		}
+		@Override
+		public E next() {
+			return (E) elements[index++];
+		}
+		public boolean isLast() {
+			return index == elements.length;
+		}
+		public boolean isFirst() {
+			return index == 1;
+		}
+		@Override
+		public String toString() {
+			return Vect.class.getSimpleName() + ".Iterator(at " + index + ")";
+		}
 	}
 
 	@NotThreadSafe

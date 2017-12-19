@@ -4,19 +4,26 @@ import io.immutables.collect.Vect;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
+import static com.google.common.base.Preconditions.checkState;
 
 @Enclosing
 public interface Type {
 	default <I, O> O accept(Visitor<I, O> v, I in) {
-		return v.any(in, this);
+		return v.otherwise(this, in);
+	}
+
+	default boolean eq(Type t) {
+		return equals(t);
 	}
 
 	default Vect<Feature> features() {
 		return Vect.of();
 	}
 
-	default boolean eq(Type t) {
-		return equals(t);
+	default Feature getFeature(Name name) {
+		return features()
+				.findFirst(f -> f.name().equals(name))
+				.orElseGet(() -> Feature.missing(name));
 	}
 
 	interface Parameterized {
@@ -32,6 +39,83 @@ public interface Type {
 
 	interface Feature extends Arrow<Feature>, Named {
 
+		static Feature simple(Name name, Type in, Type out) {
+			return new Feature() {
+				@Override
+				public Name name() {
+					return name;
+				}
+
+				@Override
+				public Vect<Variable> parameters() {
+					return Vect.of();
+				}
+
+				@Override
+				public Vect<Constraint> constraints() {
+					return Vect.of();
+				}
+
+				@Override
+				public Type out() {
+					return out;
+				}
+
+				@Override
+				public Type in() {
+					return in;
+				}
+
+				@Override
+				public String toString() {
+					return name.value() + "(" + in + ")" + out;
+				}
+
+				@Override
+				public <I> Feature with(Visitor<I, Type> v, I in) {
+					return this;
+				}
+			};
+		}
+
+		static Feature missing(Name name) {
+			return new Feature() {
+				@Override
+				public Name name() {
+					return name;
+				}
+
+				@Override
+				public Vect<Variable> parameters() {
+					return Vect.of();
+				}
+
+				@Override
+				public Vect<Constraint> constraints() {
+					return Vect.of();
+				}
+
+				@Override
+				public Type out() {
+					return Type.Undefined;
+				}
+
+				@Override
+				public Type in() {
+					return Type.Undefined;
+				}
+
+				@Override
+				public String toString() {
+					return name.value() + "(??)??";
+				}
+
+				@Override
+				public <I> Feature with(Visitor<I, Type> v, I in) {
+					return this;
+				}
+			};
+		}
 	}
 
 	/** This is not type constructor, just constructor */
@@ -46,13 +130,9 @@ public interface Type {
 		Type in();
 		Type out();
 
-		A with(Type in, Type out);
-
-		default <I> A with(Visitor<I, Type> v, I in) {
-			return with(
-					in().accept(v, in),
-					out().accept(v, in));
-		}
+//		A with(Type in, Type out);
+//
+		<I> A with(Visitor<I, Type> v, I in);
 	}
 
 	interface Named {
@@ -62,7 +142,7 @@ public interface Type {
 	interface Variable extends Type, Named {
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
-			return v.variable(in, this);
+			return v.variable(this, in);
 		}
 
 		static Variable allocate(Name name) {
@@ -98,10 +178,14 @@ public interface Type {
 				}
 				@Override
 				public String toString() {
-					return "!" + name + ")";
+					return "!" + name + "!";
 				}
 			};
 		}
+	}
+
+	interface Typestructor extends Parameterized, Named {
+		Vect<Constructor> constructors();
 	}
 
 	interface Declared extends Type, Parameterized, Named {
@@ -114,7 +198,11 @@ public interface Type {
 
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
-			return v.declared(in, this);
+			return v.declared(this, in);
+		}
+
+		default boolean sameDeclaration(Declared d) {
+			return name().equals(d.name()); // simplistic definition
 		}
 	}
 
@@ -143,7 +231,7 @@ public interface Type {
 
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
-			return v.variant(in, this);
+			return v.variant(this, in);
 		}
 	}
 
@@ -164,11 +252,17 @@ public interface Type {
 			return ImmutableType.Product.of(components);
 		}
 
-		@Override
-		default <I, O> O accept(Visitor<I, O> v, I in) {
-			return v.product(in, this);
+		@Value.Check
+		default void check() {
+			checkState(components().size() != 1, "Type system equates tuple of one element to the element itself");
 		}
 
+		@Override
+		default <I, O> O accept(Visitor<I, O> v, I in) {
+			return this == Empty
+					? v.empty(in)
+					: v.product(this, in);
+		}
 	}
 
 	@Immutable
@@ -179,21 +273,21 @@ public interface Type {
 		// later: isn't this is the same
 		@Override
 		Vect<Feature> features();
+
 		Record withFeatures(Iterable<? extends Type.Feature> elements);
 
 		class Builder extends ImmutableType.Record.Builder {}
 
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
-			return v.record(in, this);
+			return v.record(this, in);
 		}
-
 	}
 
 	interface Function extends Structural, Arrow<Function> {
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
-			return v.function(in, this);
+			return v.function(this, in);
 		}
 	}
 
@@ -202,7 +296,7 @@ public interface Type {
 		// Sequence types are not thought out yet
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
-			return v.sequence(in, this);
+			return v.sequence(this, in);
 		}
 	}
 
@@ -216,7 +310,7 @@ public interface Type {
 
 		@Override
 		public <I, O> O accept(Visitor<I, O> v, I in) {
-			throw new UnsupportedOperationException("Cannot visit undefined type");
+			return v.undefined(in);
 		}
 
 		@Override
@@ -268,61 +362,69 @@ public interface Type {
 	}
 
 	interface Visitor<I, O> {
-		default O variable(I in, Variable v) {
-			return any(in, v);
+		default O variable(Variable v, I in) {
+			return otherwise(v, in);
 		}
 
-		default O capture(I in, Capture c) {
-			return any(in, c);
+		default O capture(Capture c, I in) {
+			return otherwise(c, in);
 		}
 
-		default O declared(I in, Declared d) {
-			return any(in, d);
+		default O declared(Declared d, I in) {
+			return otherwise(d, in);
 		}
 
-		default O product(I in, Product p) {
-			return any(in, p);
+		default O product(Product p, I in) {
+			return otherwise(Empty, in);
 		}
 
-		default O record(I in, Record r) {
-			return any(in, r);
+		default O empty(I in) {
+			return otherwise(Empty, in);
 		}
 
-		default O variant(I in, Variant v) {
-			return any(in, v);
+		default O record(Record r, I in) {
+			return otherwise(r, in);
 		}
 
-		default O sequence(I in, Sequence s) {
-			return any(in, s);
+		default O variant(Variant v, I in) {
+			return otherwise(v, in);
 		}
 
-		default O function(I in, Function f) {
-			return any(in, f);
+		default O sequence(Sequence s, I in) {
+			return otherwise(s, in);
+		}
+
+		default O function(Function f, I in) {
+			return otherwise(f, in);
 		}
 
 		default O unresolved(I in, Unresolved f) {
-			return any(in, f);
+			return otherwise(f, in);
 		}
 
-		default O any(I in, Type t) {
-			throw new UnsupportedOperationException("cannot handle type: " + t + " and input " + in);
+		default O undefined(I in) {
+			return otherwise(Undefined, in);
+		}
+
+		default O otherwise(Type t, I in) {
+			throw new UnsupportedOperationException("cannot handle type " + t + " with input: " + in);
 		}
 	}
 
 	interface Transformer<I> extends Visitor<I, Type> {
 
 		@Override
-		default Type any(I in, Type t) {
+		default Type otherwise(Type t, I in) {
 			return t;
 		}
 
 		@Override
-		default Type record(I in, Record r) {
+		default Type record(Record r, I in) {
 			return r.withFeatures(r.features().map(f -> f.with(this, in)));
 		}
 
 		@Override
-		default Type product(I in, Product p) {
+		default Type product(Product p, I in) {
 			return p == Empty ? p : p.withComponents(p.components().map(c -> c.accept(this, in)));
 		}
 	}

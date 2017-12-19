@@ -345,19 +345,38 @@ expression-additive
 
 expression-multiplicative-sub
   | expression-multiplicative
-  | expression-ranging
+  | expression-ranging-sub
 
 expression-multiplicative
-  left:expression-ranging (nl? operator-infix-multiplicative nl? right:expression-ranging)+
+  left:expression-ranging-sub (nl? operator-infix-multiplicative nl? right:expression-ranging-sub)+
+
+expression-ranging-sub
+  | expression-ranging
+  | expression-unary-sub
 
 expression-ranging
-  left:expression-unary (operator-infix-ranging right:expression-unary)?
+  left:expression-unary-sub operator-infix-ranging right:expression-unary-sub
+
+expression-unary-sub
+  | expression-unary
+  | expression-access-sub
 
 expression-unary
-  operator-prefix? right:expression-access
+  operator-prefix right:expression-access-sub
+
+expression-access-sub
+  | expression-access
+  | expression-feature-sub
 
 expression-access
-  base:expression-literal (nl? '.' nl? feature:feature-application)*
+  base:expression-feature-sub (nl? '.' nl? selector:expression-feature)+
+
+expression-feature-sub
+  | expression-feature
+  | expression-literal
+
+expression-feature
+  name:<name> argument:argument?
 
 expression-effect
   | expression-effect-mutative
@@ -369,16 +388,12 @@ expression-effect-mutative
 expression-effect-assigning
   left:expression operator-infix-assigning right:expression
 
-feature-application
-  name:<name> argument:argument?
-
 argument
   | literal-product
   | literal-record
   | literal-sequence
 
 expression-literal
-  | literal-reference
   | literal-product
   | literal-sequence
   | literal-constructor
@@ -396,20 +411,17 @@ literal-product
 
 literal-record
   | '{' nl* '}'
-  | '{' field:field-expression (field-separator field:field-expression)* field-separator? '}'
+  | '{' field:field-binding (field-separator field:field-binding)* field-separator? '}'
 
 literal-sequence
   | '[' nl* ']'
   | '[' component:component-expression (field-separator component:component-expression)* field-separator? ']'
 
-field-expression
+field-binding
   nl* name:<name> ':' nl* value:expression-or-statement
 
 component-expression
   nl* value:expression-or-statement
-
-literal-reference
-  name:<name>
 
 literal-string
   literal:<string>

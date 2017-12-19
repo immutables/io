@@ -5,13 +5,16 @@ import io.immutables.lang.type.Type.Declared;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
-abstract class DefinedImpl implements Declared {
+public abstract class DefinedImpl implements Declared {
 	private final int hashCode = System.identityHashCode(this);
 
 	@Override
 	public DefinedImpl applyArguments(Vect<Type> arguments) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public abstract Vect<Feature> features();
 
 	@Override
 	public boolean equals(Object obj) {
@@ -23,5 +26,5 @@ abstract class DefinedImpl implements Declared {
 		return hashCode;
 	}
 
-	static final class Builder extends ImmutableDefinedImpl.Builder {}
+	public static final class Builder extends ImmutableDefinedImpl.Builder {}
 }

@@ -14,7 +14,7 @@
 	[/output.java]
 
 	[output.java pack treesClass]
-[generateTrees treesClass]
+[generateTrees treesClass productionsClass]
 	[/output.java]
 
 [/template]
@@ -425,7 +425,8 @@ private static [treesClass].[type] [var](Traversal in) {
 	[treesClass].[type].Builder builder =
 			new [treesClass].[type].Builder()
 					.termBegin(in.termBegin())
-					.termEnd(in.termEnd());
+					.termEnd(in.termEnd())
+					.productionIndex(in.index());
 
 	while (in.next() != Traversal.At.PRODUCTION_END)[if not p.parts];[else] {
 		switch (in.part()) {
@@ -448,7 +449,7 @@ private static [treesClass].[type] [var](Traversal in) {
 [/for]
 [/template]
 
-[template generateTrees String className]
+[template generateTrees String className String productionsClass]
 package [pack];
 
 @[grmp].Node
@@ -465,11 +466,14 @@ public interface [className] {
 	@[grmp].Node
 	interface [type] extends [className]Nodes.With[type], [grmp].TreeProduction<[className]>[for s in p.supertypes], [asType s][/for] {
 		[taggedPartsAttributes p]
+		@Override default int productionKind() { return [productionsClass].KIND_[asConstant p.id]; }
 
 		class Builder extends [className]Nodes.[type].Builder implements [grmp].TreeProduction.Builder {}
 	}
 	[/if]
 	[/for]
+
+	[generateMatcher className productionsClass]
 }
 [/template]
 
@@ -500,6 +504,39 @@ io.immutables.collect.Vect<[partTypeName]> [n]();
 [grmp].TreeProduction.Builder [n]([asType t.reference.get] [n]);
 	[/if]
 [/for]
+[/template]
+
+[template generateMatcher String className String productionsClass]
+static abstract class Matcher<IN, OUT> {
+
+	public final OUT match([grmp].TreeProduction<[className]> v, IN in) {
+		switch (v.productionKind()) {
+	[for p in productions if not (p.ephemeral or p.subtypes), String type = asType p.id]
+		case [productionsClass].KIND_[asConstant p.id]: return case[type](([type]) v, in);
+	[/for]
+		default: return fallback(v, in);
+		}
+	}
+
+	protected OUT fallback([grmp].TreeProduction<[className]> v, IN in) {
+		throw new UnsupportedOperationException("No fallback for " + v.getClass().getSimpleName());
+	}
+	[for p in productions if not p.ephemeral, String type = asType p.id]
+	[if p.subtypes]
+
+	protected final OUT case[type]([type] v, IN in) {
+		return match(v, in);[-- just use default table, trust the type system --]
+	}
+	[else]
+
+	public OUT case[type]([type] v, IN in) {
+		return fallback(v, in);
+	}
+	[/if]
+	[/for]
+}
+[-- Ad-hoc visitor, I used to rely on --]
+
 [/template]
 
 [template arr]['[]'][/template]

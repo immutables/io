@@ -1,6 +1,7 @@
-package io.immutables.lang.type;
+package io.immutables.lang.type.fixture;
 
 import io.immutables.collect.Vect;
+import io.immutables.lang.type.Type;
 import io.immutables.lang.type.Type.Arrow;
 import io.immutables.lang.type.Type.Declared;
 import io.immutables.lang.type.Type.Variable;
@@ -16,7 +17,7 @@ final class Typecheck {
 		Type transformedIn = arrow.in().accept(check, in);
 
 		// TODO transform outs
-		return arrow.with(transformedIn, arrowOut);
+		return null;// arrow.with(transformedIn, arrowOut);
 	}
 
 	static class Check implements Type.Transformer<Type> {
@@ -27,12 +28,12 @@ final class Typecheck {
 		}
 
 		@Override
-		public Type variable(Type in, Variable v) {
+		public Type variable(Variable v, Type in) {
 			return v;
 		}
 
 		@Override
-		public Type declared(Type in, Declared d) {
+		public Type declared(Declared d, Type in) {
 			return d;
 		}
 	}

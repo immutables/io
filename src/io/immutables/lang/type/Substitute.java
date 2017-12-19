@@ -2,15 +2,17 @@ package io.immutables.lang.type;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
-import io.immutables.Capacity;
+import java.util.Arrays;
 import java.util.function.Function;
 
-final class Substitute<T extends Type> implements Function<T, Type> {
+// Rubbish
+@Deprecated
+public final class Substitute<T extends Type> implements Function<T, Type> {
 	private final Type[] types;
 	private final int size;
 
 	@SuppressWarnings("unchecked") // safe unchecked, empty immutable.
-	static <T extends Type> Substitute<T> init() {
+	public static <T extends Type> Substitute<T> init() {
 		return (Substitute<T>) INIT;
 	}
 
@@ -29,16 +31,16 @@ final class Substitute<T extends Type> implements Function<T, Type> {
 		return type;
 	}
 
-	boolean has(T type) {
-		return apply(type) != type;
+	public boolean has(T type) {
+		return type != Type.Undefined && !apply(type).eq(type);
 	}
 
-	int size() {
+	public int size() {
 		return size / INDEX_INCREMENT;
 	}
 
-	Substitute<T> with(T from, Type to) {
-		Type[] types = Capacity.ensure(this.types, size, CAPACITY_INCREMENT);
+	public Substitute<T> with(T from, Type to) {
+		Type[] types = Arrays.copyOf(this.types, size + INDEX_INCREMENT);
 		types[size] = from;
 		types[size + 1] = to;
 		return new Substitute<>(types, size + INDEX_INCREMENT);
@@ -54,7 +56,5 @@ final class Substitute<T extends Type> implements Function<T, Type> {
 	}
 
 	private static final int INDEX_INCREMENT = 2;
-	/** avoid few reallocation for 1-2 substitution. */
-	private static final int CAPACITY_INCREMENT = INDEX_INCREMENT * 2;
 	private static final Substitute<Type> INIT = new Substitute<>(new Type[0], 0);
 }
