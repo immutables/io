@@ -1,18 +1,18 @@
 package io.immutables.lang.type;
 
+import com.google.common.base.Joiner;
 import io.immutables.collect.Vect;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
-import static com.google.common.base.Preconditions.checkState;
 
 @Enclosing
-public interface Type {
+public interface Type22 {
 	default <I, O> O accept(Visitor<I, O> v, I in) {
 		return v.otherwise(this, in);
 	}
 
-	default boolean eq(Type t) {
+	default boolean eq(Type22 t) {
 		return equals(t);
 	}
 
@@ -28,18 +28,18 @@ public interface Type {
 
 	interface Parameterized {
 		Vect<Variable> parameters();
-		Vect<Constraint> constraints();
+		Vect<Constraint22> constraints();
 	}
 
 	@Immutable
 	interface Concept extends Parameterized, Named {
 		Vect<Feature> features();
-		class Builder extends ImmutableType.Concept.Builder {}
+		class Builder extends ImmutableType22.Concept.Builder {}
 	}
 
 	interface Feature extends Arrow<Feature>, Named {
 
-		static Feature simple(Name name, Type in, Type out) {
+		static Feature simple(Name name, Type22 in, Type22 out) {
 			return new Feature() {
 				@Override
 				public Name name() {
@@ -52,27 +52,27 @@ public interface Type {
 				}
 
 				@Override
-				public Vect<Constraint> constraints() {
+				public Vect<Constraint22> constraints() {
 					return Vect.of();
 				}
 
 				@Override
-				public Type out() {
+				public Type22 out() {
 					return out;
 				}
 
 				@Override
-				public Type in() {
+				public Type22 in() {
 					return in;
 				}
 
 				@Override
 				public String toString() {
-					return name.value() + "(" + in + ")" + out;
+					return name.value() + (in == Empty ? "" : in instanceof Product ? in : ("(" + in + ")")) + out;
 				}
 
 				@Override
-				public <I> Feature with(Visitor<I, Type> v, I in) {
+				public <I> Feature with(Visitor<I, Type22> v, I in) {
 					return this;
 				}
 			};
@@ -91,27 +91,27 @@ public interface Type {
 				}
 
 				@Override
-				public Vect<Constraint> constraints() {
+				public Vect<Constraint22> constraints() {
 					return Vect.of();
 				}
 
 				@Override
-				public Type out() {
-					return Type.Undefined;
+				public Type22 out() {
+					return Type22.Undefined;
 				}
 
 				@Override
-				public Type in() {
-					return Type.Undefined;
+				public Type22 in() {
+					return Type22.Undefined;
 				}
 
 				@Override
 				public String toString() {
-					return name.value() + "(??)??";
+					return name.value() + "!??";
 				}
 
 				@Override
-				public <I> Feature with(Visitor<I, Type> v, I in) {
+				public <I> Feature with(Visitor<I, Type22> v, I in) {
 					return this;
 				}
 			};
@@ -127,19 +127,19 @@ public interface Type {
 	 * operators as well as extraction of elements from collection in for comprehension etc.
 	 */
 	interface Arrow<A extends Arrow<A>> extends Parameterized {
-		Type in();
-		Type out();
+		Type22 in();
+		Type22 out();
 
 //		A with(Type in, Type out);
 //
-		<I> A with(Visitor<I, Type> v, I in);
+		<I> A with(Visitor<I, Type22> v, I in);
 	}
 
 	interface Named {
 		Name name();
 	}
 
-	interface Variable extends Type, Named {
+	interface Variable extends Type22, Named {
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
 			return v.variable(this, in);
@@ -156,16 +156,16 @@ public interface Type {
 					return "<" + name + ">";
 				}
 				@Override
-				public boolean eq(Type t) {
+				public boolean eq(Type22 t) {
 					return this == t;
 				}
 			};
 		}
 	}
 
-	interface Structural extends Type {}
+	interface Structural extends Type22 {}
 
-	interface Unresolved extends Type, Named {
+	interface Unresolved extends Type22, Named {
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
 			return v.unresolved(in, this);
@@ -188,13 +188,13 @@ public interface Type {
 		Vect<Constructor> constructors();
 	}
 
-	interface Declared extends Type, Parameterized, Named {
-		Vect<Type> arguments();
+	interface Declared extends Type22, Parameterized, Named {
+		Vect<Type22> arguments();
 
 		Vect<Constructor> constructors();
 
 		/** @param arguments */
-		Declared applyArguments(Vect<Type> arguments);
+		Declared applyArguments(Vect<Type22> arguments);
 
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
@@ -211,22 +211,22 @@ public interface Type {
 	interface Impl extends Parameterized {
 		Vect<Feature> features();
 
-		class Builder extends ImmutableType.Impl.Builder {}
+		class Builder extends ImmutableType22.Impl.Builder {}
 	}
 
 	@Immutable
 	interface Variant extends Structural {
 		@Value.Parameter
-		Vect<Type> alternatives();
+		Vect<Type22> alternatives();
 
-		class Builder extends ImmutableType.Variant.Builder {}
+		class Builder extends ImmutableType22.Variant.Builder {}
 
-		static Variant of(Type... alternatives) {
+		static Variant of(Type22... alternatives) {
 			return of(Vect.of(alternatives));
 		}
 
-		static Variant of(Iterable<? extends Type> alternatives) {
-			return ImmutableType.Variant.of(alternatives);
+		static Variant of(Iterable<? extends Type22> alternatives) {
+			return ImmutableType22.Variant.of(alternatives);
 		}
 
 		@Override
@@ -235,26 +235,22 @@ public interface Type {
 		}
 	}
 
-	@Immutable(singleton = true)
 	interface Product extends Structural {
 		@Value.Parameter
-		Vect<Type> components();
+		Vect<Type22> components();
 
-		Product withComponents(Iterable<? extends Type> type);
+		Product withComponents(Iterable<? extends Type22> type);
 
-		class Builder extends ImmutableType.Product.Builder {}
+		static Product of() {
+			return ImmutableType22.ProductImpl.of();
+		}
 
-		static Product of(Type... components) {
+		static Product of(Type22... components) {
 			return of(Vect.of(components));
 		}
 
-		static Product of(Iterable<? extends Type> components) {
-			return ImmutableType.Product.of(components);
-		}
-
-		@Value.Check
-		default void check() {
-			checkState(components().size() != 1, "Type system equates tuple of one element to the element itself");
+		static Product of(Iterable<? extends Type22> components) {
+			return ImmutableType22.ProductImpl.of(components);
 		}
 
 		@Override
@@ -263,6 +259,15 @@ public interface Type {
 					? v.empty(in)
 					: v.product(this, in);
 		}
+	}
+
+	@Immutable(singleton = true)
+	abstract class ProductImpl implements Product {
+		@Override
+		public String toString() {
+			return "(" + Joiner.on(", ").join(components()) + ")";
+		}
+		public static final class Builder extends ImmutableType22.ProductImpl.Builder {}
 	}
 
 	@Immutable
@@ -274,9 +279,9 @@ public interface Type {
 		@Override
 		Vect<Feature> features();
 
-		Record withFeatures(Iterable<? extends Type.Feature> elements);
+		Record withFeatures(Iterable<? extends Type22.Feature> elements);
 
-		class Builder extends ImmutableType.Record.Builder {}
+		class Builder extends ImmutableType22.Record.Builder {}
 
 		@Override
 		default <I, O> O accept(Visitor<I, O> v, I in) {
@@ -302,7 +307,7 @@ public interface Type {
 
 	Product Empty = Product.of();
 
-	Type Undefined = new Type() {
+	Type22 Undefined = new Type22() {
 		@Override
 		public Vect<Feature> features() {
 			return Vect.of();
@@ -324,7 +329,7 @@ public interface Type {
 		}
 
 		@Override
-		public boolean eq(Type type) {
+		public boolean eq(Type22 type) {
 			return false;
 		}
 
@@ -334,13 +339,13 @@ public interface Type {
 		}
 	};
 
-	interface Capture extends Type {
-		Type in();
+	interface Capture extends Type22 {
+		Type22 in();
 
-		static Capture of(Type in) {
+		static Capture of(Type22 in) {
 			return new Capture() {
 				@Override
-				public Type in() {
+				public Type22 in() {
 					return in;
 				}
 				@Override
@@ -348,7 +353,7 @@ public interface Type {
 					return "$" + in;
 				}
 				@Override
-				public boolean eq(Type t) {
+				public boolean eq(Type22 t) {
 					return this == t;
 				}
 			};
@@ -356,9 +361,9 @@ public interface Type {
 	}
 
 	@FunctionalInterface
-	interface Resolver extends java.util.function.Function<Name, Type> {
+	interface Resolver extends java.util.function.Function<Name, Type22> {
 		@Override
-		Type apply(Name name);
+		Type22 apply(Name name);
 	}
 
 	interface Visitor<I, O> {
@@ -406,25 +411,25 @@ public interface Type {
 			return otherwise(Undefined, in);
 		}
 
-		default O otherwise(Type t, I in) {
+		default O otherwise(Type22 t, I in) {
 			throw new UnsupportedOperationException("cannot handle type " + t + " with input: " + in);
 		}
 	}
 
-	interface Transformer<I> extends Visitor<I, Type> {
+	interface Transformer<I> extends Visitor<I, Type22> {
 
 		@Override
-		default Type otherwise(Type t, I in) {
+		default Type22 otherwise(Type22 t, I in) {
 			return t;
 		}
 
 		@Override
-		default Type record(Record r, I in) {
+		default Type22 record(Record r, I in) {
 			return r.withFeatures(r.features().map(f -> f.with(this, in)));
 		}
 
 		@Override
-		default Type product(Product p, I in) {
+		default Type22 product(Product p, I in) {
 			return p == Empty ? p : p.withComponents(p.components().map(c -> c.accept(this, in)));
 		}
 	}

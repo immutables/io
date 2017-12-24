@@ -1,46 +1,46 @@
 package io.immutables.lang.type.fixture;
 
 import io.immutables.collect.Vect;
-import io.immutables.lang.type.Type;
-import io.immutables.lang.type.Type.Declared;
-import io.immutables.lang.type.Type.Product;
-import io.immutables.lang.type.Type.Variable;
-import io.immutables.lang.type.Type.Visitor;
+import io.immutables.lang.type.Type22;
+import io.immutables.lang.type.Type22.Declared;
+import io.immutables.lang.type.Type22.Product;
+import io.immutables.lang.type.Type22.Variable;
+import io.immutables.lang.type.Type22.Visitor;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-class TypeMatcher implements Type.Visitor<Type, Boolean> {
-	final Map<Type.Variable, Type> arguments = new IdentityHashMap<>(8);
-	TypeMatcher(Type.Variable... parameters) {
+class TypeMatcher implements Type22.Visitor<Type22, Boolean> {
+	final Map<Type22.Variable, Type22> arguments = new IdentityHashMap<>(8);
+	TypeMatcher(Type22.Variable... parameters) {
 		this(Vect.of(parameters));
 	}
-	TypeMatcher(Vect<Type.Variable> parameters) {
-		for (Type.Variable p : parameters) {
+	TypeMatcher(Vect<Type22.Variable> parameters) {
+		for (Type22.Variable p : parameters) {
 			this.arguments.put(p, null);
 		}
 	}
 	boolean satisfied() {
 		return arguments.values().stream().allMatch(Objects::nonNull);
 	}
-	boolean match(Type expect, Type actual) {
+	boolean match(Type22 expect, Type22 actual) {
 		return expect.accept(this, actual);
 	}
 	@Override
-	public Boolean otherwise(Type t, Type in) {
+	public Boolean otherwise(Type22 t, Type22 in) {
 		return t.eq(in);
 	}
 	@Override
-	public Boolean variable(Variable v, Type in) {
+	public Boolean variable(Variable v, Type22 in) {
 		if (arguments.containsKey(v)) {
-			Type existing = arguments.put(v, in);
+			Type22 existing = arguments.put(v, in);
 			// TODO add mismatch
 			return existing == null || existing.eq(in);
 		}
 		return otherwise(v, in);
 	}
 	@Override
-	public Boolean declared(Declared expect, Type in) {
+	public Boolean declared(Declared expect, Type22 in) {
 		return new MatchOnly() {
 			@Override
 			public Boolean declared(Declared actual, Void in) {
@@ -52,7 +52,7 @@ class TypeMatcher implements Type.Visitor<Type, Boolean> {
 		}.matches(in);
 	}
 	@Override
-	public Boolean product(Product expect, Type in) {
+	public Boolean product(Product expect, Type22 in) {
 		return new MatchOnly() {
 			@Override
 			public Boolean product(Product actual, Void in) {
@@ -62,7 +62,7 @@ class TypeMatcher implements Type.Visitor<Type, Boolean> {
 			}
 		}.matches(in);
 	}
-	protected boolean matchComponentwise(Vect<Type> expect, Vect<Type> actual) {
+	protected boolean matchComponentwise(Vect<Type22> expect, Vect<Type22> actual) {
 		int size = expect.size();
 		if (size != actual.size()) return false;
 		for (int i = 0; i < size; i++) {
@@ -74,10 +74,10 @@ class TypeMatcher implements Type.Visitor<Type, Boolean> {
 	}
 	class MatchOnly implements Visitor<Void, Boolean> {
 		@Override
-		public Boolean otherwise(Type t, Void in) {
+		public Boolean otherwise(Type22 t, Void in) {
 			return false;
 		}
-		Boolean matches(Type t) {
+		Boolean matches(Type22 t) {
 			return t.accept(this, null);
 		}
 	}

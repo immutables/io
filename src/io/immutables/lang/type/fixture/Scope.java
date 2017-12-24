@@ -2,11 +2,10 @@ package io.immutables.lang.type.fixture;
 
 import io.immutables.collect.Vect;
 import io.immutables.lang.type.Name;
-import io.immutables.lang.type.Type;
-import io.immutables.lang.type.Type.Feature;
+import io.immutables.lang.type.Type22;
 import javax.annotation.Nullable;
 
-final class Scope implements Node.Scoped, Type {
+final class Scope implements Node.Scoped, Type22 {
 	private static Scope INIT = new Scope(null, null, null);
 	private final @Nullable Scope parent;
 	private final @Nullable Name name;
@@ -28,7 +27,7 @@ final class Scope implements Node.Scoped, Type {
 	}
 
 	private Feature toAccessor() {
-		return Feature.simple(name, Type.Empty, value.type());
+		return Feature.simple(name, Type22.Empty, value.type());
 	}
 
 	@Override
@@ -39,6 +38,11 @@ final class Scope implements Node.Scoped, Type {
 			}
 		}
 		return Feature.missing(name);
+	}
+
+	@Override
+	public Type22 type() {
+		return this;
 	}
 
 	static Scope init() {

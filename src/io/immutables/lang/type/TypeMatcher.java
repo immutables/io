@@ -3,15 +3,15 @@ package io.immutables.lang.type;
 interface Context {
 	boolean matches();
 	boolean satisfied();
-	Context argument(Type.Variable variable, Type type);
-	boolean isParameter(Type.Variable variable);
+	Context argument(Type22.Variable variable, Type22 type);
+	boolean isParameter(Type22.Variable variable);
 	int parameterCount();
-	Type.Variable parameterAt(int index);
-	Type argumentAt(Type type);
+	Type22.Variable parameterAt(int index);
+	Type22 argumentAt(Type22 type);
 
 }
 
-public class TypeMatcher implements Type.Visitor<Type, Context> {
+public class TypeMatcher implements Type22.Visitor<Type22, Context> {
 	private final Context context;
 
 	private TypeMatcher(Context context) {

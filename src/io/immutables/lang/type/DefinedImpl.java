@@ -1,7 +1,8 @@
 package io.immutables.lang.type;
 
+import com.google.common.base.Joiner;
 import io.immutables.collect.Vect;
-import io.immutables.lang.type.Type.Declared;
+import io.immutables.lang.type.Type22.Declared;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
@@ -9,7 +10,7 @@ public abstract class DefinedImpl implements Declared {
 	private final int hashCode = System.identityHashCode(this);
 
 	@Override
-	public DefinedImpl applyArguments(Vect<Type> arguments) {
+	public DefinedImpl applyArguments(Vect<Type22> arguments) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -19,6 +20,11 @@ public abstract class DefinedImpl implements Declared {
 	@Override
 	public boolean equals(Object obj) {
 		return this == obj;
+	}
+
+	@Override
+	public String toString() {
+		return name() + (!arguments().isEmpty() ? "<" + Joiner.on(", ").join(arguments()) + ">" : "");
 	}
 
 	@Override
