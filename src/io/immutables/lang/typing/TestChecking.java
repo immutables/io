@@ -1,16 +1,17 @@
 package io.immutables.lang.typing;
 
 import io.immutables.grammar.Symbol;
-import io.immutables.lang.typing.Type.Nominal;
+import io.immutables.lang.typing.Type.Converted;
+import io.immutables.lang.typing.Type.Declared;
 import io.immutables.lang.typing.Type.Parameter;
 import io.immutables.lang.typing.Type.Product;
 import org.junit.Test;
 import static io.immutables.that.Assert.that;
 
 public class TestChecking {
-	Nominal A = type("A");
-	Nominal B = type("B");
-	Nominal C = type("C");
+	Declared A = type("A");
+	Declared B = type("B");
+	Declared C = type("C");
 
 	@Test
 	public void nominal() {
@@ -79,13 +80,40 @@ public class TestChecking {
 		that(m.get(Y)).same(C);
 	}
 
+	@Test
+	public void coercingToNominal() {
+		Checking.Coercer m = new Checking.Coercer();
+
+		Declared D = typeCtor("D", Product.of(A, A));
+		Type t = m.coerce(D, Product.of(A, A));
+		that(t).instanceOf(Converted.class);
+	}
+
+	@Test
+	public void coercingToProductWithParameter() {
+		Parameter X = param("X");
+		Checking.Coercer m = new Checking.Coercer(X);
+		Declared D = typeCtor("D", Product.of(X, B), X);
+		Product E = Product.of(X, D);
+
+		Type t1 = m.coerce(E, Product.of(A, Product.of(A, B)));
+
+		that(t1).instanceOf(Product.class).is(
+				p -> p.components()[0] == A
+						&& p.components()[1] instanceof Converted);
+	}
+
 	int paramCount;
 
 	Parameter param(String name) {
 		return Parameter.declare(paramCount++, Symbol.from(name));
 	}
 
-	Nominal type(String name, Type... arguments) {
-		return Nominal.simple(Symbol.from(name), arguments);
+	Declared type(String name, Type... arguments) {
+		return Declared.simple(Symbol.from(name), arguments);
+	}
+
+	Declared typeCtor(String name, Type in, Type... arguments) {
+		return Declared.constructed(Symbol.from(name), in, arguments);
 	}
 }

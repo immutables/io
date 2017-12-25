@@ -3,6 +3,7 @@ package io.immutables.lang.typing;
 import io.immutables.grammar.Symbol;
 
 public interface Type {
+
 	default <I, O> O accept(Visitor<I, O> v, I in) {
 		return v.otherwise(this, in);
 	}
@@ -23,9 +24,23 @@ public interface Type {
 		Parameter[] parameters();
 	}
 
-	interface Feature extends Named, Parameterized {
+	interface Arrow {
 		Type in();
 		Type out();
+	}
+
+	interface Converted extends Type {
+		Arrow arrow();
+		default Type to() {
+			return arrow().out();
+		}
+
+		static Converted by(Arrow arrow) {
+			return Impl.converted(arrow);
+		}
+	}
+
+	interface Feature extends Arrow, Named, Parameterized {
 
 		static Feature simple(Symbol name, Type in, Type out) {
 			return Impl.feature(name, in, out);
@@ -34,13 +49,35 @@ public interface Type {
 		static Feature missing(Symbol name) {
 			return Impl.missing(name);
 		}
+
+		// temporary, to be rewamped into concepts, as anchor/reminder
+		Symbol to = Symbol.from("to");
+
+		default boolean isDefined() {
+			return out() != Undefined;
+		}
 	}
 
-	interface Nominal extends Type, Named {
-		Type[] arguments();
+	interface Constructor extends Arrow, Named {
+		@Override
+		Declared out();
 
-		static Nominal simple(Symbol name, Type... arguments) {
-			return Impl.nominal(name, arguments);
+		static Constructor unnamed(Declared out, Type in) {
+			return Impl.constructor(out, in);
+		}
+	}
+
+	interface Declared extends Type, Named {
+		Type[] arguments();
+		Type withArguments(Type[] arguments);
+		Constructor[] constructors();
+
+		static Declared simple(Symbol name, Type... arguments) {
+			return Impl.declared(name, arguments, Type.Undefined);
+		}
+
+		static Declared constructed(Symbol name, Type in, Type... arguments) {
+			return Impl.declared(name, arguments, in);
 		}
 	}
 
@@ -86,7 +123,7 @@ public interface Type {
 			return otherwise(p, in);
 		}
 
-		default O nominal(Nominal d, I in) {
+		default O declared(Declared d, I in) {
 			return otherwise(d, in);
 		}
 
@@ -98,12 +135,16 @@ public interface Type {
 			return otherwise(Type.Empty, in);
 		}
 
-		default O unresolved(I in, Unresolved f) {
+		default O undefined(I in) {
+			return otherwise(Undefined, in);
+		}
+
+		default O unresolved(Unresolved f, I in) {
 			return otherwise(f, in);
 		}
 
-		default O undefined(I in) {
-			return otherwise(Undefined, in);
+		default O converted(Converted c, I in) {
+			return otherwise(c, in);
 		}
 
 		default O otherwise(Type t, I in) {

@@ -2,6 +2,7 @@ package io.immutables.lang.typing;
 
 import com.google.common.base.Joiner;
 import io.immutables.grammar.Symbol;
+import io.immutables.lang.typing.Type.Declared;
 
 public final class Impl {
 	private Impl() {}
@@ -70,7 +71,7 @@ public final class Impl {
 
 			@Override
 			public <I, O> O accept(Type.Visitor<I, O> v, I in) {
-				return v.unresolved(in, this);
+				return v.unresolved(this, in);
 			}
 
 			@Override
@@ -157,8 +158,13 @@ public final class Impl {
 		};
 	}
 
-	static Type.Nominal nominal(Symbol name, Type[] arguments) {
-		return new Type.Nominal() {
+	static Type.Declared declared(Symbol name, Type[] arguments, Type constructorIn) {
+		return new Type.Declared() {
+			final Type.Constructor[] constructors =
+					constructorIn != Type.Undefined
+							? new Type.Constructor[] {constructor(this, constructorIn)}
+							: NO_CONSTRUCTORS;
+
 			@Override
 			public Symbol name() {
 				return name;
@@ -170,13 +176,23 @@ public final class Impl {
 			}
 
 			@Override
+			public Constructor[] constructors() {
+				return constructors;
+			}
+
+			@Override
 			public <I, O> O accept(Type.Visitor<I, O> v, I in) {
-				return v.nominal(this, in);
+				return v.declared(this, in);
 			}
 
 			@Override
 			public String toString() {
-				return name + "<" + Joiner.on(", ").join(arguments) + ">";
+				return name + (arguments.length > 0 ? "<" + Joiner.on(", ").join(arguments) + ">" : "");
+			}
+
+			@Override
+			public Type withArguments(Type[] arguments) {
+				return declared(name, arguments, constructorIn);
 			}
 		};
 	}
@@ -205,6 +221,53 @@ public final class Impl {
 		};
 	}
 
+	static Type.Converted converted(Type.Arrow arrow) {
+		return new Type.Converted() {
+			@Override
+			public Arrow arrow() {
+				return arrow;
+			}
+			@Override
+			public <I, O> O accept(Type.Visitor<I, O> v, I in) {
+				return v.converted(this, in);
+			}
+			@Override
+			public String toString() {
+				return "::" + arrow;
+			}
+		};
+	}
+
+	static Type.Constructor constructor(Type.Declared out, Type in) {
+		return new Type.Constructor() {
+
+			@Override
+			public Symbol name() {
+				return unnamed();
+			}
+
+			@Override
+			public Type in() {
+				return in;
+			}
+
+			@Override
+			public Declared out() {
+				return out;
+			}
+
+			@Override
+			public String toString() {
+				return "" + out + (in == Empty ? "" : in instanceof Type.Product ? in : ("(" + in + ")"));
+			}
+		};
+	}
+
+	private static final Type.Constructor[] NO_CONSTRUCTORS = new Type.Constructor[0];
 	private static final Type.Feature[] NO_FEATURES = new Type.Feature[0];
 	private static final Type.Parameter[] NO_PARAMETERS = new Type.Parameter[0];
+
+	static Symbol unnamed() {
+		return Symbol.from("");
+	}
 }

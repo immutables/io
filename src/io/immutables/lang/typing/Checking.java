@@ -1,10 +1,13 @@
 package io.immutables.lang.typing;
 
+import io.immutables.nullable;
+import io.immutables.lang.typing.Type.Declared;
+import io.immutables.lang.typing.Type.Product;
 import java.util.Arrays;
+import javax.annotation.Nullable;
 
 interface Checking {
 	class Coercer extends Matcher {
-		private boolean coercion;
 		public Coercer() {}
 
 		public Coercer(Type.Parameter... parameters) {
@@ -15,28 +18,58 @@ interface Checking {
 			super(parameters, arguments);
 		}
 
-		@Override
-		public Coercer clone() {
+		public Coercer coercer() {
 			return new Coercer(parameters, arguments.clone());
 		}
 
-		@Override
-		protected boolean matchToNominal(Type.Nominal expected, Type.Nominal actual) {
-			return super.matchToNominal(expected, actual);
+		public Type coerce(Type expected, Type actual) {
+			return expected.accept(this, actual);
 		}
 
 		@Override
-		protected boolean matchToNominal(Type.Nominal expected, Type actual) {
-			return super.matchToNominal(expected, actual);
+		protected Type declaredOtherwise(Declared expected, Type actual) {
+			Type r = tryDeconstruct(expected, actual);
+			if (r != Type.Undefined) return r;
+			return tryConstruct(expected, actual);
 		}
 
 		@Override
-		protected boolean matchToProduct(Type.Product expected, Type actual) {
-			return super.matchToProduct(expected, actual);
+		protected Type productOtherwise(Product expected, Type actual) {
+			return tryDeconstruct(expected, actual);
+		}
+
+		// TODO auto-construction is also a sketch
+		private Type tryConstruct(Declared expected, Type actual) {
+			for (Type.Constructor c : expected.constructors()) {
+				if (c.name().isEmpty()) {
+					Matcher m = matcher();
+					if (m.match(c.in(), actual)) {
+						acceptArguments(m);
+						return Type.Converted.by(c);
+					}
+				}
+			}
+			return Type.Undefined;
+		}
+
+		// TODO decomposition is just a sketch
+		private Type tryDeconstruct(Type expected, Type actual) {
+			Type.Feature d = actual.getFeature(Type.Feature.to);
+			if (d.isDefined()) {
+				assert d.in() == Type.Empty;
+				assert d.parameters().length == 0;
+
+				Matcher m = matcher();
+				if (m.match(expected, d.out())) {
+					acceptArguments(m);
+					return Type.Converted.by(d);
+				}
+			}
+			return Type.Undefined;
 		}
 	}
 
-	class Matcher implements Type.Visitor<Type, Boolean> {
+	class Matcher implements Type.Visitor<Type, Type> {
 		protected final Type.Parameter[] parameters;
 		protected final Type[] arguments;
 
@@ -53,13 +86,18 @@ interface Checking {
 			this.arguments = arguments;
 		}
 
-		@Override
-		public Matcher clone() {
+		public Matcher matcher() {
 			return new Matcher(parameters, arguments.clone());
 		}
 
+		protected void acceptArguments(Matcher m) {
+			assert parameters == m.parameters;
+			assert arguments.length == m.arguments.length;
+			System.arraycopy(m.arguments, 0, arguments, 0, m.arguments.length);
+		}
+
 		public boolean match(Type expect, Type actual) {
-			return expect.accept(this, actual);
+			return expect.accept(this, actual) != Type.Undefined;
 		}
 
 		public Type get(Type.Parameter p) {
@@ -68,79 +106,98 @@ interface Checking {
 		}
 
 		@Override
-		public Boolean empty(Type actual) {
-			return actual == Type.Empty;
+		public Type empty(Type actual) {
+			return actual == Type.Empty ? Type.Empty : Type.Undefined;
 		}
 
 		@Override
-		public Boolean product(Type.Product expected, Type actual) {
-			return actual.accept(new Type.Visitor<Type.Product, Boolean>() {
+		public Type product(Type.Product expected, Type actual) {
+			return actual.accept(new Type.Visitor<Type.Product, Type>() {
 				@Override
-				public Boolean product(Type.Product actual, Type.Product expected) {
-					return matchComponentwise(expected.components(), actual.components());
-				}
-				@Override
-				public Boolean otherwise(Type actual, Type.Product expected) {
-					return matchToProduct(expected, actual);
-				}
-			}, expected);
-		}
-
-		@Override
-		public Boolean nominal(Type.Nominal expected, Type actual) {
-			return actual.accept(new Type.Visitor<Type.Nominal, Boolean>() {
-				@Override
-				public Boolean nominal(Type.Nominal actual, Type.Nominal expected) {
-					if (expected.name().equals(actual.name())) {
-						return matchComponentwise(expected.arguments(), actual.arguments());
+				public Type product(Type.Product actual, Type.Product expected) {
+					Type[] actualComponents = actual.components();
+					@nullable Type[] matched = matchComponentwise(expected.components(), actualComponents);
+					if (matched != null) {
+						return actualComponents != matched ? Type.Product.of(matched) : actual;
 					}
-					return matchToNominal(expected, actual);
+					// don't call productOtherwise, alternative match is not allowed
+					return Type.Undefined;
 				}
 				@Override
-				public Boolean otherwise(Type actual, Type.Nominal expected) {
-					return matchToNominal(expected, actual);
+				public Type otherwise(Type actual, Type.Product expected) {
+					return productOtherwise(expected, actual);
+				}
+			}, expected);
+		}
+
+		@Override
+		public Type declared(Type.Declared expected, Type actual) {
+			return actual.accept(new Type.Visitor<Type.Declared, Type>() {
+				@Override
+				public Type declared(Type.Declared actual, Type.Declared expected) {
+					if (expected.name().equals(actual.name())) {
+						Type[] actualArguments = actual.arguments();
+						@Nullable Type[] matched = matchComponentwise(expected.arguments(), actualArguments);
+						if (matched != null) {
+							return actualArguments != matched ? actual.withArguments(matched) : actual;
+						}
+						// don't call declaredOtherwise, alternative match is not allowed
+						// if declared are of the same type constructor
+						return Type.Undefined;
+					}
+					return declaredOtherwise(expected, actual);
+				}
+				@Override
+				public Type otherwise(Type actual, Type.Declared expected) {
+					return declaredOtherwise(expected, actual);
 				}
 			}, expected);
 		}
 
 		@SuppressWarnings("unused")
-		protected boolean matchToNominal(Type.Nominal expected, Type.Nominal actual) {
-			return false;
+		protected Type declaredOtherwise(Type.Declared expected, Type actual) {
+			return Type.Undefined;
 		}
 
 		@SuppressWarnings("unused")
-		protected boolean matchToNominal(Type.Nominal expected, Type actual) {
-			return false;
-		}
-
-		@SuppressWarnings("unused")
-		protected boolean matchToProduct(Type.Product expected, Type actual) {
-			return false;
+		protected Type productOtherwise(Type.Product expected, Type actual) {
+			return Type.Undefined;
 		}
 
 		@Override
-		public Boolean otherwise(Type expected, Type actual) {
-			return expected != actual;
+		public Type otherwise(Type expected, Type actual) {
+			return expected == actual ? actual : Type.Undefined;
 		}
 
 		@Override
-		public Boolean parameter(Type.Parameter expected, Type actual) {
+		public Type parameter(Type.Parameter expected, Type actual) {
 			int i = expected.index();
 			assert parameters[i] == expected;
 			if (arguments[i] != Type.Undefined && !match(arguments[i], actual)) {
 				arguments[i] = new Conflict(arguments[i], actual);
-				return false;
+				return Type.Undefined;
 			}
-			arguments[i] = actual;
-			return true;
+			return arguments[i] = actual;
 		}
 
-		protected boolean matchComponentwise(Type[] expect, Type[] actual) {
-			if (expect.length != actual.length) return false;
+		protected @nullable Type[] matchComponentwise(Type[] expect, Type[] actual) {
+			if (expect.length != actual.length) return null;
+			Type[] result = null; // may be needed if we're copying
 			for (int i = 0; i < expect.length; i++) {
-				if (!match(expect[i], actual[i])) return false;
+				Type a = actual[i];
+				Type r = expect[i].accept(this, a);
+				if (r == Type.Undefined) return null;
+				if (result != null) {
+					// already copying to result array
+					result[i] = r;
+				} else if (r != a) {
+					// start copy to a new result array if type differ
+					result = new Type[expect.length];
+					System.arraycopy(actual, 0, result, 0, i);
+					result[i] = r;
+				} // just stay on actual array
 			}
-			return true;
+			return result != null ? result : actual;
 		}
 
 		private static final class Conflict implements Type {

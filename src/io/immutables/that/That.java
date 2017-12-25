@@ -189,6 +189,7 @@ public interface That<T, S extends That<T, S>> {
 		 * @deprecated Already regular object matcher.
 		 * @return always {@code this}
 		 */
+		@Override
 		@Deprecated
 		default Object<T> just() {
 			return this;
@@ -208,7 +209,7 @@ public interface That<T, S extends That<T, S>> {
 
 		default <C extends T> Object<C> instanceOf(Class<C> type) {
 			T actualRef = What.get(this);
-			if (type.isInstance(actualRef)) {
+			if (!type.isInstance(actualRef)) {
 				throw What.newAssertionError(
 						"expected instance of " + type.getCanonicalName(),
 						"actual: " + What.showReference(actualRef) + What.showToStringDetail(actualRef));

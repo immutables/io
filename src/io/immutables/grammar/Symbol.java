@@ -36,6 +36,10 @@ public final class Symbol implements CharSequence {
 		return value.hashCode();
 	}
 
+	public boolean isEmpty() {
+		return value.isEmpty();
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		return ((Symbol) obj).value.equals(value);
