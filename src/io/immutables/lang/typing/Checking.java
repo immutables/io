@@ -7,6 +7,7 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 
 interface Checking {
+	@Deprecated
 	class Coercer extends Matcher {
 		public Coercer() {}
 

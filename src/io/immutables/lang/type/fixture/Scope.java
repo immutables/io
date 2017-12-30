@@ -5,13 +5,13 @@ import io.immutables.lang.type.Name;
 import io.immutables.lang.type.Type22;
 import javax.annotation.Nullable;
 
-final class Scope implements Node.Scoped, Type22 {
+final class Scope implements Node33.Scoped, Type22 {
 	private static Scope INIT = new Scope(null, null, null);
 	private final @Nullable Scope parent;
 	private final @Nullable Name name;
-	private final @Nullable Node value;
+	private final @Nullable Node33 value;
 
-	private Scope(Scope parent, Name name, Node value) {
+	private Scope(Scope parent, Name name, Node33 value) {
 		this.parent = parent;
 		this.name = name;
 		this.value = value;
@@ -49,12 +49,12 @@ final class Scope implements Node.Scoped, Type22 {
 		return INIT;
 	}
 
-	Scope let(Name name, Node value) {
+	Scope let(Name name, Node33 value) {
 		return new Scope(this, name, value);
 	}
 
 	@Nullable
-	Node get(Name name) {
+	Node33 get(Name name) {
 		if (this.name == null) return null;
 		if (this.name.equals(name)) return value;
 		assert parent != null;

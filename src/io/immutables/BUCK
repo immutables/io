@@ -2,6 +2,7 @@ java_library(
   name = 'package',
   srcs = glob(['*.java']),
   deps = [
-    '//lib:immutables_annotations'
+    '//lib:immutables_annotations',
+    '//lib:jsr305',
   ],
   visibility = ['//...'])

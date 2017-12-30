@@ -3,7 +3,7 @@ package io.immutables.lang.type.fixture;
 import com.google.common.base.Joiner;
 import io.immutables.lang.type.Type22;
 
-interface Node {
+interface Node33 {
 	default boolean checks() {
 		return false;
 	}
@@ -22,7 +22,7 @@ interface Node {
 //			}
 //		}
 
-	Node Empty = new Node() {
+	Node33 Empty = new Node33() {
 		@Override
 		public Type22 type() {
 			return Type22.Empty;
@@ -39,7 +39,7 @@ interface Node {
 		}
 	};
 
-	Node NotApplicable = new Node() {
+	Node33 NotApplicable = new Node33() {
 		@Override
 		public Type22 type() {
 			return Type22.Undefined;
@@ -51,12 +51,12 @@ interface Node {
 		}
 	};
 
-	interface UnapplicableFeature extends Node {
-		static Node.UnapplicableFeature of(
+	interface UnapplicableFeature extends Node33 {
+		static Node33.UnapplicableFeature of(
 				int production,
-				Node receiver,
+				Node33 receiver,
 				Type22.Feature feature,
-				Node argument) {
+				Node33 argument) {
 //			Type in = feature.in();
 //			Type out = feature.out();
 			return new UnapplicableFeature() {
@@ -69,14 +69,14 @@ interface Node {
 		}
 	}
 
-	interface Scoped extends Node {}
+	interface Scoped extends Node33 {}
 
-	interface ApplyFeature extends Node {
-		static Node.ApplyFeature of(
+	interface ApplyFeature extends Node33 {
+		static Node33.ApplyFeature of(
 				int production,
-				Node receiver,
+				Node33 receiver,
 				Type22.Feature feature,
-				Node argument) {
+				Node33 argument) {
 //				Type in = feature.in();
 //				Type out = feature.out();
 			return new ApplyFeature() {
@@ -97,8 +97,8 @@ interface Node {
 		}
 	}
 
-	interface StaticValue extends Node {
-		static Node.StaticValue of(int production, Object value, Type22 type) {
+	interface StaticValue extends Node33 {
+		static Node33.StaticValue of(int production, Object value, Type22 type) {
 			return new StaticValue() {
 				@Override
 				public Type22 type() {
@@ -116,7 +116,7 @@ interface Node {
 		}
 	}
 
-	interface TypeMismatch extends Node {
+	interface TypeMismatch extends Node33 {
 		static TypeMismatch of(int production, Type22 expected) {
 			return new TypeMismatch() {
 				@Override
@@ -127,8 +127,8 @@ interface Node {
 		}
 	}
 
-	interface ConstructProduct extends Node {
-		static Node.ConstructProduct of(int production, Type22 type, Node... components) {
+	interface ConstructProduct extends Node33 {
+		static Node33.ConstructProduct of(int production, Type22 type, Node33... components) {
 			return new ConstructProduct() {
 				@Override
 				public Type22 type() {
@@ -146,15 +146,15 @@ interface Node {
 		}
 	}
 
-	interface LetBindingReference extends Node {
-		static LetBindingReference of(Node referenced) {
+	interface LetBindingReference extends Node33 {
+		static LetBindingReference of(Node33 referenced) {
 			return new LetBindingReference() {
 
 			};
 		}
 	}
 
-	interface StructuralMismatch extends Node {
+	interface StructuralMismatch extends Node33 {
 		static StructuralMismatch of(int production, Type22 expected) {
 			return new StructuralMismatch() {
 				@Override
@@ -165,11 +165,11 @@ interface Node {
 		}
 	}
 
-	interface ApplyConstructor extends Node {
+	interface ApplyConstructor extends Node33 {
 
 	}
 
-	interface ConstructRecord extends Node {
+	interface ConstructRecord extends Node33 {
 
 	}
 }

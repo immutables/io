@@ -21,7 +21,7 @@ import io.immutables.lang.type.Type22.Constructor;
 import io.immutables.lang.type.Type22.Feature;
 import io.immutables.lang.type.Type22.Product;
 import io.immutables.lang.type.Type22.Variable;
-import io.immutables.lang.type.fixture.Node.StructuralMismatch;
+import io.immutables.lang.type.fixture.Node33.StructuralMismatch;
 import org.junit.Test;
 import static io.immutables.that.Assert.that;
 
@@ -57,7 +57,7 @@ public class TestTypecheck {
 //		Expression expression = expression("a.b(1, \"c\")");
 //		System.out.println(expression);
 //	}
-	abstract static class Matcher extends SyntaxTrees.Matcher<Type22, Node> {
+	abstract static class Matcher extends SyntaxTrees.Matcher<Type22, Node33> {
 		protected final Scope scope;
 
 		Matcher(Scope scope) {
@@ -89,10 +89,10 @@ public class TestTypecheck {
 		System.out.println(expression);
 
 		Scope letA = Scope.init()
-				.let(Name.of("a"), Node.StaticValue.of(-1, "<a>", AType));
+				.let(Name.of("a"), Node33.StaticValue.of(-1, "<a>", AType));
 
 		Nodester nodester = new Nodester(letA);
-		Node match = nodester.match(expression, Type22.Undefined);
+		Node33 match = nodester.match(expression, Type22.Undefined);
 
 		that(match).hasToString("<scope>.a: A.b((1: Int, \"c\": String): (Int, String)): Int");
 
@@ -222,7 +222,7 @@ public class TestTypecheck {
 		return Name.of(symbol.toString());
 	}
 
-	public final class Nodester extends SyntaxTrees.Matcher<Type22, Node> {
+	public final class Nodester extends SyntaxTrees.Matcher<Type22, Node33> {
 		final Scope scope;
 
 		Nodester(Scope scope) {
@@ -230,10 +230,10 @@ public class TestTypecheck {
 		}
 
 		@Override
-		public Node caseExpressionAccess(ExpressionAccess access, Type22 lastExpected) {
+		public Node33 caseExpressionAccess(ExpressionAccess access, Type22 lastExpected) {
 			assert !access.selector().isEmpty();
 
-			Node receiver = caseExpressionFeatureSub(access.base(), Type22.Undefined);
+			Node33 receiver = caseExpressionFeatureSub(access.base(), Type22.Undefined);
 
 			for (Vect<ExpressionFeature>.Iterator it = access.selector().iterator(); it.hasNext();) {
 				ExpressionFeature ef = it.next();
@@ -245,12 +245,12 @@ public class TestTypecheck {
 		}
 
 		@Override
-		public Node caseExpressionFeature(ExpressionFeature fe, Type22 expected) {
+		public Node33 caseExpressionFeature(ExpressionFeature fe, Type22 expected) {
 			// should not be called from inside caseExpressionAccess
 			return feature(fe, scope, expected);
 		}
 
-		private Node feature(ExpressionFeature expression, Node receiver, Type22 expected) {
+		private Node33 feature(ExpressionFeature expression, Node33 receiver, Type22 expected) {
 			Feature f = receiver.type().getFeature(nameFrom(expression.name()));
 
 			if (expression.argument().isPresent()) {
@@ -258,50 +258,50 @@ public class TestTypecheck {
 
 				assert arg instanceof ExpressionOrStatement : "Have grammar structure changed?";
 
-				Node input = f.in().accept(new Conformer(), (ExpressionOrStatement) arg);
+				Node33 input = f.in().accept(new Conformer(), (ExpressionOrStatement) arg);
 
 				if (!input.checks()) {
-					return Node.UnapplicableFeature.of(expression.productionIndex(), receiver, f, input);
+					return Node33.UnapplicableFeature.of(expression.productionIndex(), receiver, f, input);
 				}
 				if (expected != Type22.Undefined && !f.out().eq(expected)) {
-					return Node.TypeMismatch.of(expression.productionIndex(), expected);
+					return Node33.TypeMismatch.of(expression.productionIndex(), expected);
 				}
-				return Node.ApplyFeature.of(expression.productionIndex(), receiver, f, input);
+				return Node33.ApplyFeature.of(expression.productionIndex(), receiver, f, input);
 			}
 
 			if (!f.in().eq(Type22.Empty)) {
-				return Node.UnapplicableFeature.of(expression.productionIndex(), receiver, f, Node.Empty);
+				return Node33.UnapplicableFeature.of(expression.productionIndex(), receiver, f, Node33.Empty);
 			}
 			if (expected != Type22.Undefined && !f.out().eq(expected)) {
-				return Node.TypeMismatch.of(expression.productionIndex(), expected);
+				return Node33.TypeMismatch.of(expression.productionIndex(), expected);
 			}
-			return Node.ApplyFeature.of(expression.productionIndex(), receiver, f, Node.Empty);
+			return Node33.ApplyFeature.of(expression.productionIndex(), receiver, f, Node33.Empty);
 		}
 
 		@Override
-		public Node caseLiteralString(LiteralString v, Type22 expected) {
+		public Node33 caseLiteralString(LiteralString v, Type22 expected) {
 			if (expected != Type22.Undefined && !expected.eq(TestTypecheck.StringType)) {
-				return Node.TypeMismatch.of(v.productionIndex(), expected);
+				return Node33.TypeMismatch.of(v.productionIndex(), expected);
 			}
-			return Node.StaticValue.of(v.productionIndex(), v.literal(), TestTypecheck.StringType);
+			return Node33.StaticValue.of(v.productionIndex(), v.literal(), TestTypecheck.StringType);
 		}
 
 		@Override
-		public Node caseLiteralNumberDecimal(LiteralNumberDecimal v, Type22 expected) {
+		public Node33 caseLiteralNumberDecimal(LiteralNumberDecimal v, Type22 expected) {
 			if (expected != Type22.Undefined && !expected.eq(TestTypecheck.IntType)) {
-				return Node.TypeMismatch.of(v.productionIndex(), expected);
+				return Node33.TypeMismatch.of(v.productionIndex(), expected);
 			}
-			return Node.StaticValue.of(v.productionIndex(), v.literal(), TestTypecheck.IntType);
+			return Node33.StaticValue.of(v.productionIndex(), v.literal(), TestTypecheck.IntType);
 		}
 
-		final class Conformer implements Type22.Visitor<ExpressionOrStatement, Node> {
+		final class Conformer implements Type22.Visitor<ExpressionOrStatement, Node33> {
 			@Override
-			public Node undefined(ExpressionOrStatement in) {
+			public Node33 undefined(ExpressionOrStatement in) {
 				return Nodester.this.caseExpressionOrStatement(in, Type22.Undefined);
 			}
 
 			@Override
-			public Node product(Product p, ExpressionOrStatement in) {
+			public Node33 product(Product p, ExpressionOrStatement in) {
 				if (in instanceof SyntaxTrees.LiteralProduct) {
 					Vect<ComponentExpression> expressions = ((SyntaxTrees.LiteralProduct) in).component();
 					// TODO how to make flexible matching (for splatting, varargs)
@@ -309,35 +309,35 @@ public class TestTypecheck {
 					if (size != expressions.size()) {
 						return StructuralMismatch.of(in.productionIndex(), p);
 					}
-					Node[] components = new Node[size];
+					Node33[] components = new Node33[size];
 					Type22[] types = new Type22[size]; // recreating types because of generic matching
 					for (int i = 0; i < size; i++) {
 						Type22 expected = p.components().get(i);
 						ExpressionOrStatement expression = expressions.get(i).value();
 						// Node c = Nodester.this.caseExpressionOrStatement(expression, expected);
-						Node c = expected.accept(this, expression);
+						Node33 c = expected.accept(this, expression);
 						if (c.type() == Type22.Undefined) {
 							return StructuralMismatch.of(expression.productionIndex(), expected);
 						}
 						components[i] = c;
 						types[i] = c.type();
 					}
-					return Node.ConstructProduct.of(in.productionIndex(), Type22.Product.of(types), components);
+					return Node33.ConstructProduct.of(in.productionIndex(), Type22.Product.of(types), components);
 				}
 				return reconstruct(p, in);
 			}
 
 			@Override
-			public Node empty(ExpressionOrStatement in) {
+			public Node33 empty(ExpressionOrStatement in) {
 				if (in instanceof SyntaxTrees.LiteralProduct
 						&& ((SyntaxTrees.LiteralProduct) in).component().isEmpty()) {
-					return Node.Empty;
+					return Node33.Empty;
 				}
 				return otherwise(Type22.Empty, in);
 			}
 
 			@Override
-			public Node otherwise(Type22 t, ExpressionOrStatement in) {
+			public Node33 otherwise(Type22 t, ExpressionOrStatement in) {
 				if (in instanceof SyntaxTrees.LiteralProduct) {
 					LiteralProduct p = (SyntaxTrees.LiteralProduct) in;
 					// Not sure this should be done on this level
@@ -351,13 +351,13 @@ public class TestTypecheck {
 				return reconstruct(t, in);
 			}
 
-			private Node reconstruct(Type22 t, ExpressionOrStatement in) {
-				Node n = Nodester.this.caseExpressionOrStatement(in, t);
+			private Node33 reconstruct(Type22 t, ExpressionOrStatement in) {
+				Node33 n = Nodester.this.caseExpressionOrStatement(in, t);
 
 				if (n.type() == Type22.Empty && t instanceof Type22.Declared) {
 					Vect<Constructor> constr = ((Type22.Declared) t).constructors();
 				}
-				return Node.NotApplicable;
+				return Node33.NotApplicable;
 			}
 		}
 	}
