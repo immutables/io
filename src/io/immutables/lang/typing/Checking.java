@@ -1,10 +1,9 @@
 package io.immutables.lang.typing;
 
-import io.immutables.nullable;
+import io.immutables.Nullable;
 import io.immutables.lang.typing.Type.Declared;
 import io.immutables.lang.typing.Type.Product;
 import java.util.Arrays;
-import javax.annotation.Nullable;
 
 interface Checking {
 	@Deprecated
@@ -117,7 +116,7 @@ interface Checking {
 				@Override
 				public Type product(Type.Product actual, Type.Product expected) {
 					Type[] actualComponents = actual.components();
-					@nullable Type[] matched = matchComponentwise(expected.components(), actualComponents);
+					@Nullable Type[] matched = matchComponentwise(expected.components(), actualComponents);
 					if (matched != null) {
 						return actualComponents != matched ? Type.Product.of(matched) : actual;
 					}
@@ -181,7 +180,7 @@ interface Checking {
 			return arguments[i] = actual;
 		}
 
-		protected @nullable Type[] matchComponentwise(Type[] expect, Type[] actual) {
+		protected @Nullable Type[] matchComponentwise(Type[] expect, Type[] actual) {
 			if (expect.length != actual.length) return null;
 			Type[] result = null; // may be needed if we're copying
 			for (int i = 0; i < expect.length; i++) {
