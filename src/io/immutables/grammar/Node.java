@@ -2,7 +2,7 @@ package io.immutables.grammar;
 
 import org.immutables.value.Value;
 
-/** Immutables style annotation for generated ast nodes. */
+/** Immutables style annotation for generated AST nodes. */
 @Value.Style(
 		add = "*",
 		addAll = "*",

@@ -20,16 +20,17 @@ public class TestSource {
 	}
 
 	@Test
+	public void range() {
+		Lines ls = Lines.from("\nasas".toCharArray());
+		that(ls.getLineRange(1)).hasToString("[1:1)");
+	}
+
+	@Test
 	public void lines() {
 		Lines lines = Lines.from(input);
 		that(lines.count()).is(3);
 		that(lines.getLineRange(1).get(source)).hasToString("01");
 		that(lines.getLineRange(2).get(source)).hasToString("345");
 		that(lines.getLineRange(3).get(source)).hasToString("789");
-	}
-
-	public static void main(String... args) {
-		Lines ls = Lines.from("\nasas".toCharArray());
-		System.out.println(ls.getLineRange(1));
 	}
 }
