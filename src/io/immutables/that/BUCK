@@ -1,1 +1,7 @@
-java_package('that')
+java_library(
+	name = 'that',
+	maven_coords = 'io.immutables:that:0.3',
+	srcs = glob(['*.java']),
+	deps = ['//lib:jsr305'],
+	visibility = ['//...']
+)

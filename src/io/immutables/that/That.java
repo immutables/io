@@ -14,6 +14,18 @@ import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
 /**
+ * Wrapper around test subject providing assertion check methods.
+ * @see Assert
+ * @see That.Condition
+ * @see That.Object
+ * @see That.Runnable
+ * @see That.Iterable
+ * @see That.Optional
+ * @see That.String
+ * @see That.Int
+ * @see That.Long
+ * @see That.Double
+ * @see That.Boolean
  * @param <T> object under test type
  * @param <S> matcher type
  */
@@ -28,17 +40,23 @@ public interface That<T, S extends That<T, S>> {
 
 	/**
 	 * This is not a matcher method. Always throws {@link UnsupportedOperationException}.
-	 * @deprecated don't use this method
+	 * @deprecated don't use this method.
 	 */
 	@Deprecated
 	@Override
 	int hashCode();
 
-	/** Turn matcher into a plain object matcher. */
+	/**
+	 * Turns any matcher into a plain object matcher. If some matcher (like {@link That.Iterable})
+	 * streamlines matchers for iterable types, if you wish to resort to object matchers, you can
+	 * always call {@link #just()} to rewrap actual value into just plain object matcher.
+	 * Primitive types are considered auto-wrapped in corresponing boxed types.
+	 */
 	default Object<T> just() {
 		return Assert.that(What.getNullable(this));
 	}
 
+	/** Tests for certain conditions without wrapped actual value. */
 	public interface Condition extends That<Void, Condition> {
 		/**
 		 * Fails if condition is {@code false}.
@@ -530,6 +548,13 @@ public interface That<T, S extends That<T, S>> {
 		}
 	}
 
+	/**
+	 * This support class is mandatory to extend and decorate with any {@link That} interfaces
+	 * (providing default methods). Implementing classes are usually private or local, but
+	 * {@link That}-interfaces are public.
+	 * @param <T> type of value to check
+	 * @param <S> self-type of checker.
+	 */
 	public abstract class What<T, S extends That<T, S>> implements That<T, S> {
 		private @Nullable T value;
 		private boolean isSet;
@@ -547,7 +572,7 @@ public interface That<T, S extends That<T, S>> {
 		}
 
 		private @Nullable T get() {
-			if (!isSet) throw new IllegalStateException("What.value is not set");
+			if (!isSet) throw new IllegalStateException("What.set(value) must be called on wrapper");
 			return value;
 		}
 
@@ -565,21 +590,45 @@ public interface That<T, S extends That<T, S>> {
 
 		@Override
 		public final java.lang.String toString() {
-			return "What(" + value + ")";
+			return "that(" + value + ")";
 		}
 
-		public static <T, S extends That<T, S>> T get(That<T, S> that) {
+		/**
+		 * Extracts actual value from wrapper. Trips on {@code null} immediately: raises assertion
+		 * error. It is mandatory that input argument extends {@link That.What}.
+		 * @see #getNullable(That) to allow nullable values
+		 * @param <T> type of value
+		 * @param <S> type of checker.
+		 * @param that wrapper user to extract actual value
+		 * @return unwrapped actual value
+		 */
+		protected static <T, S extends That<T, S>> T get(That<T, S> that) {
 			@Nullable T value = ((What<T, S>) that).get();
 			if (value != null) return value;
 			throw newAssertionError("non-null expected");
 		}
 
-		public static <T, S extends That<T, S>> T getNullable(That<T, S> that) {
+		/**
+		 * The same as {@link #get(That that)}, but allows actual value to be {@code null}
+		 * @param <T> type of value
+		 * @param <S> type of checker which extends {@link That}.
+		 * @param that wrapper user to extract actual value
+		 * @return unwrapped actual value
+		 */
+		protected static <T, S extends That<T, S>> T getNullable(That<T, S> that) {
 			return ((What<T, S>) that).get();
 		}
 
-		public static java.lang.AssertionError newAssertionError(java.lang.String... mismatch) {
-			return new AssertionError(mismatch);
+		/**
+		 * Factory for well-suited assertion error. Typical usage is to format via 2 strings, one for
+		 * actuall value. While it is not mandatory to use this factory method to create assertion
+		 * errors, if you choose to use it, this will provide very pretty stack trace filtering and
+		 * source code extraction (if test sources are available as resources on the classpath).
+		 * @param linesDescribingMismatch message lines
+		 * @return properly constructed instance of {@link java.lang.AssertionError}
+		 */
+		protected static java.lang.AssertionError newAssertionError(java.lang.String... linesDescribingMismatch) {
+			return new AssertionError(linesDescribingMismatch);
 		}
 
 		private static <T, S extends That<java.lang.Iterable<T>, S>> List<T> getList(That<java.lang.Iterable<T>, S> that) {

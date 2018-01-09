@@ -6,7 +6,8 @@ import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
- * Assert.that
+ * {@code Assert.that}: Minimalistic, extensible and attentive to details assertion checker
+ * toolkit.
  */
 public final class Assert {
 	private Assert() {}

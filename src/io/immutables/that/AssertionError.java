@@ -38,7 +38,7 @@ final class AssertionError extends java.lang.AssertionError {
 
 	@Override
 	public String toString() {
-		return getClass().getCanonicalName() + ": " + showSourceHint() + super.getMessage();
+		return getClass().getName() + ": " + showSourceHint() + super.getMessage();
 	}
 
 	private String showSourceHint() {
