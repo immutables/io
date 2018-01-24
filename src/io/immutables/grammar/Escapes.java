@@ -91,7 +91,7 @@ public final class Escapes {
 				|| first == '\''
 				|| first == '`'
 				|| first == last,
-				"First and last chars should both be single or double quotes");
+				"First and last chars should both be single or double quotes or backticks");
 
 		return string.substring(1, string.length() - 1);
 	}
