@@ -447,18 +447,19 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		}
 
 		@CheckReturnValue
-		public When<R> otherwise(Function<Vect<E>, R> onElse) {
+		public R otherwise(Function<Vect<E>, R> onElse) {
 			if (result == null) {
 				result = requireNonNull(onElse.apply(Vect.this));
 			}
-			return this;
+			return result;
 		}
 
-		public When<R> otherwise(R r) {
+		@CheckReturnValue
+		public R otherwise(R r) {
 			if (result == null) {
 				result = requireNonNull(r);
 			}
-			return this;
+			return result;
 		}
 
 		@Override

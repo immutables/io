@@ -554,7 +554,7 @@ fn futionale(robbie Name, williams Lastname) Name {
 
   winners = a ?? "oscilli"
 
-  [a * z for a <- b, z <- c]
+  [for a <- b, z <- c {a * z}]
 
   a*.{ e -> e.empty }
 

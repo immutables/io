@@ -337,8 +337,7 @@ abstract class Production implements WithProduction {
 						a -> a.parts()
 								.<Boolean>when()
 								.single(this::subtypingReference)
-								.otherwise(false)
-								.get();
+								.otherwise(false);
 
 				if (alternatives.all(hasSingleReference)) {
 					return alternatives.map(
