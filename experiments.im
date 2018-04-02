@@ -458,6 +458,8 @@ variadic = {
   progust Bughost = 1
 }
 
+if aa ? 1 else 2
+
 fn futionale(robbie Name, williams Lastname) Name {
   r = robbie
   w = williams
@@ -494,6 +496,25 @@ fn futionale(robbie Name, williams Lastname) Name {
 
   do a <- b; z <- c;
 
+  Set{1, 2, 3, 4}
+
+  abracadabra =
+      for a <- b if a.z
+      for z <- c if c.full
+      for u <- w if z.empty {
+        a * z * u
+      }
+
+  if a == 2 {2} else {5}
+
+  if a == 2
+    then a + b
+    else b + x
+
+  abracadabra{
+    y: 2
+    x: 2
+  }
 
   abracadabra =
       for a <- b if a.z
@@ -534,7 +555,7 @@ fn futionale(robbie Name, williams Lastname) Name {
 
   cubaba = xs.map{ x Int -> x * 2 }
   cissd = xs.flatmap{ x Int -> [x * 2] }
-  folded = xs.foldl(0, x -> x * 2)
+  folded = xs.foldl(0, x => x * 2)
 
   balabadu =
       for z <- abracadabra { z * z }
