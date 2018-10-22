@@ -1,10 +1,10 @@
-package io.immutables.lang.typing;
+package io.immutables.lang.typing2;
 
 import io.immutables.grammar.Symbol;
-import io.immutables.lang.typing.Type.Converted;
-import io.immutables.lang.typing.Type.Declared;
-import io.immutables.lang.typing.Type.Parameter;
-import io.immutables.lang.typing.Type.Product;
+import io.immutables.lang.typing2.Type.Converted;
+import io.immutables.lang.typing2.Type.Declared;
+import io.immutables.lang.typing2.Type.Parameter;
+import io.immutables.lang.typing2.Type.Product;
 import org.junit.Test;
 import static io.immutables.that.Assert.that;
 

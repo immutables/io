@@ -1,4 +1,4 @@
-package io.immutables.lang.type.fixture;
+package io.immutables.lang.type22.fixture;
 
 import io.immutables.collect.Vect;
 import io.immutables.grammar.Symbol;
@@ -14,14 +14,15 @@ import io.immutables.lang.SyntaxTrees.ExpressionOrStatement;
 import io.immutables.lang.SyntaxTrees.LiteralNumberDecimal;
 import io.immutables.lang.SyntaxTrees.LiteralProduct;
 import io.immutables.lang.SyntaxTrees.LiteralString;
-import io.immutables.lang.type.DefinedImpl;
-import io.immutables.lang.type.Name;
-import io.immutables.lang.type.Type22;
-import io.immutables.lang.type.Type22.Constructor;
-import io.immutables.lang.type.Type22.Feature;
-import io.immutables.lang.type.Type22.Product;
-import io.immutables.lang.type.Type22.Variable;
-import io.immutables.lang.type.fixture.Node33.StructuralMismatch;
+import io.immutables.lang.type22.DefinedImpl;
+import io.immutables.lang.type22.Name;
+import io.immutables.lang.type22.Type22;
+import io.immutables.lang.type22.Type22.Constructor;
+import io.immutables.lang.type22.Type22.Feature;
+import io.immutables.lang.type22.Type22.Product;
+import io.immutables.lang.type22.Type22.Variable;
+import io.immutables.lang.type22.fixture.Node33.StructuralMismatch;
+import org.junit.Ignore;
 import org.junit.Test;
 import static io.immutables.that.Assert.that;
 
@@ -30,33 +31,21 @@ import static io.immutables.that.Assert.that;
 // starting at let binding we determine target type W from the left
 // then we determine type of the expression on the right
 // go down recursively???
-//
-//
 public class TestTypecheck {
 
-//	@Test
-//	public void parseCheck() {
-//		Expression expression = expression("a().b(1, 2 + c(d))");
-//		System.out.println(expression);
-//	}
-//
-//	@Test
-//	public void parseCheck2() {
-//		Expression expression = expression("a{b: 1, c: 2 + d}");
-//		System.out.println(expression);
-//	}
+	@Test
+	@Ignore
+	public void parseCheck() {
+		Expression expression = expression("a().b(1, 2 + c(d))");
+		System.out.println(expression);
+		Expression expression1 = expression("a{b: 1, c: 2 + d}");
+		System.out.println(expression1);
+		Expression expression2 = expression("a.b(1, 2 + c)");
+		System.out.println(expression2);
+		Expression expression3 = expression("a.b(1, \"c\")");
+		System.out.println(expression3);
+	}
 
-//	@Test
-//	public void typeCheck3() {
-//		Expression expression = expression("a.b(1, 2 + c)");
-//		System.out.println(expression);
-//	}
-
-//	@Test
-//	public void typeCheck() {
-//		Expression expression = expression("a.b(1, \"c\")");
-//		System.out.println(expression);
-//	}
 	abstract static class Matcher extends SyntaxTrees.Matcher<Type22, Node33> {
 		protected final Scope scope;
 
@@ -83,7 +72,8 @@ public class TestTypecheck {
 		that(m.match(typeArg("B", Y, Y), typeArg("B", IntType, IntType))).is(true);
 	}
 
-	// @Test
+	@Test
+	@Ignore
 	public void typeSimplest() {
 		Expression expression = expression("a.b(1, \"c\")");
 		System.out.println(expression);
@@ -100,17 +90,18 @@ public class TestTypecheck {
 	}
 
 	@Test
+	@Ignore
 	public void typeSimplest2() {
-//		Expression expression = expression("a.b(1, \"c\")");
-//		System.out.println(expression);
-//
-//		Scope letA = Scope.init()
-//				.let(Name.of("a"), Node.StaticValue.of(-1, "<a>", AType));
-//
-//		Nodester nodester = new Nodester(letA);
-//		Node match = nodester.match(expression, Type.Undefined);
-//
-//		that(match).hasToString("<scope>.a: A.b((1: Int, \"c\": String): (Int, String)): Int");
+		Expression expression = expression("a.b(1, \"c\")");
+		System.out.println(expression);
+
+		Scope letA = Scope.init()
+				.let(Name.of("a"), Node33.StaticValue.of(-1, "<a>", AType));
+
+		Nodester nodester = new Nodester(letA);
+		Node33 match = nodester.match(expression, Type22.Undefined);
+
+		that(match).hasToString("<scope>.a: A.b((1: Int, \"c\": String): (Int, String)): Int");
 	}
 
 	static final Type22.Declared IntType = new DefinedImpl.Builder()

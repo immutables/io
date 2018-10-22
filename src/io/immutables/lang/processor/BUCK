@@ -4,6 +4,7 @@ java_package(
   deps = [
     '//lib:immutables_trees',
     '//lib:immutables_generator',
+    '//src/io/immutables/collect:collect',
     '//src/io/immutables/lang:lang',
     '//src/io/immutables/grammar:grammar'
   ],

@@ -1,4 +1,4 @@
-package io.immutables.lang.type;
+package io.immutables.lang.node;
 
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;

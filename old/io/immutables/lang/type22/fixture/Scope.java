@@ -1,8 +1,8 @@
-package io.immutables.lang.type.fixture;
+package io.immutables.lang.type22.fixture;
 
 import io.immutables.collect.Vect;
-import io.immutables.lang.type.Name;
-import io.immutables.lang.type.Type22;
+import io.immutables.lang.type22.Name;
+import io.immutables.lang.type22.Type22;
 import javax.annotation.Nullable;
 
 final class Scope implements Node33.Scoped, Type22 {

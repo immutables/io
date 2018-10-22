@@ -388,6 +388,32 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 			return true;
 		}
+
+////  This digged out method is incomplete
+////  The idea is that we try to find already parsed production if it was already parsed by
+////  another alternative in the same rule, there are many questions about this...
+//		private boolean findAndCopyParsedProduction(int termIndex, short part, short kind) {
+//			int len = Math.min(lastEndedProduction, position + POSITION_INCREMENT * 4);
+//			for (int p = position; p < len; p += POSITION_INCREMENT) {
+//				long l0 = elements[p];
+//				// stop if we at uninialized yet position or if we are not in the same beginning term index
+//				// (or the one that have not been ended, term index would be zero and not equal)
+//				int tb = decodeTermBegin(elements[p + 1]) + 2;
+//				if (l0 == 0 || termIndex != tb) return false;
+//				if (kind == decodeKind(l0)) {
+//					int length = decodeLength(l0);
+//					if (p != position) {
+//						System.arraycopy(elements, p, elements, position, length);
+//					}
+//					// need to update to needed part, might be different we reuse parsed production
+//					elements[p] = encodePart(l0, part);
+//					// set position to the next just as if we ended.
+//					position += length;
+//					return true;
+//				}
+//			}
+//			return false;
+//		}
 	}
 
 	/** the total number of parsed productions and terms. */

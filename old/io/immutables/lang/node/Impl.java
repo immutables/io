@@ -1,10 +1,10 @@
-package io.immutables.lang.typing;
+package io.immutables.lang.node;
 
 import com.google.common.base.Joiner;
-import io.immutables.grammar.Symbol;
-import io.immutables.lang.typing.Type.Declared;
+import io.immutables.collect.Vect;
+import io.immutables.lang.node.Type.Feature;
 
-public final class Impl {
+final class Impl {
 	private Impl() {}
 
 	static Type.Feature[] noFeatures() {
@@ -19,9 +19,11 @@ public final class Impl {
 		return NO_PARAMETERS; // subtype empty array is oks
 	}
 
-	static Type.Feature getFeature(Type.Feature[] features, Symbol name) {
+	static Type.Feature getFeature(Vect<Type.Feature> features, Name name) {
 		for (Type.Feature f : features) {
-			if (f.name().equals(name)) return f;
+			if (f.name().equals(name)) {
+				return f;
+			}
 		}
 		return missing(name);
 	}
@@ -62,10 +64,10 @@ public final class Impl {
 		};
 	}
 
-	static Type.Unresolved unresolved(Symbol name) {
+	static Type.Unresolved unresolved(Name name) {
 		return new Type.Unresolved() {
 			@Override
-			public Symbol name() {
+			public Name name() {
 				return name;
 			}
 
@@ -81,10 +83,10 @@ public final class Impl {
 		};
 	}
 
-	static Type.Feature feature(Symbol name, Type in, Type out) {
+	static Type.Feature feature(Name name, Type in, Type out) {
 		return new Type.Feature() {
 			@Override
-			public Symbol name() {
+			public Name name() {
 				return name;
 			}
 
@@ -110,10 +112,10 @@ public final class Impl {
 		};
 	}
 
-	static Type.Feature missing(Symbol name) {
+	static Type.Feature missing(Name name) {
 		return new Type.Feature() {
 			@Override
-			public Symbol name() {
+			public Name name() {
 				return name;
 			}
 
@@ -139,10 +141,10 @@ public final class Impl {
 		};
 	}
 
-	static Type.Variable allocate(Symbol name) {
+	static Type.Variable allocate(Name name) {
 		return new Type.Variable() {
 			@Override
-			public Symbol name() {
+			public Name name() {
 				return name;
 			}
 
@@ -158,26 +160,49 @@ public final class Impl {
 		};
 	}
 
-	static Type.Declared declared(Symbol name, Type[] arguments, Type constructorIn) {
-		return new Type.Declared() {
-			final Type.Constructor[] constructors =
-					constructorIn != Type.Undefined
-							? new Type.Constructor[] {constructor(this, constructorIn)}
-							: NO_CONSTRUCTORS;
+//	@Immutable
+//	public static abstract class DefinedImpl implements Type.Declared {
+//		private final int hashCode = System.identityHashCode(this);
+//
+//		@Override
+//		public abstract Vect<Feature> features();
+//
+//		@Override
+//		public boolean equals(Object obj) {
+//			return this == obj;
+//		}
+//
+//		@Override
+//		public String toString() {
+//			return name() + (!arguments().isEmpty() ? "<" + Joiner.on(", ").join(arguments()) + ">" : "");
+//		}
+//
+//		@Override
+//		public int hashCode() {
+//			return hashCode;
+//		}
+//
+//		public static final class Builder extends ImmutableDefinedImpl.Builder {}
+//	}
 
+	static Type.Declared declared(Name name, Type... arguments) {
+		return declared(name, arguments, Undefined, Vect.of());
+	}
+
+	static Type.Declared declared(Name name, Vect<Feature> features, Type... arguments) {
+		return declared(name, arguments, Undefined, features);
+	}
+
+	static Type.Declared simple(Name name, Vect<Feature> features) {
+		return new Type.Declared() {
 			@Override
-			public Symbol name() {
+			public Name name() {
 				return name;
 			}
 
 			@Override
-			public Type[] arguments() {
-				return arguments;
-			}
-
-			@Override
-			public Constructor[] constructors() {
-				return constructors;
+			public Vect<Feature> features() {
+				return features;
 			}
 
 			@Override
@@ -187,20 +212,51 @@ public final class Impl {
 
 			@Override
 			public String toString() {
-				return name + (arguments.length > 0 ? "<" + Joiner.on(", ").join(arguments) + ">" : "");
-			}
-
-			@Override
-			public Type withArguments(Type[] arguments) {
-				return declared(name, arguments, constructorIn);
+				return name.toString();
 			}
 		};
 	}
 
-	static Type.Parameter declare(int index, Symbol name) {
+	static Type.Declared withArguments(Name name, Vect<Feature> features, Type... arguments) {
+		assert arguments.length > 0;
+		return new DeclaredImplementation(arguments, name, features);
+	}
+
+	private static final class DeclaredImplementation implements Type.Declared {
+		private final Type[] arguments;
+		private final Name name;
+		private final Vect<Feature> features;
+		private DeclaredImplementation(Type[] arguments, Name name, Vect<Feature> features) {
+			this.arguments = arguments;
+			this.name = name;
+			this.features = features;
+		}
+		@Override
+		public Name name() {
+			return name;
+		}
+		@Override
+		public Vect<Feature> features() {
+			return features;
+		}
+		@Override
+		public <I, O> O accept(Type.Visitor<I, O> v, I in) {
+			return v.declared(this, in);
+		}
+		@Override
+		public String toString() {
+			return name + "<" + Joiner.on(", ").join(arguments) + ">";
+		}
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof  eq();
+		}
+	}
+
+	static Type.Parameter declare(int index, Name name) {
 		return new Type.Parameter() {
 			@Override
-			public Symbol name() {
+			public Name name() {
 				return name;
 			}
 
@@ -221,53 +277,6 @@ public final class Impl {
 		};
 	}
 
-	static Type.Converted converted(Type.Arrow arrow) {
-		return new Type.Converted() {
-			@Override
-			public Arrow arrow() {
-				return arrow;
-			}
-			@Override
-			public <I, O> O accept(Type.Visitor<I, O> v, I in) {
-				return v.converted(this, in);
-			}
-			@Override
-			public String toString() {
-				return "::" + arrow;
-			}
-		};
-	}
-
-	static Type.Constructor constructor(Type.Declared out, Type in) {
-		return new Type.Constructor() {
-
-			@Override
-			public Symbol name() {
-				return unnamed();
-			}
-
-			@Override
-			public Type in() {
-				return in;
-			}
-
-			@Override
-			public Declared out() {
-				return out;
-			}
-
-			@Override
-			public String toString() {
-				return "" + out + (in == Empty ? "" : in instanceof Type.Product ? in : ("(" + in + ")"));
-			}
-		};
-	}
-
-	private static final Type.Constructor[] NO_CONSTRUCTORS = new Type.Constructor[0];
 	private static final Type.Feature[] NO_FEATURES = new Type.Feature[0];
 	private static final Type.Parameter[] NO_PARAMETERS = new Type.Parameter[0];
-
-	static Symbol unnamed() {
-		return Symbol.from("");
-	}
 }

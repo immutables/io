@@ -1,4 +1,4 @@
-package io.immutables.lang.typing;
+package io.immutables.lang.typing2;
 
 import io.immutables.grammar.Symbol;
 

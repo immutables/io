@@ -1,6 +1,7 @@
-package io.immutables.lang.type;
+package io.immutables.lang.type22;
 
 import io.immutables.collect.Vect;
+import io.immutables.lang.type22.ImmutableConstraint22;
 import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;

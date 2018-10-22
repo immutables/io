@@ -1,4 +1,4 @@
-package io.immutables.lang.typing;
+package io.immutables.lang.typing2;
 
 public interface Constraint {
 	<I, O> O accept(Visitor<I, O> visitor, I in);

@@ -1,4 +1,4 @@
-package io.immutables.lang.type;
+package io.immutables.lang.type22;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;

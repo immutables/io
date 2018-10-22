@@ -1,10 +1,10 @@
-package io.immutables.lang.type.fixture;
+package io.immutables.lang.type22.fixture;
 
 import io.immutables.collect.Vect;
-import io.immutables.lang.type.Type22;
-import io.immutables.lang.type.Type22.Arrow;
-import io.immutables.lang.type.Type22.Declared;
-import io.immutables.lang.type.Type22.Variable;
+import io.immutables.lang.type22.Type22;
+import io.immutables.lang.type22.Type22.Arrow;
+import io.immutables.lang.type22.Type22.Declared;
+import io.immutables.lang.type22.Type22.Variable;
 
 final class Typecheck {
 	private Typecheck() {}

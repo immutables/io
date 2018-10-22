@@ -1,8 +1,8 @@
 java_package(
-	name = 'typing',
+	name = 'typing2',
   deps = [
   	  '//src/io/immutables/collect:collect',
   	  '//src/io/immutables/lang:lang',
-  	  '//src/io/immutables/lang/type:type',
+  	  '//old/io/immutables/lang/type22:type22',
   	  '//src/io/immutables/grammar:grammar'
   ])

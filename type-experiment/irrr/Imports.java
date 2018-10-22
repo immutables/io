@@ -1,4 +1,4 @@
-package io.immutables.lang.type.irrr;
+package io.immutables.lang.type22.irrr;
 
 import org.immutables.value.Value.Immutable;
 

@@ -253,8 +253,11 @@ feature-named
 return-type
   !'{' component:type-reference (',' component:type-reference)*
 
+-- TODO nested groups (converted to ephemerals) are resulting in bad code
 statements
-  '{' statement:statements-element* nl? '}'
+  | '{' '}'
+  | '{' nl+ '}'
+  | '{' nl* statement:statements-element (nl+ statement:statements-element)* nl* '}'
 
 let-binding
   to:name-binding '=' from:expressions
@@ -270,11 +273,11 @@ expressions
   component:expression (',' component:expression)*
 
 statements-element
-  | empty
   | local-binding
   | statement-expression
   | expression-effect
   | expression
+  | empty
 
 expression-or-statement
   | expression

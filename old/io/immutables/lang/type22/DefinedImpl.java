@@ -1,8 +1,9 @@
-package io.immutables.lang.type;
+package io.immutables.lang.type22;
 
 import com.google.common.base.Joiner;
 import io.immutables.collect.Vect;
-import io.immutables.lang.type.Type22.Declared;
+import io.immutables.lang.type22.ImmutableDefinedImpl;
+import io.immutables.lang.type22.Type22.Declared;
 import org.immutables.value.Value.Immutable;
 
 @Immutable

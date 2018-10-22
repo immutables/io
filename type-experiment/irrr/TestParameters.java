@@ -1,4 +1,4 @@
-package io.immutables.lang.type.irrr;
+package io.immutables.lang.type22.irrr;
 
 import java.util.NoSuchElementException;
 import org.junit.Test;

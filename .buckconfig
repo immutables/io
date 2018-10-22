@@ -2,6 +2,7 @@
 
 [project]
   ignore = \
+  	target \
     .classes, \
     .git, \
     .settings, \

@@ -1,8 +1,8 @@
-package io.immutables.lang.typing;
+package io.immutables.lang.typing2;
 
 import io.immutables.Nullable;
-import io.immutables.lang.typing.Type.Declared;
-import io.immutables.lang.typing.Type.Product;
+import io.immutables.lang.typing2.Type.Declared;
+import io.immutables.lang.typing2.Type.Product;
 import java.util.Arrays;
 
 interface Checking {

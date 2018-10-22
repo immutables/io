@@ -1,4 +1,4 @@
-package io.immutables.lang.type;
+package io.immutables.lang.type22;
 
 import java.util.HashMap;
 import java.util.Map;

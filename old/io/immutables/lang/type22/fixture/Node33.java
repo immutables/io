@@ -1,7 +1,7 @@
-package io.immutables.lang.type.fixture;
+package io.immutables.lang.type22.fixture;
 
 import com.google.common.base.Joiner;
-import io.immutables.lang.type.Type22;
+import io.immutables.lang.type22.Type22;
 
 interface Node33 {
 	default boolean checks() {

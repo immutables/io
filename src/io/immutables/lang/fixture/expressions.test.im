@@ -60,3 +60,20 @@ objectsObjects() Object {
     ranging: 1..<10
   }
 }
+
+emptyStatementsMix() Int {
+// comment 1
+return 1
+
+	return 2 // comment 2
+// comment 3
+	return 3
+
+}
+
+emptyStatementsMix2() {
+
+// sms
+}
+
+emptyStatementsMix3() {}

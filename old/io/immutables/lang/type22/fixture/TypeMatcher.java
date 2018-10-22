@@ -1,11 +1,11 @@
-package io.immutables.lang.type.fixture;
+package io.immutables.lang.type22.fixture;
 
 import io.immutables.collect.Vect;
-import io.immutables.lang.type.Type22;
-import io.immutables.lang.type.Type22.Declared;
-import io.immutables.lang.type.Type22.Product;
-import io.immutables.lang.type.Type22.Variable;
-import io.immutables.lang.type.Type22.Visitor;
+import io.immutables.lang.type22.Type22;
+import io.immutables.lang.type22.Type22.Declared;
+import io.immutables.lang.type22.Type22.Product;
+import io.immutables.lang.type22.Type22.Variable;
+import io.immutables.lang.type22.Type22.Visitor;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;

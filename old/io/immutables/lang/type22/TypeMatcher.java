@@ -1,4 +1,4 @@
-package io.immutables.lang.type;
+package io.immutables.lang.type22;
 
 interface Context {
 	boolean matches();
