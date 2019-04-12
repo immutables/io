@@ -10,7 +10,7 @@ import static com.google.common.base.Preconditions.checkPositionIndex;
 import static com.google.common.base.Preconditions.checkState;
 
 public interface Source {
-	
+
 	final class Position {
 		/** 0-based position. */
 		public final int position;
@@ -245,8 +245,8 @@ public interface Source {
 	}
 
 	final class Lines {
-		private int[] lines;
-		private int count;
+		private final int[] lines;
+		private final int count;
 
 		private Lines(int[] lines, int count) {
 			this.lines = lines;

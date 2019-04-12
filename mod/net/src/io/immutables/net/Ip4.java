@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
  */
 public final class Ip4 extends DiscreteDomain<Ip4.Address> {
 	private static final Ip4 DOMAIN = new Ip4();
+
 	private Ip4() {}
 
 	private static final Address LOOPBACK = address(127, 0, 0, 1);

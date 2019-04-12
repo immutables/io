@@ -1,25 +1,25 @@
 load('//lib:rules.bzl', 'java_module')
 
 java_module(
-  name = 'common',
-  exported_deps = [
-    '//lib/google/common:common',
-    '//lib/immutables/value:annotations',
-  ],
-  test_deps = [
-    '//mod/that:that',
-  ],
-  provided_deps = [
-    '//lib/javax/annotation:annotation',
-  ],
+	name = 'common',
+	exported_deps = [
+		'//lib/google/common:common',
+		'//lib/immutables/value:annotations',
+	],
+	test_deps = [
+		'//mod/that:that',
+	],
+	provided_deps = [
+		'//lib/javax/annotation:annotation',
+	],
 )
 
 java_annotation_processor(
-  name = 'immutables',
-  deps = [
-    ':common',
-    '//lib/immutables/value:value',
-  ],
-  processor_class = 'org.immutables.processor.ProxyProcessor',
-  visibility = ['PUBLIC'],
+	name = 'immutables',
+	deps = [
+		':common',
+		'//lib/immutables/value:value',
+	],
+	processor_class = 'org.immutables.processor.ProxyProcessor',
+	visibility = ['PUBLIC'],
 )

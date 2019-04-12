@@ -87,10 +87,12 @@ final class AssertionError extends java.lang.AssertionError {
 				// package declaration or synthetic methods are of no interest
 				if (e.getLineNumber() > 0) {
 					foundLine = readLine(toResourceName(e), e.getLineNumber());
-					if (foundLine.isEmpty()) continue;
+					if (foundLine.isEmpty())
+						continue;
 					// This is likely what we want, but will fallback to
 					// last matching line (or default empty) otherwise
-					if (foundLine.contains("that(")) return foundLine;
+					if (foundLine.contains("that("))
+						return foundLine;
 				}
 			}
 		}
@@ -112,9 +114,11 @@ final class AssertionError extends java.lang.AssertionError {
 		assert lineNumber > 0;
 
 		@Nullable InputStream stream = AssertionError.class.getResourceAsStream(resourceName);
-		if (stream == null) return "";
+		if (stream == null)
+			return "";
 
-		try (Reader in = new InputStreamReader(stream, StandardCharsets.UTF_8);
+		try (
+				Reader in = new InputStreamReader(stream, StandardCharsets.UTF_8);
 				BufferedReader r = new BufferedReader(in)) {
 			return r.lines()
 					.skip(lineNumber - 1)

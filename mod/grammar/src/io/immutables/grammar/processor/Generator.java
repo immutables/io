@@ -56,7 +56,12 @@ abstract class Generator extends AbstractTemplate {
 
 	ImmutableSet<Identifier> uniqueParts;
 
-	Templates.Invokable with(TypeElement element, String pack, String name, TermDispatch dispatch, Vect<Production> productions) {
+	Templates.Invokable with(
+			TypeElement element,
+			String pack,
+			String name,
+			TermDispatch dispatch,
+			Vect<Production> productions) {
 		this.originElement = element;
 		this.pack = pack;
 		this.name = name;

@@ -17,7 +17,7 @@ abstract class SourceRuns extends AbstractTemplate {
 	final List<Source> sources = new ArrayList<>();
 	String packageName;
 	String fixtureName;
-  TypeElement originElement;
+	TypeElement originElement;
 
 	static class Source {
 		final String name;

@@ -103,7 +103,7 @@ final class Diff {
 
 		for (; suffixLength <= maxSuffixLength; suffixLength++) {
 			if (expected.charAt(expected.length() - 1 - suffixLength)
-				!= actual.charAt(actual.length() - 1 - suffixLength)) {
+					!= actual.charAt(actual.length() - 1 - suffixLength)) {
 				break;
 			}
 		}

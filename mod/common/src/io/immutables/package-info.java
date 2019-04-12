@@ -6,4 +6,3 @@
 package io.immutables;
 
 import org.immutables.value.Value;
-

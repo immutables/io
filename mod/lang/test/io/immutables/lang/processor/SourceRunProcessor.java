@@ -32,7 +32,7 @@ public final class SourceRunProcessor extends AbstractGenerator {
 					Files.newDirectoryStream(packageDir(fixturePackage), glob)) {
 
 				SourceRuns generator = generator();
-        generator.originElement = fixtureType;
+				generator.originElement = fixtureType;
 				generator.packageName = fixturePackage.getQualifiedName().toString();
 				generator.fixtureName = fixtureType.getSimpleName().toString();
 
@@ -56,8 +56,8 @@ public final class SourceRunProcessor extends AbstractGenerator {
 		}
 	}
 
-  private Path packageDir(PackageElement p) {
-    String resourcesRoot = processingEnv.getOptions().getOrDefault("resources.root", ".");
+	private Path packageDir(PackageElement p) {
+		String resourcesRoot = processingEnv.getOptions().getOrDefault("resources.root", ".");
 		String packagePath = p.isUnnamed() ? "" : ("/" + p.getQualifiedName().toString().replace('.', '/'));
 		return Paths.get(resourcesRoot, packagePath);
 	}

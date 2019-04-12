@@ -7,11 +7,11 @@ java_library(
 	deps = [
 		'//lib/immutables/value:annotations',
 	],
-  exported_deps = [
-    '//mod/common:common',
-    '//mod/grammar:grammar',
-    '//lib/immutables/trees:trees',
-  ],
+	exported_deps = [
+		'//mod/common:common',
+		'//mod/grammar:grammar',
+		'//lib/immutables/trees:trees',
+	],
 	resources_root = 'src',
 	extra_arguments = ['-Aresources.root={}/src'.format(package_name())],
 	plugins = [
@@ -21,63 +21,63 @@ java_library(
 )
 
 java_library(
-  name = 'sourcerun_annotation',
-  srcs = glob(['test/io/immutables/lang/*.java']),
-  resources_root = 'test',
+	name = 'sourcerun_annotation',
+	srcs = glob(['test/io/immutables/lang/*.java']),
+	resources_root = 'test',
 )
 
 java_library(
-  name = 'sourcerun_processor_generator',
-  srcs = [],
-  resources = glob(['test/io/immutables/lang/processor/*.generator']),
-  resources_root = 'test',
+	name = 'sourcerun_processor_generator',
+	srcs = [],
+	resources = glob(['test/io/immutables/lang/processor/*.generator']),
+	resources_root = 'test',
 )
 
 java_library(
-  name = 'sourcerun_processor_library',
-  srcs = glob(['test/io/immutables/lang/processor/*.java']),
-  deps = [
-    ':lang',
-    ':sourcerun_annotation',
-    ':sourcerun_processor_generator',
-    '//lib/immutables/value:annotations',
-    '//lib/immutables/generator:processor',
-    '//mod/common:common',
-  ],
-  annotation_processors = [
-    'org.immutables.processor.ProxyProcessor',
-    'org.immutables.generator.processor.Processor',
-  ],
-  annotation_processor_deps = [
-    '//lib/immutables/trees:trees',
-    '//lib/immutables/value:value',
-    '//lib/immutables/generator:processor',
-  ],
-  resources_root = 'test',
+	name = 'sourcerun_processor_library',
+	srcs = glob(['test/io/immutables/lang/processor/*.java']),
+	deps = [
+		':lang',
+		':sourcerun_annotation',
+		':sourcerun_processor_generator',
+		'//lib/immutables/value:annotations',
+		'//lib/immutables/generator:processor',
+		'//mod/common:common',
+	],
+	annotation_processors = [
+		'org.immutables.processor.ProxyProcessor',
+		'org.immutables.generator.processor.Processor',
+	],
+	annotation_processor_deps = [
+		'//lib/immutables/trees:trees',
+		'//lib/immutables/value:value',
+		'//lib/immutables/generator:processor',
+	],
+	resources_root = 'test',
 )
 
 java_annotation_processor(
-  name = 'sourcerun_processor',
-  deps = [
-    ':sourcerun_processor_library',
-  ],
-  processor_class = 'io.immutables.lang.processor.SourceRunProcessor',
+	name = 'sourcerun_processor',
+	deps = [
+		':sourcerun_processor_library',
+	],
+	processor_class = 'io.immutables.lang.processor.SourceRunProcessor',
 )
 
 java_test(
-  name = 'test',
-  srcs = glob(['test/io/immutables/lang/fixture/*.java']),
-  resources = glob(['test/io/immutables/lang/fixture/*.test.im']),
-  deps = [
-    ':lang',
-    ':sourcerun_annotation',
-    '//mod/that:that',
-    '//lib/junit:junit',
-  ],
-  extra_arguments = ['-Aresources.root={}/test'.format(package_name())],
-  resources_root = 'test',
-  plugins = [
-    ':sourcerun_processor',
-    '//mod/common:immutables',
-  ],
+	name = 'test',
+	srcs = glob(['test/io/immutables/lang/fixture/*.java']),
+	resources = glob(['test/io/immutables/lang/fixture/*.test.im']),
+	deps = [
+		':lang',
+		':sourcerun_annotation',
+		'//mod/that:that',
+		'//lib/junit:junit',
+	],
+	extra_arguments = ['-Aresources.root={}/test'.format(package_name())],
+	resources_root = 'test',
+	plugins = [
+		':sourcerun_processor',
+		'//mod/common:immutables',
+	],
 )
