@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>nextgen</name>
-	<comment></comment>
-	<projects>
-	</projects>
-	<buildSpec>
-		<buildCommand>
-			<name>org.eclipse.jdt.core.javabuilder</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
-	</buildSpec>
-	<natures>
-		<nature>org.eclipse.jdt.core.javanature</nature>
-	</natures>
+  <name>io</name>
+  <comment></comment>
+  <projects>
+    <project>io.common</project>
+    <project>io.grammar</project>
+    <project>io.lang</project>
+    <project>io.net</project>
+    <project>io.that</project>
+  </projects>
+  <buildSpec>
+  </buildSpec>
+  <natures>
+  </natures>
 </projectDescription>

@@ -1,22 +1,37 @@
 [alias]
+# Aliases are shortcuts for longer target names
 
 [project]
-  ignore = \
-  	target \
-    .classes, \
-    .git, \
-    .settings, \
-    .idea, \
-    .buckd
-
-[java]
-  source_level = 1.8
-  target_level = 1.8
-  src_roots = src
+	# BUCK will not look inside these for build configs
+	# buck-out, .buckd, .idea are auto-ignored
+	# ! accidental empty entries here, like when using trailing comma
+	# can result in watchman not reporting file changes at all!
+	ignore = .git/,.ext/,.jars/
 
 [log]
-  max_traces = 1
-  compress_traces = true
+	max_traces = 1
+	compress_traces = true
 
-[buildfile]
-  includes = //src/DEFS
+[build]
+	metadata_storage = sqlite
+
+[cache]
+	mode = dir
+	dir_max_size = 1GB
+
+[project]
+	allow_symlinks = forbid
+	glob_handler = watchman
+
+[parser]
+	polyglot_parsing_enabled = true
+	default_build_file_syntax = SKYLARK
+
+[java]
+	# java 11 very soon ))
+	source_level = 8
+	target_level = 8
+	# compile classes in memory, then flush to jar file
+	jar_spool_mode = direct_to_jar
+	# compile against public declaration
+	compile_against_abis = true

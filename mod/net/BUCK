@@ -1,0 +1,14 @@
+load('//lib:rules.bzl', 'java_module')
+
+java_module(
+  name = 'net',
+  exported_deps = [
+    '//lib/google/common:common',
+  ],
+  test_deps = [
+    '//mod/that:that',
+  ],
+  provided_deps = [
+    '//lib/javax/annotation:annotation',
+  ],
+)

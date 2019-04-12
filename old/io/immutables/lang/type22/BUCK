@@ -1,4 +1,0 @@
-java_package('type22',
-  deps = [
-  '//src/io/immutables/collect:collect',
-  ])
