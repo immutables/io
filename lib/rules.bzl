@@ -15,6 +15,8 @@ _kotlin_test_deps_default = [
   '//lib/junit:junit'
 ]
 
+_java_test_vm_args = ['-ea', '-Dio.immutables.that.replace-error-message= ']
+
 def java_module(
     name,
     deps = [],
@@ -45,7 +47,7 @@ def java_module(
     resources_root = 'test',
     deps = _dedupe([':' + name] + _java_test_deps_default + test_deps),
     plugins = plugins,
-    vm_args = ['-ea', '-Dio.immutables.that.replace-error-message= '],
+    vm_args = _java_test_vm_args,
   )
 
 def kotlin_module(
@@ -78,9 +80,12 @@ def kotlin_module(
     resources_root = 'test',
     deps = _dedupe([':' + name] + _kotlin_test_deps_default + test_deps),
     plugins = plugins,
-    vm_args = ['-ea'],
+    vm_args = _java_test_vm_args,
   )
 
 def _dedupe(seq):
   seen = {}
   return [x for x in seq if not (x in seen or seen.update({x: ()}))]
+
+def java_test_vm_args():
+  return _java_test_vm_args

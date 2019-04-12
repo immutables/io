@@ -91,7 +91,14 @@ public interface That<T, S extends That<T, S>> {
 		}
 	}
 
+	/** That runnable or lambda/block. */
 	public interface Runnable extends That<java.lang.Runnable, Runnable> {
+		/**
+		 * Fails if that runnable doesn't throw exception of expected type (or subtype of
+		 * expected type) when called.
+		 * @param thrownType type of expected throwable
+		 * @return that exception checker
+		 */
 		default <E extends Throwable> That.Object<E> thrown(Class<E> thrownType) {
 			try {
 				java.lang.Runnable runnable = What.get(this);
@@ -110,8 +117,15 @@ public interface That<T, S extends That<T, S>> {
 		}
 	}
 
+	/**
+	 * Checks that string.
+	 */
 	interface String extends That<java.lang.String, String> {
 
+		/**
+		 * Fails if that string doesn't equal expected value
+		 * @param expected value
+		 */
 		default void is(java.lang.String expected) {
 			java.lang.String actual = What.get(this);
 			if (!expected.equals(actual)) {
@@ -120,6 +134,7 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/** Fails if that string is not empty */
 		default void isEmpty() {
 			java.lang.String actual = What.get(this);
 			if (!actual.isEmpty()) {
@@ -127,6 +142,7 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/** Fails if that string is empty */
 		default void notEmpty() {
 			java.lang.String actual = What.get(this);
 			if (actual.isEmpty()) {
@@ -134,6 +150,10 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/**
+		 * Fails if that string has length other thans
+		 * @param expectedLength expected length
+		 */
 		default void hasLength(int expectedLength) {
 			java.lang.String actual = What.get(this);
 			if (actual.length() != expectedLength) {
@@ -143,6 +163,10 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/**
+		 * Fails if that string doesn't contain substring.
+		 * @param expected substring
+		 */
 		default void contains(java.lang.String substring) {
 			java.lang.String actual = What.get(this);
 			if (!actual.contains(substring)) {
@@ -152,6 +176,10 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/**
+		 * Fails if that string doesn't start with prefix
+		 * @param prefix expected prefix
+		 */
 		default void startsWith(java.lang.String prefix) {
 			java.lang.String actual = What.get(this);
 			if (!actual.startsWith(prefix)) {
@@ -161,6 +189,10 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/**
+		 * Fails if that string doesn't start with suffix
+		 * @param suffix expected suffix
+		 */
 		default void endsWith(java.lang.String suffix) {
 			java.lang.String actual = What.get(this);
 			if (!actual.endsWith(suffix)) {
@@ -170,6 +202,10 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/**
+		 * Fails if that string doesn't matches regex pattern
+		 * @param regex expected pattern
+		 */
 		default void matches(java.lang.String regex) {
 			java.lang.String actual = What.get(this);
 			try {
@@ -186,7 +222,14 @@ public interface That<T, S extends That<T, S>> {
 		}
 	}
 
+	/**
+	 * Checks that boolean
+	 */
 	interface Boolean extends That<java.lang.Boolean, Boolean> {
+		/**
+		 * Failes if that is not of expected boolean value or if null.
+		 * @param expected value
+		 */
 		default void is(boolean trueOfFalse) {
 			java.lang.Boolean b = What.get(this);
 			if (trueOfFalse != b) {
@@ -194,6 +237,10 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/**
+		 * Fails if that is {@code false} with specified message.
+		 * @param assertion error message
+		 */
 		default void orFail(java.lang.String message) {
 			if (!What.get(this)) {
 				throw What.newAssertionError(message);
@@ -201,6 +248,7 @@ public interface That<T, S extends That<T, S>> {
 		}
 	}
 
+	/** Checks that object */
 	interface Object<T> extends That<T, Object<T>> {
 
 		/**
@@ -213,6 +261,7 @@ public interface That<T, S extends That<T, S>> {
 			return this;
 		}
 
+		/** Fails if that object referece is not {@code null} */
 		default void isNull() {
 			@Nullable T actual = What.getNullable(this);
 			if (actual != null) {
@@ -220,11 +269,18 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/** Fails if that object referece is {@code null} */
 		default Object<T> notNull() {
 			What.get(this);
 			return this;
 		}
 
+		/**
+		 * Fails if object is not of expected type (or subtype).
+		 * @param <C> expected type
+		 * @param type expected class object
+		 * @return check that downcasted object
+		 */
 		default <C extends T> Object<C> instanceOf(Class<C> type) {
 			T actualRef = What.get(this);
 			if (!type.isInstance(actualRef)) {
@@ -237,6 +293,11 @@ public interface That<T, S extends That<T, S>> {
 			return that;
 		}
 
+		/**
+		 * Fails if that object is not predicated by expression
+		 * @param predicate predicate expression
+		 * @return check that object
+		 */
 		default Object<T> is(Predicate<T> predicate) {
 			@Nullable T actual = What.getNullable(this);
 			if (!predicate.test(actual)) {
@@ -247,6 +308,10 @@ public interface That<T, S extends That<T, S>> {
 			return this;
 		}
 
+		/**
+		 * Fails if that object reference doesn't refers to the exact same expected reference
+		 * @param expected object reference (allows null)
+		 */
 		default void same(@Nullable T expected) {
 			@Nullable T actual = What.getNullable(this);
 			if (actual != expected) {
@@ -258,6 +323,10 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/**
+		 * Fails if that object reference refers to the exact same expected reference.
+		 * @param expected not same reference (allows null)
+		 */
 		default void notSame(@Nullable T expected) {
 			@Nullable T actual = What.getNullable(this);
 			if (actual == expected) {
@@ -267,6 +336,10 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/**
+		 * Fails if that object's result of calling {@code toString()} doesn't equal to expected string
+		 * @param expectedToString expected {@code toString} value
+		 */
 		default void hasToString(java.lang.String expectedToString) {
 			Objects.requireNonNull(expectedToString);
 
@@ -277,6 +350,11 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/**
+		 * Fails if that object is not equivalent (via
+		 * {@link java.lang.Object#equals(java.lang.Object)}) to the expected object.
+		 * @param expected equivalent object
+		 */
 		default void equalTo(T expected) {
 			Objects.requireNonNull(expected);
 
@@ -296,6 +374,11 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
+		/**
+		 * Fails if that object is equivalent (via
+		 * {@link java.lang.Object#equals(java.lang.Object)}) to the expected object.
+		 * @param expected not equivalent object
+		 */
 		default void notEqual(T expectedEquivalent) {
 			Objects.requireNonNull(expectedEquivalent);
 
@@ -358,6 +441,7 @@ public interface That<T, S extends That<T, S>> {
 		}
 	}
 
+	/** Checks that iterable (collection, collection view, array or any iterable) */
 	interface Iterable<T> extends That<java.lang.Iterable<T>, Iterable<T>> {
 		default void notEmpty() {
 			List<T> list = What.getList(this);

@@ -1,4 +1,4 @@
-load('//lib:rules.bzl', 'java_module')
+load('//lib:rules.bzl', 'java_module', 'java_test_vm_args')
 
 java_library(
 	name = 'lang',
@@ -80,4 +80,5 @@ java_test(
 		':sourcerun_processor',
 		'//mod/common:immutables',
 	],
+	vm_args = java_test_vm_args(),
 )
