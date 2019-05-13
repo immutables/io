@@ -491,13 +491,20 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
-		default void isOf(@SuppressWarnings("unchecked") T... expectedElements) {
+    @SuppressWarnings("unchecked")
+    default void isOf(T... expectedElements) {
 			isOf(Arrays.asList(expectedElements));
 		}
 
-		default void hasAll(@SuppressWarnings("unchecked") T... expectedElements) {
+    @SuppressWarnings("unchecked")
+    default void hasAll(T... expectedElements) {
 			hasAll(Arrays.asList(expectedElements));
 		}
+
+    @SuppressWarnings("unchecked")
+    default void hasOnly(T... expectedElements) {
+      hasOnly(Arrays.asList(expectedElements));
+    }
 
 		default void hasAll(java.lang.Iterable<T> expectedElements) {
 			List<T> actualElements = What.getList(this);
@@ -512,10 +519,6 @@ public interface That<T, S extends That<T, S>> {
 						"expected has all: " + What.showElements(expectedElements),
 						"actual: missing " + What.showElements(missingElements) + " — " + Diff.trim(actualElements));
 			}
-		}
-
-		default void hasOnly(@SuppressWarnings("unchecked") T... expectedElements) {
-			hasOnly(Arrays.asList(expectedElements));
 		}
 
 		default void hasOnly(java.lang.Iterable<T> elements) {

@@ -38,6 +38,9 @@
 /.buckd/
 /buck-out/
 
+# Maven output directory in case we run some maven commands
+target/
+
 # Symlinks for downloaded/output jars and generated source folders
 # for convenience of IDEs and ad-hoc tools.
 # Created in the directories along BUCK files containing
