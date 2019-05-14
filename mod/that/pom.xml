@@ -19,7 +19,7 @@
 
 	<groupId>io.immutables</groupId>
 	<artifactId>that</artifactId>
-	<version>0.1-SNAPSHOT</version>
+	<version>0.0.0</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}.${project.artifactId}</name>
@@ -58,7 +58,6 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<module.name>${project.groupId}.${project.artifactId}</module.name>
-		<sonatypeOssDistMgmtSnapshotsUrl>https://oss.sonatype.org/content/repositories/snapshots/</sonatypeOssDistMgmtSnapshotsUrl>
 		<maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
@@ -83,7 +82,7 @@
 		<snapshotRepository>
 			<id>sonatype-nexus-snapshots</id>
 			<name>Sonatype Nexus Snapshots</name>
-			<url>${sonatypeOssDistMgmtSnapshotsUrl}</url>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
 		</snapshotRepository>
 		<repository>
 			<id>sonatype-nexus-staging</id>
