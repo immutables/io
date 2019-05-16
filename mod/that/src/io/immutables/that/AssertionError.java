@@ -68,7 +68,7 @@ final class AssertionError extends java.lang.AssertionError {
 
 		return Arrays.asList(stack)
 				.subList(start, end)
-				.toArray(new StackTraceElement[] {});
+				.toArray(new StackTraceElement[]{});
 	}
 
 	private static boolean isThatPackageFrame(StackTraceElement s) {
@@ -76,8 +76,10 @@ final class AssertionError extends java.lang.AssertionError {
 	}
 
 	private static boolean isTestClassFrame(StackTraceElement e) {
-		return e.getFileName().startsWith(TEST_SUFFIX_OR_PREFIX)
-				|| e.getFileName().endsWith(TEST_SUFFIX_OR_PREFIX);
+		String fileName = e.getFileName();
+		if (fileName == null) return false;
+		return fileName.startsWith(TEST_SUFFIX_OR_PREFIX)
+				|| fileName.endsWith(TEST_SUFFIX_OR_PREFIX);
 	}
 
 	private static String findSourceLine(StackTraceElement[] stack) {
@@ -113,10 +115,9 @@ final class AssertionError extends java.lang.AssertionError {
 	private static String readLine(String resourceName, int lineNumber) {
 		assert lineNumber > 0;
 
-		@Nullable InputStream stream = AssertionError.class.getResourceAsStream(resourceName);
-		if (stream == null)
-			return "";
-
+		@Nullable
+		InputStream stream = AssertionError.class.getResourceAsStream(resourceName);
+		if (stream == null) return "";
 		try (
 				Reader in = new InputStreamReader(stream, StandardCharsets.UTF_8);
 				BufferedReader r = new BufferedReader(in)) {

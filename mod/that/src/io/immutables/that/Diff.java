@@ -20,7 +20,7 @@ final class Diff {
 
 	/**
 	 * The maximum length for {@link #expected} and {@link #actual} strings to show. When
-	 * {@link #compactionLength} is exceeded, the Strings are shortened.
+	 * {@code compactionLength} is exceeded, the Strings are shortened.
 	 */
 	private final int compactionLength;
 	private final String expected;
@@ -51,7 +51,7 @@ final class Diff {
 		return diff(actual, actual).get(0);
 	}
 
-	List<String> asList() {
+	private List<String> asList() {
 		String prefix = prefix();
 		String suffix = suffix(prefix);
 

@@ -49,14 +49,16 @@ public interface That<T, S extends That<T, S>> {
 	/**
 	 * Turns any matcher into a plain object matcher. If some matcher (like {@link That.Iterable})
 	 * streamlines matchers for iterable types, if you wish to resort to object matchers, you can
-	 * always call {@link #just()} to rewrap actual value into just plain object matcher.
-	 * Primitive types are considered auto-wrapped in corresponing boxed types.
+	 * always call {@code just()} to re-wrap actual value into a plain object matcher.
+	 * Primitive types are considered auto-wrapped in corresponding boxed types.
 	 */
 	default Object<T> just() {
 		return Assert.that(What.getNullable(this));
 	}
 
-	/** Tests for certain conditions without wrapped actual value. */
+	/**
+	 * Tests for certain conditions without wrapped actual value.
+	 */
 	public interface Condition extends That<Void, Condition> {
 		/**
 		 * Fails if condition is {@code false}.
@@ -76,22 +78,22 @@ public interface That<T, S extends That<T, S>> {
 
 		/**
 		 * Fails if invoked. Should be used for unreachable during successful pass test code.
-		 * 
 		 * <pre>
 		 * try {
 		 *  somethingThatThrows();
 		 *  that().unreachable();
 		 * } catch (Exception ex) {
 		 * </pre>
-		 * 
-		 * @see Assert#that(Runnable)
+		 * @see Assert#that(java.lang.Runnable)
 		 */
 		default void unreachable() {
 			throw What.newAssertionError("expected unreachable", "...and yet we are here");
 		}
 	}
 
-	/** That runnable or lambda/block. */
+	/**
+	 * That runnable or lambda/block.
+	 */
 	public interface Runnable extends That<java.lang.Runnable, Runnable> {
 		/**
 		 * Fails if that runnable doesn't throw exception of expected type (or subtype of
@@ -134,7 +136,9 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
-		/** Fails if that string is not empty */
+		/**
+		 * Fails if that string is not empty
+		 */
 		default void isEmpty() {
 			java.lang.String actual = What.get(this);
 			if (!actual.isEmpty()) {
@@ -142,7 +146,9 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
-		/** Fails if that string is empty */
+		/**
+		 * Fails if that string is empty
+		 */
 		default void notEmpty() {
 			java.lang.String actual = What.get(this);
 			if (actual.isEmpty()) {
@@ -151,7 +157,7 @@ public interface That<T, S extends That<T, S>> {
 		}
 
 		/**
-		 * Fails if that string has length other thans
+		 * Fails if that string has length other than expected
 		 * @param expectedLength expected length
 		 */
 		default void hasLength(int expectedLength) {
@@ -165,7 +171,7 @@ public interface That<T, S extends That<T, S>> {
 
 		/**
 		 * Fails if that string doesn't contain substring.
-		 * @param expected substring
+		 * @param substring expected substring
 		 */
 		default void contains(java.lang.String substring) {
 			java.lang.String actual = What.get(this);
@@ -217,7 +223,7 @@ public interface That<T, S extends That<T, S>> {
 			} catch (PatternSyntaxException ex) {
 				throw What.newAssertionError(
 						"expected string to match /" + regex + "/",
-						"pattern syntax error: " + ex.getMessage().split("\\n"));
+						"pattern syntax error: " + ex.getMessage().split("\\n")[0]);
 			}
 		}
 	}
@@ -227,19 +233,19 @@ public interface That<T, S extends That<T, S>> {
 	 */
 	interface Boolean extends That<java.lang.Boolean, Boolean> {
 		/**
-		 * Failes if that is not of expected boolean value or if null.
-		 * @param expected value
+		 * Fails if that is not of expected boolean value or if null.
+		 * @param trueOfFalse expected value
 		 */
 		default void is(boolean trueOfFalse) {
-			java.lang.Boolean b = What.get(this);
-			if (trueOfFalse != b) {
-				throw What.newAssertionError("expected: " + trueOfFalse, "actual: " + b);
+			java.lang.Boolean actual = What.get(this);
+			if (trueOfFalse != actual) {
+				throw What.newAssertionError("expected: " + trueOfFalse, "actual: " + actual);
 			}
 		}
 
 		/**
 		 * Fails if that is {@code false} with specified message.
-		 * @param assertion error message
+		 * @param message assertion error
 		 */
 		default void orFail(java.lang.String message) {
 			if (!What.get(this)) {
@@ -248,12 +254,14 @@ public interface That<T, S extends That<T, S>> {
 		}
 	}
 
-	/** Checks that object */
+	/**
+	 * Checks that object
+	 */
 	interface Object<T> extends That<T, Object<T>> {
 
 		/**
-		 * @deprecated Already regular object matcher.
 		 * @return always {@code this}
+		 * @deprecated Already regular object matcher.
 		 */
 		@Override
 		@Deprecated
@@ -261,7 +269,9 @@ public interface That<T, S extends That<T, S>> {
 			return this;
 		}
 
-		/** Fails if that object referece is not {@code null} */
+		/**
+		 * Fails if that object reference is not {@code null}
+		 */
 		default void isNull() {
 			@Nullable T actual = What.getNullable(this);
 			if (actual != null) {
@@ -269,17 +279,18 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
-		/** Fails if that object referece is {@code null} */
-		default Object<T> notNull() {
+		/**
+		 * Fails if that object reference is {@code null}
+		 */
+		default void notNull() {
 			What.get(this);
-			return this;
 		}
 
 		/**
 		 * Fails if object is not of expected type (or subtype).
 		 * @param <C> expected type
 		 * @param type expected class object
-		 * @return check that downcasted object
+		 * @return that down-casted object
 		 */
 		default <C extends T> Object<C> instanceOf(Class<C> type) {
 			T actualRef = What.get(this);
@@ -377,33 +388,34 @@ public interface That<T, S extends That<T, S>> {
 		/**
 		 * Fails if that object is equivalent (via
 		 * {@link java.lang.Object#equals(java.lang.Object)}) to the expected object.
-		 * @param expected not equivalent object
+		 *
+		 * @param expectedNotEquivalent not equivalent object
 		 */
-		default void notEqual(T expectedEquivalent) {
-			Objects.requireNonNull(expectedEquivalent);
+		default void notEqual(T expectedNotEquivalent) {
+			Objects.requireNonNull(expectedNotEquivalent);
 
 			T actual = What.get(this);
-			if (actual.equals(expectedEquivalent)) {
-				if (actual == expectedEquivalent) {
+			if (actual.equals(expectedNotEquivalent)) {
+				if (actual == expectedNotEquivalent) {
 					throw What.newAssertionError(
 							"expected not equal: "
-									+ What.showReference(expectedEquivalent)
-									+ What.showToStringDetail(expectedEquivalent),
+									+ What.showReference(expectedNotEquivalent)
+									+ What.showToStringDetail(expectedNotEquivalent),
 							"actual was the same object");
 				}
 
 				java.lang.String as = actual.toString();
-				java.lang.String es = expectedEquivalent.toString();
+				java.lang.String es = expectedNotEquivalent.toString();
 
 				if (as.equals(es)) {
 					throw What.newAssertionError(
-							What.showReference(expectedEquivalent) + What.showToStringDetail(expectedEquivalent),
-							What.showReference(actual) + What.showToStringDetail(actual));
+							"expected not equal: " + What.showReference(expectedNotEquivalent) + What.showToStringDetail(expectedNotEquivalent),
+							"actual was equal:" + What.showReference(actual) + What.showToStringDetail(actual));
 				}
 
 				throw What.newAssertionError(
-						What.showReference(expectedEquivalent) + What.showToStringDetail(expectedEquivalent),
-						What.showReference(actual) + What.showToStringDetail(actual));
+						"expected not equal: " + expectedNotEquivalent,
+						"actual was equal: " + actual);
 			}
 		}
 	}
@@ -434,14 +446,14 @@ public interface That<T, S extends That<T, S>> {
 			if (!actualOptional.equals(expectedOptional)) {
 				throw What.newAssertionError(
 						"expected: Optional.of(" + expected + ")",
-						"actual: " + (actualOptional.isPresent()
-								? "Optional.of(" + actualOptional.get() + ")"
-								: "Optional.empty()"));
+						"actual: " + actualOptional.map(t -> "Optional.of(" + t + ")").orElse("Optional.empty()"));
 			}
 		}
 	}
 
-	/** Checks that iterable (collection, collection view, array or any iterable) */
+	/**
+	 * Checks that iterable (collection, collection view, array or any iterable)
+	 */
 	interface Iterable<T> extends That<java.lang.Iterable<T>, Iterable<T>> {
 		default void notEmpty() {
 			List<T> list = What.getList(this);
@@ -491,20 +503,20 @@ public interface That<T, S extends That<T, S>> {
 			}
 		}
 
-    @SuppressWarnings("unchecked")
-    default void isOf(T... expectedElements) {
+		@SuppressWarnings("unchecked")
+		default void isOf(T... expectedElements) {
 			isOf(Arrays.asList(expectedElements));
 		}
 
-    @SuppressWarnings("unchecked")
-    default void hasAll(T... expectedElements) {
+		@SuppressWarnings("unchecked")
+		default void hasAll(T... expectedElements) {
 			hasAll(Arrays.asList(expectedElements));
 		}
 
-    @SuppressWarnings("unchecked")
-    default void hasOnly(T... expectedElements) {
-      hasOnly(Arrays.asList(expectedElements));
-    }
+		@SuppressWarnings("unchecked")
+		default void hasOnly(T... expectedElements) {
+			hasOnly(Arrays.asList(expectedElements));
+		}
 
 		default void hasAll(java.lang.Iterable<T> expectedElements) {
 			List<T> actualElements = What.getList(this);
@@ -552,10 +564,12 @@ public interface That<T, S extends That<T, S>> {
 
 	interface Double extends That<java.lang.Double, Double> {
 
-		default void bitwiseIs(double expected) {
+		default void bitwiseSame(double expected) {
 			double actual = What.get(this);
 			if (java.lang.Double.doubleToRawLongBits(actual) != java.lang.Double.doubleToRawLongBits(expected)) {
-				throw What.newAssertionError("expected: " + expected, "actual: " + actual);
+				throw What.newAssertionError(
+						"expected: " + What.showDouble(expected),
+						"actual: " + What.showDouble(actual));
 			}
 		}
 
@@ -564,16 +578,20 @@ public interface That<T, S extends That<T, S>> {
 			if (!predicate.test(actual)) {
 				throw What.newAssertionError(
 						"expected matching predicate " + What.showNonDefault(predicate),
-						"actual: " + actual);
+						"actual: " + What.showDouble(actual));
 			}
 		}
 
 		default void withinOf(double epsilon, double expected) {
+			if (!java.lang.Double.isFinite(epsilon)
+					|| !java.lang.Double.isFinite(expected)) {
+				throw new IllegalArgumentException("Epsilon and expected should be finite, not NaN numbers");
+			}
 			double actual = What.get(this);
 			if (Math.abs(actual - expected) > epsilon) {
 				throw What.newAssertionError(
-						"expected within ±" + epsilon + " of " + expected,
-						"actual: " + actual);
+						"expected within ±" + What.showDouble(epsilon) + " of " + What.showDouble(expected),
+						"actual: " + What.showDouble(actual));
 			}
 		}
 
@@ -581,6 +599,13 @@ public interface That<T, S extends That<T, S>> {
 			double actual = What.get(this);
 			if (!java.lang.Double.isNaN(actual)) {
 				throw What.newAssertionError("expected NaN", "actual: " + actual);
+			}
+		}
+
+		default void notNaN() {
+			double actual = What.get(this);
+			if (java.lang.Double.isNaN(actual)) {
+				throw What.newAssertionError("unexpected NaN");
 			}
 		}
 
@@ -637,13 +662,14 @@ public interface That<T, S extends That<T, S>> {
 
 	/**
 	 * This support class is mandatory to extend and decorate with any {@link That} interfaces
-	 * (providing default methods). Implementing classes are usually private or local, but
+	 * (providing default methods for matchers). Implementing classes are usually private or local, but
 	 * {@link That}-interfaces are public.
 	 * @param <T> type of value to check
 	 * @param <S> self-type of checker.
 	 */
 	public abstract class What<T, S extends That<T, S>> implements That<T, S> {
-		private @Nullable T value;
+		private @Nullable
+		T value;
 		private boolean isSet;
 
 		/**
@@ -665,7 +691,7 @@ public interface That<T, S extends That<T, S>> {
 
 		@Deprecated
 		@Override
-		public final boolean equals(java.lang.Object obj) {
+		public final boolean equals(@Nullable java.lang.Object obj) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -690,15 +716,16 @@ public interface That<T, S extends That<T, S>> {
 		 * @return unwrapped actual value
 		 */
 		protected static <T, S extends That<T, S>> T get(That<T, S> that) {
-			@Nullable T value = ((What<T, S>) that).get();
+			@Nullable
+			T value = ((What<T, S>) that).get();
 			if (value != null) return value;
-			throw newAssertionError("non-null expected");
+			throw newAssertionError("unexpected null");
 		}
 
 		/**
 		 * The same as {@link #get(That that)}, but allows actual value to be {@code null}
-		 * @param <T> type of value
-		 * @param <S> type of checker which extends {@link That}.
+		 * @param <T>  type of value
+		 * @param <S>  type of checker which extends {@link That}.
 		 * @param that wrapper user to extract actual value
 		 * @return unwrapped actual value
 		 */
@@ -708,7 +735,7 @@ public interface That<T, S extends That<T, S>> {
 
 		/**
 		 * Factory for well-suited assertion error. Typical usage is to format via 2 strings, one for
-		 * actuall value. While it is not mandatory to use this factory method to create assertion
+		 * actual value. While it is not mandatory to use this factory method to create assertion
 		 * errors, if you choose to use it, this will provide very pretty stack trace filtering and
 		 * source code extraction (if test sources are available as resources on the classpath).
 		 * @param linesDescribingMismatch message lines
@@ -737,7 +764,7 @@ public interface That<T, S extends That<T, S>> {
 			return string;
 		}
 
-		private static java.lang.String showReference(java.lang.Object ref) {
+		private static java.lang.String showReference(@Nullable java.lang.Object ref) {
 			return ref == null ? "null" : (ref.getClass().getSimpleName() + identityHashCodeSuffix(ref));
 		}
 
@@ -745,8 +772,17 @@ public interface That<T, S extends That<T, S>> {
 			return "@" + Integer.toHexString(System.identityHashCode(ref));
 		}
 
-		private static java.lang.String showToStringDetail(java.lang.Object ref) {
-			return ref == null ? "" : (" — " + ref);
+		private static java.lang.String showToStringDetail(@Nullable java.lang.Object ref) {
+			return ref == null ? "" : (" — " + Diff.trim(ref));
+		}
+
+		private static java.lang.String showDouble(double v) {
+			if (java.lang.Double.isNaN(v)) return "NaN";
+			if (java.lang.Double.isInfinite(v)) {
+				return java.lang.Double.NEGATIVE_INFINITY == v ? "-Inf" : "+Inf";
+			}
+			// do not provide specialized max/min value so far
+			return java.lang.Double.toString(v);
 		}
 	}
 }

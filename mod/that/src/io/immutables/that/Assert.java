@@ -1,9 +1,11 @@
 package io.immutables.that;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * {@code Assert.that}: Minimalistic, extensible and attentive to details assertions.
@@ -47,8 +49,8 @@ public final class Assert {
 	 * @return that optional
 	 */
 	@CheckReturnValue
-	public static <T> That.Optional<T> that(java.util.Optional<T> actual) {
-		class Tested extends That.What<java.util.Optional<T>, That.Optional<T>> implements That.Optional<T> {}
+	public static <T> That.Optional<T> that(Optional<T> actual) {
+		class Tested extends That.What<Optional<T>, That.Optional<T>> implements That.Optional<T> {}
 		return new Tested().set(actual);
 	}
 
@@ -58,8 +60,8 @@ public final class Assert {
 	 * @return that iterable
 	 */
 	@CheckReturnValue
-	public static <T> That.Iterable<T> that(java.lang.Iterable<T> actual) {
-		class Tested extends That.What<java.lang.Iterable<T>, That.Iterable<T>> implements That.Iterable<T> {}
+	public static <T> That.Iterable<T> that(Iterable<T> actual) {
+		class Tested extends That.What<Iterable<T>, That.Iterable<T>> implements That.Iterable<T> {}
 		return new Tested().set(actual);
 	}
 
@@ -69,8 +71,8 @@ public final class Assert {
 	 * @return that iterable
 	 */
 	@CheckReturnValue
-	public static <T> That.Iterable<T> that(java.util.stream.Stream<T> actual) {
-		class Tested extends That.What<java.lang.Iterable<T>, That.Iterable<T>> implements That.Iterable<T> {}
+	public static <T> That.Iterable<T> that(Stream<T> actual) {
+		class Tested extends That.What<Iterable<T>, That.Iterable<T>> implements That.Iterable<T> {}
 		return new Tested().set(actual.collect(Collectors.toList()));
 	}
 
@@ -82,7 +84,7 @@ public final class Assert {
 	@CheckReturnValue
 	@SafeVarargs
 	public static <T> That.Iterable<T> that(T... actual) {
-		class Tested extends That.What<java.lang.Iterable<T>, That.Iterable<T>> implements That.Iterable<T> {}
+		class Tested extends That.What<Iterable<T>, That.Iterable<T>> implements That.Iterable<T> {}
 		return new Tested().set(Arrays.asList(actual));
 	}
 
@@ -151,7 +153,7 @@ public final class Assert {
 	 */
 	@CheckReturnValue
 	public static That.Int that(@Nullable Character actual) {
-		return that(actual == null ? null : (int) actual.charValue());
+    return that(actual == null ? null : (int) actual.charValue());
 	}
 
 	/**
