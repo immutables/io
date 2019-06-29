@@ -13,10 +13,14 @@ import javax.annotation.Nullable;
  * @author Ievgen Lukash
  */
 final class Diff {
-	private static final String ELLIPSIS = "...";
-	private static final String DIFF_END = "]";
-	private static final String DIFF_START = "[";
-	private static final int COMPACTION_LENGTH_THRESHOLD = 40;
+	static final boolean useAsciiOnly = Boolean.getBoolean("io.immutables.that.ascii-only");
+	private static final int ellipsisAfterLimit = Integer.getInteger("io.immutables.that.ellipsis-after-limit", 40);
+	static final String markPointer = useAsciiOnly ? "~~~> " : "\u27FF   ";
+	static final String markEllipsis = useAsciiOnly ? "..." : "\u2026";
+	private static final String markDiffBegin = useAsciiOnly ? "<" : "\u27e8";
+	private static final String markDiffEnd = useAsciiOnly ? ">" : "\u27e9";
+	private static final String markShowBegin = useAsciiOnly ? "  ``" : "  \u301d";
+	private static final String markShowEnd = useAsciiOnly ? "``" : "\u301e";
 
 	/**
 	 * The maximum length for {@link #expected} and {@link #actual} strings to show. When
@@ -28,9 +32,8 @@ final class Diff {
 
 	/**
 	 * @param compactionLength the maximum length of context surrounding the difference
-	 *          between the
-	 *          compared strings. When context length is exceeded, the prefixes and suffixes are
-	 *          compacted.
+	 *          between the compared strings. When context length is exceeded, the prefixes and
+	 *          suffixes are compacted.
 	 * @param expected the expected string value
 	 * @param actual the actual string value
 	 */
@@ -40,24 +43,28 @@ final class Diff {
 		this.actual = actual;
 	}
 
+	static String show(String value) {
+		return markShowBegin + value + markShowEnd;
+	}
+
 	static List<String> diff(@Nullable Object expected, @Nullable Object actual) {
 		return new Diff(
-				COMPACTION_LENGTH_THRESHOLD,
+				ellipsisAfterLimit,
 				Objects.toString(expected),
 				Objects.toString(actual)).asList();
 	}
 
 	static String trim(@Nullable Object actual) {
-		return diff(actual, actual).get(0);
+		return diff(actual, actual).get(0); // discarding one of the diffs, they will be the same
 	}
 
 	private List<String> asList() {
+		if (actual.equals(expected)) {
+			return Arrays.asList(compactSuffix(expected), compactSuffix(actual));
+		}
+
 		String prefix = prefix();
 		String suffix = suffix(prefix);
-
-		if (prefix.isEmpty() && suffix.isEmpty()) {
-			return Arrays.asList(expected, actual);
-		}
 
 		String compactedPrefix = compactPrefix(prefix);
 		String compactedSuffix = compactSuffix(suffix);
@@ -71,18 +78,20 @@ final class Diff {
 		if (prefix.length() <= compactionLength) {
 			return prefix;
 		}
-		return ELLIPSIS + prefix.substring(prefix.length() - compactionLength);
+		return markEllipsis + prefix.substring(prefix.length() - compactionLength);
 	}
 
 	private String compactSuffix(String suffix) {
 		if (suffix.length() <= compactionLength) {
 			return suffix;
 		}
-		return suffix.substring(0, compactionLength) + ELLIPSIS;
+		return suffix.substring(0, compactionLength) + markEllipsis;
 	}
 
-	private static String diff(String prefix, String suffix, String text) {
-		return DIFF_START + text.substring(prefix.length(), text.length() - suffix.length()) + DIFF_END;
+	private String diff(String prefix, String suffix, String text) {
+		return markDiffBegin
+				+ compactSuffix(text.substring(prefix.length(), text.length() - suffix.length()))
+				+ markDiffEnd;
 	}
 
 	private String prefix() {
@@ -102,8 +111,7 @@ final class Diff {
 				actual.length() - prefix.length()) - 1;
 
 		for (; suffixLength <= maxSuffixLength; suffixLength++) {
-			if (expected.charAt(expected.length() - 1 - suffixLength)
-					!= actual.charAt(actual.length() - 1 - suffixLength)) {
+			if (expected.charAt(expected.length() - 1 - suffixLength) != actual.charAt(actual.length() - 1 - suffixLength)) {
 				break;
 			}
 		}

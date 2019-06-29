@@ -1,4 +1,4 @@
-load('//lib:rules.bzl', 'java_module')
+load('//mod:rules.bzl', 'java_module')
 
 java_module(
 	name = 'that',

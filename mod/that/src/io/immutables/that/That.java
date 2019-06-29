@@ -52,12 +52,16 @@ public interface That<T, S extends That<T, S>> {
 	 * always call {@code just()} to re-wrap actual value into a plain object matcher.
 	 * Primitive types are considered auto-wrapped in corresponding boxed types.
 	 */
-	default Object<T> just() {
-		return Assert.that(What.getNullable(this));
+	@SuppressWarnings("unchecked") // safe cast based on logical judgement
+	default Object<java.lang.Object> just() {
+		@Nullable T nullable = What.getNullable(this);
+		return this instanceof Object<?>
+				? (Object<java.lang.Object>) this
+				: Assert.that(nullable);
 	}
 
 	/**
-	 * Tests for certain conditions without wrapped actual value.
+	 * Tests for certain conditions without wrapping actual value.
 	 */
 	public interface Condition extends That<Void, Condition> {
 		/**
@@ -78,16 +82,26 @@ public interface That<T, S extends That<T, S>> {
 
 		/**
 		 * Fails if invoked. Should be used for unreachable during successful pass test code.
+		 * 
 		 * <pre>
 		 * try {
 		 *  somethingThatThrows();
 		 *  that().unreachable();
 		 * } catch (Exception ex) {
 		 * </pre>
+		 * 
 		 * @see Assert#that(java.lang.Runnable)
 		 */
 		default void unreachable() {
-			throw What.newAssertionError("expected unreachable", "...and yet we are here");
+			unreachable("and yet we are here");
+		}
+
+		/**
+		 * @see #unreachable()
+		 * @param description for the unreachable condition we ended up with
+		 */
+		default void unreachable(java.lang.String description) {
+			throw What.newAssertionError("expected unreachable" + Diff.markEllipsis, description);
 		}
 	}
 
@@ -165,7 +179,7 @@ public interface That<T, S extends That<T, S>> {
 			if (actual.length() != expectedLength) {
 				throw What.newAssertionError(
 						"expected length: " + expectedLength,
-						"actual length: " + actual.length() + " — " + Diff.trim(What.get(this)));
+						"actual length: " + actual.length() + Diff.show(Diff.trim(What.get(this))));
 			}
 		}
 
@@ -258,16 +272,6 @@ public interface That<T, S extends That<T, S>> {
 	 * Checks that object
 	 */
 	interface Object<T> extends That<T, Object<T>> {
-
-		/**
-		 * @return always {@code this}
-		 * @deprecated Already regular object matcher.
-		 */
-		@Override
-		@Deprecated
-		default Object<T> just() {
-			return this;
-		}
 
 		/**
 		 * Fails if that object reference is not {@code null}
@@ -388,7 +392,6 @@ public interface That<T, S extends That<T, S>> {
 		/**
 		 * Fails if that object is equivalent (via
 		 * {@link java.lang.Object#equals(java.lang.Object)}) to the expected object.
-		 *
 		 * @param expectedNotEquivalent not equivalent object
 		 */
 		default void notEqual(T expectedNotEquivalent) {
@@ -409,7 +412,8 @@ public interface That<T, S extends That<T, S>> {
 
 				if (as.equals(es)) {
 					throw What.newAssertionError(
-							"expected not equal: " + What.showReference(expectedNotEquivalent) + What.showToStringDetail(expectedNotEquivalent),
+							"expected not equal: " + What.showReference(expectedNotEquivalent)
+									+ What.showToStringDetail(expectedNotEquivalent),
 							"actual was equal:" + What.showReference(actual) + What.showToStringDetail(actual));
 				}
 
@@ -474,7 +478,7 @@ public interface That<T, S extends That<T, S>> {
 			if (list.size() != expectedSize) {
 				throw What.newAssertionError(
 						"expected size: " + expectedSize,
-						"actual size: " + list.size() + " — " + Diff.trim(What.get(this)));
+						"actual size: " + list.size() + Diff.show(Diff.trim(What.get(this))));
 			}
 		}
 
@@ -483,7 +487,7 @@ public interface That<T, S extends That<T, S>> {
 			if (!list.contains(expectedElement)) {
 				throw What.newAssertionError(
 						"expected element: " + expectedElement,
-						"actual none — " + Diff.trim(What.get(this)));
+						"actual none" + Diff.show(Diff.trim(What.get(this))));
 			}
 		}
 
@@ -662,18 +666,22 @@ public interface That<T, S extends That<T, S>> {
 
 	/**
 	 * This support class is mandatory to extend and decorate with any {@link That} interfaces
-	 * (providing default methods for matchers). Implementing classes are usually private or local, but
+	 * (providing default methods for matchers). Implementing classes are usually private or local,
+	 * but
 	 * {@link That}-interfaces are public.
 	 * @param <T> type of value to check
 	 * @param <S> self-type of checker.
 	 */
 	public abstract class What<T, S extends That<T, S>> implements That<T, S> {
-		private @Nullable
-		T value;
+		/** value under test */
+		private @Nullable T value;
+		/** need this flag as we support nullable values */
 		private boolean isSet;
 
 		/**
-		 * Set value under test
+		 * Set value under test and a copy of original value in case that value under test was converted
+		 * to some general representation convenient for matching, but be use that original value as a
+		 * reference for printing and reporting.
 		 * @param value to be tested
 		 * @return this for chained invokation
 		 */
@@ -685,6 +693,11 @@ public interface That<T, S extends That<T, S>> {
 		}
 
 		private @Nullable T get() {
+			if (!isSet) throw new IllegalStateException("What.set(value) must be called on wrapper");
+			return value;
+		}
+
+		private @Nullable java.lang.Object original() {
 			if (!isSet) throw new IllegalStateException("What.set(value) must be called on wrapper");
 			return value;
 		}
@@ -716,20 +729,19 @@ public interface That<T, S extends That<T, S>> {
 		 * @return unwrapped actual value
 		 */
 		protected static <T, S extends That<T, S>> T get(That<T, S> that) {
-			@Nullable
-			T value = ((What<T, S>) that).get();
+			@Nullable T value = ((What<T, S>) that).get();
 			if (value != null) return value;
 			throw newAssertionError("unexpected null");
 		}
 
 		/**
 		 * The same as {@link #get(That that)}, but allows actual value to be {@code null}
-		 * @param <T>  type of value
-		 * @param <S>  type of checker which extends {@link That}.
+		 * @param <T> type of value
+		 * @param <S> type of checker which extends {@link That}.
 		 * @param that wrapper user to extract actual value
 		 * @return unwrapped actual value
 		 */
-		protected static <T, S extends That<T, S>> T getNullable(That<T, S> that) {
+		protected static @Nullable <T, S extends That<T, S>> T getNullable(That<T, S> that) {
 			return ((What<T, S>) that).get();
 		}
 
@@ -773,7 +785,7 @@ public interface That<T, S extends That<T, S>> {
 		}
 
 		private static java.lang.String showToStringDetail(@Nullable java.lang.Object ref) {
-			return ref == null ? "" : (" — " + Diff.trim(ref));
+			return ref == null ? "" : Diff.show(Diff.trim(ref));
 		}
 
 		private static java.lang.String showDouble(double v) {

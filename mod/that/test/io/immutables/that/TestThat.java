@@ -1,7 +1,7 @@
 package io.immutables.that;
 
+import java.util.Collections;
 import org.junit.Test;
-
 import static io.immutables.that.Assert.that;
 
 public class TestThat {
@@ -34,5 +34,15 @@ public class TestThat {
 	@Test(expected = AssertionError.class)
 	public void assertNotNull() {
 		that((Object) null).notNull();
+	}
+
+	@Test(expected = AssertionError.class)
+	public void assertEmptyHasSize() {
+		that(Collections.emptyList()).hasSize(1);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void assertJustSame() {
+		that("a").just().same(new String("a"));
 	}
 }

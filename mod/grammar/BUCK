@@ -1,4 +1,4 @@
-load('//lib:rules.bzl', 'java_module', 'java_test_vm_args')
+load('//mod:rules.bzl', 'java_module', 'java_test_vm_args')
 
 java_library(
 	name = 'grammar',

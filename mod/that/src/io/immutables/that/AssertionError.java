@@ -20,10 +20,10 @@ final class AssertionError extends java.lang.AssertionError {
 
 	AssertionError(String... mismatch) {
 		super(join(mismatch));
-		StackTraceElement[] stack = getStackTrace();
-		this.sourceLine = findSourceLine(stack);
+		StackTraceElement[] trimmedStack = trimStack(getStackTrace());
+		this.sourceLine = findSourceLine(trimmedStack);
 		if (!fullStackTrace) {
-			this.setStackTrace(trimStack(stack));
+			this.setStackTrace(trimmedStack);
 		}
 	}
 
@@ -42,60 +42,68 @@ final class AssertionError extends java.lang.AssertionError {
 	}
 
 	private String showSourceHint() {
-		return !sourceLine.isEmpty() ? "~~~> " + sourceLine.trim() : "";
+		return !sourceLine.isEmpty() ? Diff.markPointer + sourceLine.trim() : "";
 	}
 
+	/**
+	 * The idea here is that we chop this package's classes from the top, then we chop out all test
+	 * framework entry calls including corresponding reflection calls.
+	 */
 	private static StackTraceElement[] trimStack(StackTraceElement[] stack) {
-		// Here we trimming anything including and above current package ("that").
-		// And everything excluding below currentlty failed test class (like JUnit runners)
 		int start = 0;
-		for (int i = stack.length - 1; i >= 0; i--) {
+		int end = stack.length;
+		int reflective = -1;
+
+		for (int i = 0; i < stack.length; i++) {
 			StackTraceElement s = stack[i];
 			if (isThatPackageFrame(s)) {
-				start = Math.min(i + 1, stack.length - 1);
+				if (start == i) start = i + 1;
+				reflective = -1;
+				continue;
+			}
+			if (isReflectiveFrame(s)) {
+				if (reflective == -1) {
+					reflective = i;
+				}
+				continue;
+			}
+			if (isTestFrameworkFrame(s)) {
+				end = reflective != -1 ? reflective : i;
 				break;
 			}
-		}
-
-		int end = stack.length - 1;
-		for (int i = stack.length - 1; i >= 0; i--) {
-			StackTraceElement s = stack[i];
-			if (isTestClassFrame(s)) {
-				end = Math.min(i + 1, stack.length - 1);
-				break;
-			}
+			reflective = -1;
 		}
 
 		return Arrays.asList(stack)
 				.subList(start, end)
-				.toArray(new StackTraceElement[]{});
+				.toArray(new StackTraceElement[] {});
+	}
+
+	private static boolean isReflectiveFrame(StackTraceElement s) {
+		return s.getClassName().startsWith("java.lang.reflect.")
+				|| s.getClassName().startsWith("sun.reflect.");
 	}
 
 	private static boolean isThatPackageFrame(StackTraceElement s) {
-		return s.getClassName().startsWith(AssertionError.class.getPackage().getName());
+		return s.getClassName().startsWith(thatPackagePrefix)
+				&& !s.getClassName().contains(TEST_SUFFIX_OR_PREFIX);
 	}
 
-	private static boolean isTestClassFrame(StackTraceElement e) {
-		String fileName = e.getFileName();
-		if (fileName == null) return false;
-		return fileName.startsWith(TEST_SUFFIX_OR_PREFIX)
-				|| fileName.endsWith(TEST_SUFFIX_OR_PREFIX);
+	private static boolean isTestFrameworkFrame(StackTraceElement e) {
+		return e.getClassName().startsWith(testFrameworkTypesPrefix);
 	}
 
 	private static String findSourceLine(StackTraceElement[] stack) {
 		String foundLine = "";
 		for (StackTraceElement e : stack) {
-			if (isTestClassFrame(e)) {
-				// package declaration or synthetic methods are of no interest
-				if (e.getLineNumber() > 0) {
-					foundLine = readLine(toResourceName(e), e.getLineNumber());
-					if (foundLine.isEmpty())
-						continue;
-					// This is likely what we want, but will fallback to
-					// last matching line (or default empty) otherwise
-					if (foundLine.contains("that("))
-						return foundLine;
-				}
+			// package declaration or synthetic methods are of no interest
+			if (e.getLineNumber() > 0) {
+				foundLine = readLine(toResourceName(e), e.getLineNumber());
+				if (foundLine.isEmpty())
+					continue;
+				// This is likely what we want, but will fallback to
+				// last matching line (or default empty) otherwise
+				if (foundLine.contains("that(")) return foundLine;
 			}
 		}
 		return foundLine;
@@ -115,8 +123,7 @@ final class AssertionError extends java.lang.AssertionError {
 	private static String readLine(String resourceName, int lineNumber) {
 		assert lineNumber > 0;
 
-		@Nullable
-		InputStream stream = AssertionError.class.getResourceAsStream(resourceName);
+		@Nullable InputStream stream = AssertionError.class.getResourceAsStream(resourceName);
 		if (stream == null) return "";
 		try (
 				Reader in = new InputStreamReader(stream, StandardCharsets.UTF_8);
@@ -132,6 +139,8 @@ final class AssertionError extends java.lang.AssertionError {
 
 	private static final String TEST_SUFFIX_OR_PREFIX = "Test";
 
+	private static final String thatPackagePrefix = AssertionError.class.getPackage().getName() + ".";
+
 	/**
 	 * Some test reporting systems output both message and toString
 	 * if this replacement is enabled, we're outputting it when getMessage
@@ -143,4 +152,11 @@ final class AssertionError extends java.lang.AssertionError {
 	 * If full stack trace should always be available, with no trimming it for convenient output
 	 */
 	private static final boolean fullStackTrace = Boolean.getBoolean("io.immutables.that.full-stack-trace");
+
+	/**
+	 * As we manipulate stack trace frames we use our test runner framework name. Rather than guessing
+	 * many of them, we just assum junit, be we can override that.
+	 */
+	private static final String testFrameworkTypesPrefix =
+			System.getProperty("io.immutables.that.test-framework-types-prefix", "org.junit.");
 }

@@ -153,7 +153,7 @@ public final class Assert {
 	 */
 	@CheckReturnValue
 	public static That.Int that(@Nullable Character actual) {
-    return that(actual == null ? null : (int) actual.charValue());
+		return that(actual == null ? null : (int) actual.charValue());
 	}
 
 	/**
