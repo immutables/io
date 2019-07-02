@@ -781,7 +781,7 @@ public interface That<T, S extends That<T, S>> {
 		}
 
 		private static java.lang.String identityHashCodeSuffix(java.lang.Object ref) {
-			return "@" + Integer.toHexString(System.identityHashCode(ref));
+			return "#" + Integer.toHexString(System.identityHashCode(ref));
 		}
 
 		private static java.lang.String showToStringDetail(@Nullable java.lang.Object ref) {
