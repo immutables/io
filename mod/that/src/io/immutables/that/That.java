@@ -552,16 +552,16 @@ public interface That<T, S extends That<T, S>> {
 			}
 
 			if (!missingElements.isEmpty() || !remainingElements.isEmpty()) {
-				java.lang.String actual = "";
+				List<java.lang.String> actual = new ArrayList<>();
 				if (!missingElements.isEmpty()) {
-					actual += "missing " + What.showElements(missingElements) + "; ";
+					actual.add("missing " + What.showElements(missingElements));
 				}
 				if (!remainingElements.isEmpty()) {
-					actual += "extra  " + What.showElements(remainingElements);
+					actual.add("extra " + What.showElements(remainingElements));
 				}
 				throw What.newAssertionError(
 						"expected only: " + What.showElements(expectedElements),
-						"actual: " + actual);
+						"actual: " + java.lang.String.join("; ", actual));
 			}
 		}
 	}

@@ -1,5 +1,6 @@
 package io.immutables.that;
 
+import java.util.Arrays;
 import java.util.Collections;
 import org.junit.Test;
 import static io.immutables.that.Assert.that;
@@ -44,5 +45,10 @@ public class TestThat {
 	@Test(expected = AssertionError.class)
 	public void assertJustSame() {
 		that("a").just().same(new String("a"));
+	}
+
+	@Test(expected = AssertionError.class)
+	public void assertHasOnly() {
+		that(Arrays.asList("a", "b", "c", "d")).hasOnly("a", "b", "h", "d");
 	}
 }
