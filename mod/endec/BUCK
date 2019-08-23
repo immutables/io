@@ -1,0 +1,9 @@
+load('//mod:rules.bzl', 'java_module')
+
+java_module(
+	name = 'endec',
+  provided_deps = [
+    '//lib/javax/annotation:annotation',
+  ],
+  maven_coords = 'io.immutables:endec:0.0.1',
+)
