@@ -1,10 +1,10 @@
-package io.immutables.sql;
+package io.immutables.regresql;
 
 import io.immutables.Nullable;
 import io.immutables.Source;
 import io.immutables.collect.Vect;
-import io.immutables.sql.Sqls.MethodDefinition;
-import io.immutables.sql.Sqls.SqlSource;
+import io.immutables.regresql.Sqls.MethodDefinition;
+import io.immutables.regresql.Sqls.SqlSource;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.stream.Stream;

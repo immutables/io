@@ -1,3 +1,3 @@
-package io.immutables.sql;
+package io.immutables.regresql;
 
 public interface SqlAccessor {}

@@ -1,7 +1,6 @@
 package io.immutables;
 
 import com.google.common.base.Strings;
-import java.io.IOException;
 import java.io.Writer;
 import java.nio.CharBuffer;
 import java.util.Arrays;

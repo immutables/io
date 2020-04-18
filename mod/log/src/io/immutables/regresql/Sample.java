@@ -1,4 +1,4 @@
-package io.immutables.sql;
+package io.immutables.regresql;
 
 import java.sql.SQLException;
 

@@ -1,4 +1,4 @@
-package io.immutables.sql;
+package io.immutables.regresql;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
