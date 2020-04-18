@@ -6,7 +6,10 @@
 	# buck-out, .buckd, .idea are auto-ignored
 	# ! accidental empty entries here, like when using trailing comma
 	# can result in watchman not reporting file changes at all!
-	ignore = .git/,.ext/,.jars/
+	ignore = .git/,.ext/,.out/
+
+[download]
+	in_build = false
 
 [log]
 	max_traces = 1
@@ -28,7 +31,6 @@
 	default_build_file_syntax = SKYLARK
 
 [java]
-	# java 11 very soon ))
 	source_level = 8
 	target_level = 8
 	# compile classes in memory, then flush to jar file

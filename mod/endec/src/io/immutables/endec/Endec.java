@@ -13,7 +13,7 @@ import static java.lang.annotation.ElementType.TYPE_USE;
 abstract class Out {}
 
 abstract class In {
-  public abstract @Offset int offset();
+  public abstract @Offset int offset(); // mark
   public abstract void reset(@Offset int offset);
 }
 
@@ -25,10 +25,31 @@ interface Factory {
 }
 
 class Registry {
-  void add(Factory factory) {}
-  void add(Function<Registry, Factory> factory) {}
+  void add(Factory factory) {
+
+  }
+  void add(Function<Factory, Factory> factory) {
+
+  }
   Factory toFactory() {
     return null;
+  }
+
+  public static void main(String... args) {
+//    Registry r = new Registry();
+//    r.add(delegate -> {
+//      return new Factory() {
+//        Endec<T> = delegate.get(String.class);
+//        @Override
+//        @Nullable
+//        public <T> Endec<T> get(Type type) {
+//          return null; //TODO auto
+//        }
+//      };
+//    });
+//    Factory f = r.toFactory();
+
+    // f.get(Type).ecode();
   }
 }
 

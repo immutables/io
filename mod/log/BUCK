@@ -2,8 +2,13 @@ load('//mod:rules.bzl', 'java_module')
 
 java_module(
 	name = 'log',
-  provided_deps = [
-    '//lib/javax/annotation:annotation',
+  deps = [
+	  '//lib/immutables/value:annotations',
+    '//mod/common:common',
+    '//lib/postresql:postresql',
+  ],
+  plugins = [
+    '//lib/immutables/value:processor'
   ],
   maven_coords = 'io.immutables:log:0.0.1',
 )

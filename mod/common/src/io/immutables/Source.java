@@ -1,12 +1,13 @@
-package io.immutables.grammar;
+package io.immutables;
 
 import com.google.common.base.Strings;
-import io.immutables.Capacity;
-import io.immutables.Unreachable;
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.CharBuffer;
 import java.util.Arrays;
-import javax.annotation.Nullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkPositionIndex;
+import static com.google.common.base.Preconditions.checkPositionIndexes;
 import static com.google.common.base.Preconditions.checkState;
 
 public interface Source {
@@ -78,6 +79,10 @@ public interface Source {
 			return source.subSequence(begin.position, end.position);
 		}
 
+		public Range span(Range to) {
+			return Range.of(this.begin, to.end);
+		}
+
 		@Override
 		public String toString() {
 			return begin.equals(end)
@@ -107,14 +112,18 @@ public interface Source {
 		private final CharSequence source;
 		private final Lines lines;
 
-		Excerpt(CharSequence source, Lines lines) {
+		private Excerpt(CharSequence source, Lines lines) {
 			this.source = source;
 			this.lines = lines;
 			this.gutterWidth = Math.max(1, computeLineNumberMagnitude(lines.count()));
 		}
 
 		public static Excerpt from(CharSequence source) {
-			return new Excerpt(source, Lines.from(source.toString().toCharArray()));
+			return new Excerpt(source, Lines.from(source));
+		}
+
+		public static Excerpt from(CharSequence source, Lines lines) {
+			return new Excerpt(source, lines);
 		}
 
 		private static int computeLineNumberMagnitude(int size) {
@@ -244,6 +253,30 @@ public interface Source {
 		private static final int TAB_WIDTH = Integer.getInteger("im.source.tab-width", 2);
 	}
 
+	final class Problem {
+		public final String filename;
+		public final CharSequence source;
+		public final Range range;
+		public final String message;
+		public final String hint;
+		public final Lines lines;
+
+		public Problem(String filename, CharSequence source, Lines lines, Range range, String message, String hint) {
+			this.filename = filename;
+			this.source = source;
+			this.lines = lines;
+			this.range = range;
+			this.message = message;
+			this.hint = hint;
+		}
+		@Override
+		public String toString() {
+			return filename + ":" + range.begin + " " + message + "\n\t"
+					+ Source.Excerpt.from(source, lines).get(range).toString().replace("\n", "\n\t")
+					+ hint + "\n";
+		}
+	}
+
 	final class Lines {
 		private final int[] lines;
 		private final int count;
@@ -283,13 +316,18 @@ public interface Source {
 		}
 
 		public static Lines from(char[] input) {
+			return from(wrap(input));
+		}
+
+		public static Lines from(CharSequence input) {
 			Tracker t = new Tracker();
-			for (int i = 0; i < input.length; i++) {
-				if (input[i] == '\n') {
+			int length = input.length();
+			for (int i = 0; i < length; i++) {
+				if (input.charAt(i) == '\n') {
 					t.addNewlineAt(i);
 				}
 			}
-			return t.lines(input.length);
+			return t.lines(length);
 		}
 
 		public static final class Tracker {
@@ -325,44 +363,194 @@ public interface Source {
 		}
 	}
 
-	static CharSequence wrap(char[] input) {
-		class SourceWrapper implements CharSequence {
-			private final char[] input;
-			private final int begin;
-			private final int end;
+	/**
+	 * Clean implementation of in memory CharSequence and Writer/Appendable.
+	 * Auto-grows akin to ArrayList. Contains common optimization for character copying.
+	 * Create shallow subsequences and otherwise minimizes copying/object creation.
+	 */
+	public final class Buffer extends Writer implements CharSequence {
+		private static final int MIN_CAPACITY = 128;
+		private char[] data = new char[0];
+		private int limit = 0;
 
-			SourceWrapper(char[] input) {
-				this(input, 0, input.length);
-			}
-
-			SourceWrapper(char[] input, int begin, int end) {
-				this.input = input;
-				this.begin = begin;
-				this.end = end;
-			}
-
-			@Override
-			public CharSequence subSequence(int begin, int end) {
-				int newBegin = checkPositionIndex(this.begin + begin, input.length);
-				int newEnd = checkPositionIndex(this.begin + end, input.length);
-				return new SourceWrapper(input, newBegin, newEnd);
-			}
-
-			@Override
-			public int length() {
-				return end - begin;
-			}
-
-			@Override
-			public char charAt(int index) {
-				return input[begin + index];
-			}
-
-			@Override
-			public String toString() {
-				return String.valueOf(input, begin, end - begin);
-			}
+		public Buffer() {
+			this(MIN_CAPACITY);
 		}
+
+		public Buffer(int initialCapacity) {
+			data = Capacity.ensure(data, limit, initialCapacity);
+		}
+
+		@Override
+		public int length() {
+			return limit;
+		}
+
+		@Override
+		public char charAt(int index) {
+			checkPositionIndex(index, limit);
+			return data[index];
+		}
+
+		/**
+		 * We do shallow copy subsequence, whereas StringBuilder does copy character content.
+		 * They did it do minimize accidental memory leaks. Our classes are very specialized
+		 * and are to be used carefully, so it's beneficial to share underlying char data
+		 * and copy explicitly when needed: {@code wrap(buffer.toCharArray())}
+		 */
+		@Override
+		public CharSequence subSequence(int begin, int end) {
+			checkPositionIndexes(begin, end, limit);
+			return new SourceWrapper(data, begin, end);
+		}
+
+		@Override
+		public String toString() {
+			return String.valueOf(data, 0, limit);
+		}
+
+		@Override
+		public void flush() {}
+
+		@Override
+		public void close() {}
+
+		@Override
+		public Buffer append(CharSequence cs) {
+			if (cs instanceof CharBuffer) {
+				// this optimization is only applicable without start/end ranges,
+				// otherwise we would include it in applend(cs, start, end) implementation
+				int increment = cs.length();
+				data = Capacity.ensure(data, limit, increment);
+				((CharBuffer) cs).get(data, limit, increment);
+				limit += increment;
+				return this;
+			}
+			return append(cs, 0, cs.length());
+		}
+
+		@Override
+		public Buffer append(CharSequence cs, int start, int end) {
+			int increment = end - start;
+			data = Capacity.ensure(data, limit, increment);
+			// trying to optimize char[] data copying for common
+			// known CharSequence implementation, otherwise resort
+			// to per-character copying, which is obviously slower
+			// for practical file or stream reading.
+			if (cs instanceof String) {
+				((String) cs).getChars(start, end, data, limit);
+			} else if (cs instanceof StringBuilder) {
+				((StringBuilder) cs).getChars(start, end, data, limit);
+			} else {
+				for (int i = 0; i < increment; i++) {
+					data[limit + i] = cs.charAt(start + i);
+				}
+			}
+			limit += increment;
+			return this;
+		}
+
+		@Override
+		public void write(String string) {
+			write(string, 0, string.length());
+		}
+
+		@Override
+		public void write(String string, int offset, int length) {
+			data = Capacity.ensure(data, limit, length);
+			string.getChars(offset, offset + length, data, limit);
+			limit += length;
+		}
+
+		@Override
+		public void write(char[] buffer) {
+			write(buffer, 0, buffer.length);
+		}
+
+		@Override
+		public void write(char[] buffer, int offset, int length) {
+			data = Capacity.ensure(data, limit, length);
+			System.arraycopy(buffer, offset, data, limit, length);
+			limit += length;
+		}
+
+		@Override
+		public void write(int c) {
+			append((char) c);
+		}
+
+		@Override
+		public Buffer append(char c) {
+			data = Capacity.ensure(data, limit, MIN_CAPACITY);
+			data[limit++] = c;
+			return this;
+		}
+
+		/** String and StringBuilder -like character copy to destination array. */
+		public void getChars(int srcStart, int srcEnd, char[] dest, int destStart) {
+			checkPositionIndexes(srcStart, srcEnd, limit);
+			System.arraycopy(data, srcStart, dest, destStart, srcEnd - srcStart);
+		}
+
+		/** Provides unsafe access to the raw underlying array. */
+		public char[] array() {
+			return data;
+		}
+
+		/**
+		 * Resets internal content size to 0 and leaving internal character array
+		 * intact, effectively "forgetting" any content written so far. Could be use
+		 * for repeatable reading into the same array.
+		 */
+		public void reset() {
+			limit = 0;
+		}
+
+		/** Safe copy of the internal data trimmed to the actual content length. */
+		public char[] toCharArray() {
+			return Arrays.copyOf(data, limit);
+		}
+	}
+
+	final class SourceWrapper implements CharSequence {
+		private final char[] data;
+		private final int begin;
+		private final int end;
+
+		SourceWrapper(char[] data) {
+			this(data, 0, data.length);
+		}
+
+		SourceWrapper(char[] data, int begin, int end) {
+			this.data = data;
+			this.begin = begin;
+			this.end = end;
+		}
+
+		@Override
+		public CharSequence subSequence(int begin, int end) {
+			checkPositionIndexes(begin, end, length());
+			return new SourceWrapper(data, this.begin + begin, this.begin + end);
+		}
+
+		@Override
+		public int length() {
+			return end - begin;
+		}
+
+		@Override
+		public char charAt(int index) {
+			checkPositionIndex(index, end - begin);
+			return data[begin + index];
+		}
+
+		@Override
+		public String toString() {
+			return String.valueOf(data, begin, end - begin);
+		}
+	}
+
+	static CharSequence wrap(char[] input) {
 		return new SourceWrapper(input);
 	}
 }

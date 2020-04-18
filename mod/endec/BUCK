@@ -5,5 +5,8 @@ java_module(
   provided_deps = [
     '//lib/javax/annotation:annotation',
   ],
+	test_deps = [
+		'//lib/postresql:postresql',
+	],
   maven_coords = 'io.immutables:endec:0.0.1',
 )

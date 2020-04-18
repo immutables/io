@@ -41,4 +41,20 @@ public class TestVect {
 		that(Vect.of(1, 2, 3).range(0, 1)).isOf(1);
 		that(Vect.of(1, 2, 3).range(2, 3)).isOf(3);
 	}
+
+	@Test
+	public void takeWhile() {
+		Vect<Integer> vect = Vect.of(1, 2, 3, 4, 3, 2, 1);
+		that(vect.takeWhile(e -> e < 4)).isOf(1, 2, 3);
+		that(vect.takeWhile(e -> e > 10)).isEmpty();
+		that(vect.takeWhile(e -> e < 10)).just().same(vect);
+	}
+
+	@Test
+	public void dropWhile() {
+		Vect<Integer> vect = Vect.of(1, 2, 3, 4, 3, 2, 1);
+		that(vect.dropWhile(e -> e < 4)).isOf(4, 3, 2, 1);
+		that(vect.dropWhile(e -> e > 10)).just().same(vect);
+		that(vect.dropWhile(e -> e < 10)).isEmpty();
+	}
 }

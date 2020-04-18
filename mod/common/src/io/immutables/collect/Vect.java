@@ -11,6 +11,7 @@ import java.util.Spliterators;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
@@ -110,6 +111,26 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		return (Vect<T>) filter(type::isInstance);
 	}
 
+	public Vect<E> takeWhile(Predicate<? super E> predicate) {
+		int taken = 0;
+		for (taken = 0; taken < elements.length; taken++) {
+			if (!predicate.test((E) elements[taken])) break;
+		}
+		if (taken == 0) return (Vect<E>) EMPTY;
+		if (taken == elements.length) return this;
+		return range(0, taken);
+	}
+
+	public Vect<E> dropWhile(Predicate<? super E> predicate) {
+		int dropped = 0;
+		for (dropped = 0; dropped < elements.length; dropped++) {
+			if (!predicate.test((E) elements[dropped])) break;
+		}
+		if (dropped == 0) return this;
+		if (dropped == elements.length) return (Vect<E>) EMPTY;
+		return rangeFrom(dropped);
+	}
+
 	public <R> R bipartition(Predicate<? super E> predicate, BiFunction<Vect<E>, Vect<E>, R> receiver) {
 		Builder<E> yes = new Builder<>(elements.length);
 		Builder<E> no = new Builder<>(elements.length);
@@ -204,7 +225,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 
 	public Vect<E> range(int from, int to) {
 		checkPositionIndexes(from, to, elements.length);
-		if (this == EMPTY) return this;
+		if (from == to) return (Vect<E>) EMPTY;
 		return new Vect<>(Arrays.copyOfRange(elements, from, to));
 	}
 
@@ -212,6 +233,16 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		checkPositionIndex(from, elements.length);
 		if (this == EMPTY) return this;
 		return new Vect<>(Arrays.copyOfRange(elements, from, elements.length));
+	}
+	
+	public E first() {
+		if (isEmpty()) throw new NoSuchElementException("first()");
+		return (E) elements[0];
+	}
+	
+	public E last() {
+		if (isEmpty()) throw new NoSuchElementException("first()");
+		return (E) elements[elements.length - 1];
 	}
 
 	public E get(int index) {
@@ -258,7 +289,26 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 				.addAll(v)
 				.build();
 	}
+	
+	public Object[] toArray() {
+		return elements.clone();
+	}
 
+	public E[] toArray(E[] a) {
+		 if (a.length < elements.length) {
+       return (E[]) Arrays.copyOf(elements, elements.length, a.getClass());
+		 }
+   System.arraycopy(elements, 0, a, 0, elements.length);
+   // by the strange (useful?) convention, we set next extra
+   // element to null, but we don't null the rest if any.
+   if (a.length > elements.length) a[elements.length] = null;
+   return a;
+	}
+	
+	public E[] toArray(IntFunction<E[]> factory) {
+		return toArray(factory.apply(elements.length)); // some microbenchmarks recomment 0?
+	}
+	
 	public static <E> Vect<E> of(E single) {
 		requireNonNull(single);
 		return new Vect<>(new Object[] {single});

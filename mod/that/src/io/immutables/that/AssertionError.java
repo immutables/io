@@ -80,8 +80,10 @@ final class AssertionError extends java.lang.AssertionError {
 	}
 
 	private static boolean isReflectiveFrame(StackTraceElement s) {
-		return s.getClassName().startsWith("java.lang.reflect.")
-				|| s.getClassName().startsWith("sun.reflect.");
+		String className = s.getClassName();
+		return className.startsWith("java.lang.reflect.")
+				|| className.startsWith("sun.reflect.")
+				|| className.startsWith("java.base/jdk.internal.reflect.");
 	}
 
 	private static boolean isThatPackageFrame(StackTraceElement s) {

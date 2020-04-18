@@ -28,7 +28,7 @@ prereq_bin = git curl java python buck node
 prereq_check = $(foreach bin,$(prereq_bin),$(if $(shell which $(bin)),,\
 		$(error "No `$(bin)` found in PATH. see README.md")))
 
-highlands_link = https://github.com/immutables/highlands/archive/v0.5.tar.gz
+highlands_link = https://github.com/immutables/highlands/archive/v0.13.tar.gz
 
 # The default is just to fetch, build, test all targets
 default:
@@ -49,4 +49,4 @@ up: .ext/highlands
 	$(prereq_check)
 	@printf "\e[00;33m[updating dependencies, regen all]\e[00m\n"
 	buck clean
-	node up --uplock --lib --intellij --trace
+	node up --uplock --lib --intellij --eclipse --trace

@@ -2,6 +2,7 @@ package io.immutables.grammar;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultiset;
+import io.immutables.Source;
 import io.immutables.grammar.Productions.Traversal;
 import io.immutables.grammar.Productions.Traversal.At;
 import io.immutables.grammar.fixture.ExprProductions;
