@@ -6,7 +6,8 @@
 const ver = {
 	guava: '28.2-jre',
 	guice: '4.2.2',
-	immutables: '2.8.3',
+	gson: '2.8.6',
+	immutables: '2.8.7',
 }
 
 require('./.ext/highlands/')
@@ -18,12 +19,16 @@ require('./.ext/highlands/')
 	})
 	.lib('//lib/immutables/value:annotations', `org.immutables:value:annotations:${ver.immutables}`)
 	.lib('//lib/immutables/value', `org.immutables:value:${ver.immutables}`, {
-		// processor: 'org.immutables.processor.ProxyProcessor',
 		srcs: [],
 	})
 	.lib('//lib/immutables/value:processor', [], {
 		processor: 'org.immutables.processor.ProxyProcessor',
 		deps: ['//lib/immutables/value'],
+	})
+	.lib('//lib/google/gson', `com.google.code.gson:gson:${ver.gson}`)
+	.lib('//lib/square/okio', `com.squareup.okio:okio:1.16.0`)
+	.lib('//lib/square/moshi', `com.squareup.moshi:moshi:1.9.2`, {
+		deps: ['//lib/square/okio']
 	})
 	.lib('//lib/immutables/trees', `org.immutables:trees:${ver.immutables}`)
 	.lib('//lib/immutables/ordinal', `org.immutables:ordinal:${ver.immutables}`)

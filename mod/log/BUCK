@@ -6,6 +6,7 @@ java_module(
 	  '//lib/immutables/value:annotations',
     '//mod/common:common',
     '//lib/postresql:postresql',
+    '//lib/google/gson:gson',
   ],
   plugins = [
     '//lib/immutables/value:processor'

@@ -3,8 +3,8 @@ package io.immutables.regresql;
 import io.immutables.Nullable;
 import io.immutables.Source;
 import io.immutables.collect.Vect;
-import io.immutables.regresql.Sqls.MethodDefinition;
-import io.immutables.regresql.Sqls.SqlSource;
+import io.immutables.regresql.Regresql.MethodSnippet;
+import io.immutables.regresql.Regresql.SqlSource;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.stream.Stream;
@@ -29,7 +29,7 @@ class ErrorRefining {
 	static SQLException refineException(
 			SqlSource source,
 			Method method,
-			MethodDefinition definition,
+			MethodSnippet definition,
 			SQLException originalException) {
 
 		if (!postgresqlPresent || !(originalException instanceof PSQLException)) {

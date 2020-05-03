@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.MissingResourceException;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,20 +41,20 @@ import java.util.stream.Collectors;
 import org.immutables.value.Value.Immutable;
 import static com.google.common.base.Preconditions.checkArgument;
 
-final class Sqls {
-	private Sqls() {}
+public final class Regresql {
+	private Regresql() {}
 
 	private static final Pattern PLACEHOLDER = Pattern.compile("[:]{1,2}([a-zA-Z0-9.]+)");
 
 	@Immutable
-	interface MethodDefinition {
+	interface MethodSnippet {
 		String name();
 		List<String> placeholders();
 		Source.Range identifierRange();
 		Source.Range statementsRange();
 		String preparedStatements();
 
-		class Builder extends ImmutableMethodDefinition.Builder {}
+		class Builder extends ImmutableMethodSnippet.Builder {}
 	}
 
 	@Immutable
@@ -72,28 +73,77 @@ final class Sqls {
 
 		class Builder extends ImmutableSqlSource.Builder {}
 	}
-
-	@SuppressWarnings("unchecked") // cast guaranteed by Proxy contract, runtime verified
-	public static <T extends SqlAccessor> T load(Class<T> accessorInterface) {
-		checkArgument(accessorInterface.isInterface()
-				&& accessorInterface.getCanonicalName() != null
-				&& SqlAccessor.class.isAssignableFrom(accessorInterface),
-				"Should be normal interface extending SqlAccessor: %s", accessorInterface);
-
-		return (T) Proxy.newProxyInstance(
-				accessorInterface.getClassLoader(),
-				new Class<?>[] {accessorInterface},
-				handlerFor(accessorInterface));
+	
+	@Immutable
+	interface InOutProfile {
+		
+		default boolean useBatch() {
+			return false;
+		}
+		
+		default boolean useUpdateCount() {
+			return false;
+		}
+		
+		default void set(PreparedStatement statement, int parameterIndex, String placeholder, int batchIndex) {
+			
+		}
+		
+		default void resultSet() {
+			
+		}
 	}
 
-	static InvocationHandler handlerFor(Class<?> accessorInterface) {
-		Set<String> methods = uniqueAccessMethods(accessorInterface);
+	@SuppressWarnings("unchecked") // cast guaranteed by Proxy contract, runtime verified
+	public static <T> T load(Class<T> accessor) {
+		checkArgument(accessor.isInterface()
+				&& accessor.getCanonicalName() != null,
+				"%s is not valid SQL access interface", accessor);
 
+		return (T) Proxy.newProxyInstance(
+				accessor.getClassLoader(),
+				new Class<?>[] {accessor},
+				handlerFor(accessor));
+	}
+	
+	private static ImmutableMap<String, InOutProfile> compileProfiles(Class<?> accessor, Set<String> methods) {
+		return null; //TODO auto
+	}
+
+	static InvocationHandler handlerFor(Class<?> accessor) {
+		SqlSource source = loadSqlSource(accessor);
+		Set<String> methods = uniqueAccessMethods(accessor);
+		ImmutableMap<String, MethodSnippet> snippets = parseSnippets(source, methods);
+		ImmutableMap<String, InOutProfile> profiles = compileProfiles(accessor, methods);
+
+		return new InvocationHandler() {
+			@Override
+			public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+				MethodSnippet snippet = snippets.get(method.getName());
+
+				try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres");
+						PreparedStatement statement = connection.prepareStatement(snippet.preparedStatements())) {
+					List<String> placeholders = snippet.placeholders();
+					int i = 0;
+					for (String p : placeholders) {
+						statement.setInt(++i, i);
+					}
+					return statement.executeUpdate();
+				} catch (SQLException sqlException) {
+					throw ErrorRefining.refineException(source, method, snippet, sqlException);
+				}
+			}
+		};
+	}
+
+	private static SqlSource loadSqlSource(Class<?> accessorInterface) throws AssertionError {
 		String filename = resourceFilenameFor(accessorInterface);
 		URL resource = accessorInterface.getResource(filename);
-		if (resource == null) {
-			throw new AssertionError(filename + " must be present in classpath for " + accessorInterface);
-		}
+
+		if (resource == null) throw new MissingResourceException(
+				filename + " must be present in classpath",
+				accessorInterface.getCanonicalName(),
+				filename);
 
 		// We minimize any copying unless absolutely necessary.
 		// Basically, we only have full source in a single Buffer which we fill in
@@ -104,79 +154,58 @@ final class Sqls {
 		// and use directly for JDBC. Also we collect placeholder strings in lists
 		// per method.
 		Source.Buffer content = new Source.Buffer();
-		
+
 		try {
 			Resources.asCharSource(resource, StandardCharsets.UTF_8).copyTo(content);
-		} catch (IOException readingFromClasspathFailed) {
-			throw new UncheckedIOException("Cannot read " + filename, readingFromClasspathFailed);
+		} catch (IOException readingClasspathResourceFailed) {
+			throw new UncheckedIOException("Cannot read " + filename, readingClasspathResourceFailed);
 		}
 
-		SqlSource source = new SqlSource.Builder()
+		return new SqlSource.Builder()
 				.content(content)
 				.filename(filename)
 				.lines(Source.Lines.from(content))
 				.build();
-
-		ImmutableMap<String, MethodDefinition> definitions = parseMatchedMethods(source, methods);
-
-		return new InvocationHandler() {
-			@Override
-			public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-				MethodDefinition definition = definitions.get(method.getName());
-
-				try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres");
-						PreparedStatement statement = connection.prepareStatement(definition.preparedStatements())) {
-					List<String> placeholders = definition.placeholders();
-					int i = 0;
-					for (String p : placeholders) {
-						statement.setInt(++i, i);
-					}
-					return statement.executeUpdate();
-				} catch (SQLException sqlException) {
-					throw ErrorRefining.refineException(source, method, definition, sqlException);
-				}
-			}
-		};
 	}
 
-	private static ImmutableMap<String, MethodDefinition> parseMatchedMethods(
+	private static ImmutableMap<String, MethodSnippet> parseSnippets(
 			SqlSource source,
 			Set<String> methods) {
-
-		ImmutableList<MethodDefinition> definitions = parse(source.content(), source.lines());
-		ImmutableListMultimap<String, MethodDefinition> byName = Multimaps.index(definitions, m -> m.name());
+		ImmutableList<MethodSnippet> snippets = parse(source.content(), source.lines());
+		ImmutableListMultimap<String, MethodSnippet> byName = Multimaps.index(snippets, m -> m.name());
 
 		List<Source.Problem> problems = new ArrayList<>();
 
-		for (Entry<String, Collection<MethodDefinition>> e : byName.asMap().entrySet()) {
+		for (Entry<String, Collection<MethodSnippet>> e : byName.asMap().entrySet()) {
 			String name = e.getKey();
 			if (name.isEmpty()) {
-				for (MethodDefinition orphan : e.getValue()) {
+				for (MethodSnippet nameless : e.getValue()) {
 					problems.add(source.problemAt(
-							orphan.statementsRange(),
+							nameless.statementsRange(),
 							"SQL statements not under method",
 							"Put statements after --.method declarations"));
 				}
 			} else if (!methods.contains(name)) {
-				for (MethodDefinition unmatched : e.getValue()) {
+				for (MethodSnippet unmatched : e.getValue()) {
 					problems.add(source.problemAt(
 							unmatched.identifierRange(),
 							"There are no corresponding `" + name + "` method in interface",
 							"Declared interface methods: " + String.join(", ", methods)));
 				}
 			} else if (e.getValue().size() > 1) {
-				for (MethodDefinition duplicate : Vect.from(e.getValue()).rangeFrom(1)) {
+				for (MethodSnippet duplicate : Vect.from(e.getValue()).rangeFrom(1)) {
 					problems.add(source.problemAt(
 							duplicate.identifierRange(),
-							"Duplicate `" + name + "` definition",
+							"Duplicate `" + name + "` declaration",
 							"No method duplicates or overloads are allowed"));
 				}
 			}
 		}
 
-		if (!problems.isEmpty()) throw new AssertionError("\n" + Joiner.on("\n").join(problems));
+		if (!problems.isEmpty()) throw new RuntimeException(
+				"\n" + Joiner.on("\n").join(problems));
 
-		return Maps.uniqueIndex(definitions, m -> m.name());
+		return Maps.uniqueIndex(snippets, m -> m.name());
 	}
 
 	private static Set<String> uniqueAccessMethods(Class<?> accessorInterface) {
@@ -196,8 +225,10 @@ final class Sqls {
 
 	private static String resourceFilenameFor(Class<?> accessorInterface) {
 		String canonicalName = accessorInterface.getCanonicalName();
-		assert canonicalName != null : "precondition check before";
-		String packageName = accessorInterface.getPackage().getName();
+		assert canonicalName != null : "precondition checked before";
+		// not sure if null package can be for unnamed package, handling just in case
+		Package packageObject = accessorInterface.getPackage();
+		String packageName = packageObject != null ? packageObject.getName() : "";
 		String packagePath = packageName.replace('.', '/');
 		String resourceFilename;
 		if (canonicalName.startsWith(packageName + ".")) {
@@ -208,14 +239,14 @@ final class Sqls {
 		return "/" + resourceFilename + ".sql";
 	}
 
-	private static ImmutableList<MethodDefinition> parse(CharSequence content, Source.Lines lines) {
-		ImmutableList.Builder<MethodDefinition> allMethods = ImmutableList.builder();
+	private static ImmutableList<MethodSnippet> parse(CharSequence content, Source.Lines lines) {
+		ImmutableList.Builder<MethodSnippet> allMethods = ImmutableList.builder();
 
 		class Parser {
 			@Nullable
-			MethodDefinition.Builder methodBuilder = null;
+			MethodSnippet.Builder openBuilder = null;
 			@Nullable
-			Source.Range methodRange = null;
+			Source.Range openRange = null;
 
 			void parse() {
 				for (int i = 1; i <= lines.count(); i++) {
@@ -225,17 +256,18 @@ final class Sqls {
 
 					if (!name.isEmpty()) {
 						// method identifier line
+						// flush any open method and start
+						// new method builder
 						flushMethod(content, range);
-						beginMethod(name, range);
+						openMethod(name, range);
 					} else {
 						// regular statement line
-						if (methodBuilder != null) {
-							// define or expand range of previosly started method
-							methodRange = methodRange == null ? range : methodRange.span(range);
+						if (openBuilder != null) {
+							// begin or expand range for open method
+							openRange = openRange == null ? range : openRange.span(range);
 						} else {
-							// can collect unnamed trailing/orphan lines
-							// for error reporting
-							beginMethod(name, range);
+							// can collect unnamed leading lines for error reporting
+							openMethod("", range);
 						}
 					}
 				}
@@ -258,21 +290,21 @@ final class Sqls {
 				return ""; // none
 			}
 
-			void beginMethod(String name, Source.Range range) {
-				methodRange = null;
-				methodBuilder = new MethodDefinition.Builder()
+			void openMethod(String name, Source.Range range) {
+				openRange = null;
+				openBuilder = new MethodSnippet.Builder()
 						.identifierRange(range)
 						.name(name);
 			}
 
 			void flushMethod(CharSequence content, Source.Range currentRange) {
-				if (methodBuilder != null) {
-					if (methodRange != null) {
+				if (openBuilder != null) {
+					if (openRange != null) {
 						prepareRange(content);
-						allMethods.add(methodBuilder.build());
+						allMethods.add(openBuilder.build());
 					} else {
 						prepareEmpty(currentRange);
-						allMethods.add(methodBuilder.build());
+						allMethods.add(openBuilder.build());
 					}
 				}
 			}
@@ -282,7 +314,7 @@ final class Sqls {
 			 * otherwise it would too painful during development
 			 */
 			void prepareEmpty(Source.Range currentRange) {
-				methodBuilder.statementsRange(Source.Range.of(currentRange.begin))
+				openBuilder.statementsRange(Source.Range.of(currentRange.begin))
 						.preparedStatements("--");
 			}
 
@@ -292,11 +324,11 @@ final class Sqls {
 			 * with '?' character to match the JDBC prepared statement syntax.
 			 */
 			void prepareRange(CharSequence content) {
-				methodBuilder.statementsRange(methodRange);
+				openBuilder.statementsRange(openRange);
 
 				CharSequence source = content.subSequence(
-						methodRange.begin.position,
-						methodRange.end.position);
+						openRange.begin.position,
+						openRange.end.position);
 
 				// regex API works with old buffers
 				StringBuffer buffer = new StringBuffer();
@@ -312,7 +344,7 @@ final class Sqls {
 						matcher.appendReplacement(buffer, "$0");
 					} else {
 						String placeholder = matcher.group(1);
-						methodBuilder.addPlaceholders(placeholder);
+						openBuilder.addPlaceholders(placeholder);
 						matcher.appendReplacement(buffer, "?");
 						// append number of spaces to match the length of original
 						// placeholder so SQL syntax error reporting would operate
@@ -323,7 +355,7 @@ final class Sqls {
 					}
 				}
 				matcher.appendTail(buffer);
-				methodBuilder.preparedStatements(buffer.toString());
+				openBuilder.preparedStatements(buffer.toString());
 			}
 		}
 

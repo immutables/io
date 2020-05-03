@@ -1,0 +1,14 @@
+load('//mod:rules.bzl', 'java_module')
+
+java_module(
+	name = 'codec',
+  deps = [
+    '//mod/common:common',
+		'//lib/square/moshi:moshi',
+		'//lib/square/okio:okio',
+		'//lib/javax/annotation:annotation'
+  ],
+  test_deps = [
+  	'//mod/that:that',
+  ],
+)
