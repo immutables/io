@@ -9,50 +9,97 @@ import com.google.common.reflect.TypeToken;
 import io.immutables.Nullable;
 import io.immutables.Unreachable;
 import io.immutables.codec.Codec.At;
+import io.immutables.codec.Codec.Compound;
+import io.immutables.codec.Codec.ContainerCodec;
 import io.immutables.codec.Codec.Field;
-import io.immutables.codec.Codec.FieldMapper;
+import io.immutables.codec.Codec.FieldIndex;
 import io.immutables.codec.Codec.In;
-import io.immutables.codec.Codec.Lookup;
 import io.immutables.codec.Codec.NullAware;
 import io.immutables.codec.Codec.Out;
+import io.immutables.codec.Codec.Resolver;
 import io.immutables.collect.Vect;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.immutables.data.Datatype;
 
-final class Codecs {
-	static Codec.Lookup lookup() {
+public final class Codecs {
+	private Codecs() {}
+
+	public static @Nullable Annotation findQualifier(AnnotatedElement element) {
+		@Nullable Annotation found = null;
+		for (Annotation a : element.getAnnotations()) {
+			if (a.annotationType().isAnnotationPresent(CodecQualifier.class)) {
+				if (found != null) {
+					throw new IllegalArgumentException(
+							element + " has more than one annotation (@CodecQualifier): " + found + ", " + a);
+				}
+				found = a;
+			}
+		}
+		return found;
+	}
+
+	public static Codec.Compound builtin() {
 		return new Codec.Compound()
-				.add(SCALARS)
-				.add(ENUMS)
-				.add(COLLECTIONS);
+				.add(SCALARS, null, Compound.LOWEST_PRIORITY + 1)
+				.add(ENUMS, null, Compound.LOWEST_PRIORITY + 1)
+				.add(COLLECTIONS, null, Compound.LOWEST_PRIORITY + 1)
+				.add(OPTIONALS, null, Compound.LOWEST_PRIORITY + 1)
+				.add(DATATYPES, null, Compound.LOWEST_PRIORITY);
 	}
 
-	private static Codec.Factory datatypes() {
-		return null;
-//		@SuppressWarnings("unchecked")
-//		@Override
-//		public <T> Codec<T> get(Lookup lookup, TypeToken<T> type) {
-//			return null;
-//		}
-	}
+	private static Codec.Factory DATATYPES = new Codec.Factory() {
+		@SuppressWarnings("unchecked")
+		@Override
+		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
+			@Nullable Datatype<T> t = null;
+			try {
+				t = Datatypes.construct(type);
+			} catch (Exception cannotConstructDatatype) {
+				cannotConstructDatatype.printStackTrace();
+				return null;
+			}
+
+			return t != null ? new DatatypeCodec<>(t, lookup) : null;
+		}
+		@Override
+		public String toString() {
+			return "Codec.Factory for Datatypes";
+		}
+	};
 
 	private static Codec.Factory ENUMS = new Codec.Factory() {
 		@SuppressWarnings("unchecked")
 		@Override
-		public <T> Codec<T> get(Lookup lookup, TypeToken<T> type) {
+		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
 			Class<?> c = type.getRawType();
 			if (c.isEnum()) {
 				return new EnumCodec<>((Class<T>) c, o -> ((Enum<?>) o).name(), false);
 			}
-			return Codec.unsupported();
+			return null;
+		}
+		@Override
+		public String toString() {
+			return "Codec.Factory for enums";
 		}
 	};
+
+	@FunctionalInterface
+	interface CollectionConstructor {
+		<E, C> C construct(Iterable<E> elements);
+	}
 
 	private static Codec.Factory COLLECTIONS = new Codec.Factory() {
 		private final Type listTypeParameter = List.class.getTypeParameters()[0];
@@ -61,21 +108,45 @@ final class Codecs {
 		private final Type mapKeyTypeParameter = Map.class.getTypeParameters()[0];
 		private final Type mapValueTypeParameter = Map.class.getTypeParameters()[1];
 
+		private final CollectionConstructor listConstructor = new CollectionConstructor() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public <E, C> C construct(Iterable<E> elements) {
+				return (C) ImmutableList.copyOf(elements);
+			}
+		};
+
+		private final CollectionConstructor setConstructor = new CollectionConstructor() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public <E, C> C construct(Iterable<E> elements) {
+				return (C) ImmutableSet.copyOf(elements);
+			}
+		};
+
+		private final CollectionConstructor vectConstructor = new CollectionConstructor() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public <E, C> C construct(Iterable<E> elements) {
+				return (C) Vect.from(elements);
+			}
+		};
+
 		@SuppressWarnings("unchecked") // runtime token + checks
 		@Override
-		public <T> Codec<T> get(Lookup lookup, TypeToken<T> type) {
+		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
 			Class<?> rawType = type.getRawType();
 			if (rawType == List.class || rawType == ImmutableList.class) {
 				Codec<?> codec = lookup.get(type.resolveType(listTypeParameter));
-				return (Codec<T>) new ArrayCodec<>((Codec<Object>) codec, ImmutableList::copyOf);
+				return (Codec<T>) new ArrayCodec<>((Codec<Object>) codec, listConstructor);
 			}
 			if (rawType == Set.class || rawType == ImmutableSet.class) {
 				Codec<?> codec = lookup.get(type.resolveType(setTypeParameter));
-				return (Codec<T>) new ArrayCodec<>((Codec<Object>) codec, ImmutableSet::copyOf);
+				return (Codec<T>) new ArrayCodec<>((Codec<Object>) codec, setConstructor);
 			}
 			if (rawType == Vect.class) {
 				Codec<?> codec = lookup.get(type.resolveType(vectTypeParameter));
-				return (Codec<T>) new ArrayCodec<>((Codec<Object>) codec, Vect::from);
+				return (Codec<T>) new ArrayCodec<>((Codec<Object>) codec, vectConstructor);
 			}
 			if (rawType == Map.class || rawType == ImmutableMap.class) {
 				Codec<?> forKey = lookup.get(type.resolveType(mapKeyTypeParameter));
@@ -85,7 +156,12 @@ final class Codecs {
 						(Codec<Object>) forValue,
 						MapCodec.immutableMapSupplier());
 			}
-			return Codec.unsupported();
+			return null;
+		}
+
+		@Override
+		public String toString() {
+			return "Codec.Factory for List<T>, Set<T>, Map<K,V>";
 		}
 	};
 
@@ -102,7 +178,7 @@ final class Codecs {
 
 		@Override
 		public M decode(In in) throws IOException {
-			FieldMapper fields = Codec.arbitraryFields();
+			FieldIndex fields = Codec.arbitraryFields();
 			in.beginStruct(fields);
 			MapBuilder<K, V, M> builder = builderSupplier.get();
 			StringValueIo keyIo = new StringValueIo();
@@ -116,7 +192,7 @@ final class Codecs {
 
 		@Override
 		public void encode(Out out, M instance) throws IOException {
-			FieldMapper fields = Codec.arbitraryFields();
+			FieldIndex fields = Codec.arbitraryFields();
 			out.beginStruct(fields);
 			StringValueIo keyIo = new StringValueIo();
 			for (Entry<K, V> e : instance.entrySet()) {
@@ -127,19 +203,18 @@ final class Codecs {
 			out.endStruct();
 		}
 
-		interface MapBuilder<K, V, M extends Map<K, V>> {
+		public interface MapBuilder<K, V, M extends Map<K, V>> {
 			void put(K k, V v);
 			M build();
 		}
 
-		static <K, V> Supplier<MapBuilder<K, V, ImmutableMap<K, V>>> immutableMapSupplier() {
+		public static <K, V> Supplier<MapBuilder<K, V, ImmutableMap<K, V>>> immutableMapSupplier() {
 			return () -> new MapCodec.MapBuilder<K, V, ImmutableMap<K, V>>() {
 				final ImmutableMap.Builder<K, V> b = ImmutableMap.builder();
 				@Override
 				public void put(K k, V v) {
 					b.put(k, v);
 				}
-
 				@Override
 				public ImmutableMap<K, V> build() {
 					return b.build();
@@ -148,11 +223,11 @@ final class Codecs {
 		}
 	}
 
-	public static class ArrayCodec<E, C extends Iterable<E>> extends Codec<C> {
+	public static class ArrayCodec<E, C extends Iterable<E>> extends ContainerCodec<E, C> {
 		private final Codec<E> elementCodec;
-		private final Function<Iterable<E>, C> constructor;
+		private final CollectionConstructor constructor;
 
-		public ArrayCodec(Codec<E> elementCodec, Function<Iterable<E>, C> constructor) {
+		public ArrayCodec(Codec<E> elementCodec, CollectionConstructor constructor) {
 			this.elementCodec = elementCodec;
 			this.constructor = constructor;
 		}
@@ -165,7 +240,7 @@ final class Codecs {
 				elements.add(elementCodec.decode(in));
 			}
 			in.endArray();
-			return constructor.apply(elements);
+			return constructor.construct(elements);
 		}
 
 		@Override
@@ -175,6 +250,17 @@ final class Codecs {
 				elementCodec.encode(out, e);
 			}
 			out.endArray();
+		}
+
+		@Override
+		public Codec<E> element() {
+			return elementCodec;
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public <R, K> ContainerCodec<R, K> withElement(Codec<R> newElementCodec) {
+			return (ContainerCodec<R, K>) new ArrayCodec<>(newElementCodec, constructor);
 		}
 	}
 
@@ -249,13 +335,17 @@ final class Codecs {
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public <T> Codec<T> get(Lookup lookup, TypeToken<T> type) {
-			@Nullable Codec<?> codec = codecs.get(type.getRawType());
-			return codec != null ? (Codec<T>) codec : Codec.unsupported();
+		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
+			return (Codec<T>) codecs.get(type.getRawType());
+		}
+
+		@Override
+		public String toString() {
+			return "Codec.Factory for int, long, double, boolean, String";
 		}
 	};
 
-	// Albeigt a lot of codecs for structures/objects will decide to encode decode
+	// Albeit a lot of codecs for structures/objects will decide to encode decode
 	// scalars by themselves, there's built-in codec for scalar (primitives + wrappers + string)
 	// to implement reflective codecs.
 	@SuppressWarnings("unchecked")
@@ -327,6 +417,146 @@ final class Codecs {
 		}
 	}
 
+	private static Codec.Factory OPTIONALS = new Codec.Factory() {
+		private final Type optionalTypeParameter = Optional.class.getTypeParameters()[0];
+		@SuppressWarnings("unchecked") // runtime token + checks
+		@Override
+		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
+			Class<?> rawType = type.getRawType();
+			if (rawType == Optional.class) {
+				Codec<?> codec = lookup.get(type.resolveType(optionalTypeParameter));
+				return (Codec<T>) new OptionalCodec<>((Codec<Object>) codec);
+			}
+			if (rawType == OptionalInt.class) {
+				return (Codec<T>) new OptionalPrimitive(OptionalPrimitive.Variant.INT);
+			}
+			if (rawType == OptionalLong.class) {
+				return (Codec<T>) new OptionalPrimitive(OptionalPrimitive.Variant.LONG);
+			}
+			if (rawType == OptionalDouble.class) {
+				return (Codec<T>) new OptionalPrimitive(OptionalPrimitive.Variant.DOUBLE);
+			}
+			return null;
+		}
+
+		@Override
+		public String toString() {
+			return "Codec.Factory for Optional<E>, Optional{Int|Long|Double}";
+		}
+	};
+
+	public static class OptionalPrimitive extends Codec<Object> implements NullAware {
+		enum Variant {
+			INT, LONG, DOUBLE
+		}
+		private final Variant type;
+		public OptionalPrimitive(Variant type) {
+			this.type = type;
+		}
+		@Override
+		public Object decode(In in) throws IOException {
+			if (in.peek() == At.NULL) {
+				in.takeNull();
+				switch (type) { // @formatter:off
+				case INT: return OptionalInt.empty();
+				case LONG: return OptionalLong.empty();
+				case DOUBLE: return OptionalDouble.empty();
+				default: throw Unreachable.exhaustive();
+				}
+			}
+			switch (type) { // @formatter:off
+			case INT: return OptionalInt.of(in.takeInt());
+			case LONG: return OptionalLong.of(in.takeLong());
+			case DOUBLE: return OptionalDouble.of(in.takeDouble());
+			default: throw Unreachable.exhaustive();
+			} // @formatter:on
+		}
+		@Override
+		public void encode(Out out, Object instance) throws IOException {
+			if (instance != null) {
+				switch (type) {
+				case INT:
+					OptionalInt i = ((OptionalInt) instance);
+					if (i.isPresent()) {
+						out.putInt(i.getAsInt());
+						return;
+					}
+					break;
+				case LONG:
+					OptionalLong l = ((OptionalLong) instance);
+					if (l.isPresent()) {
+						out.putLong(l.getAsLong());
+						return;
+					}
+					break;
+				case DOUBLE:
+					OptionalDouble d = ((OptionalDouble) instance);
+					if (d.isPresent()) {
+						out.putDouble(d.getAsDouble());
+						return;
+					}
+					break;
+				}
+			}
+			// every present case should return above
+			out.putNull();
+		}
+
+		@Override
+		public boolean supportsNull() {
+			return true;
+		}
+		@Override
+		public String toString() {
+			switch (type) { // @formatter:off
+			case INT: return "Codec<OptionalInt>";
+			case LONG: return "Codec<OptionalLong>";
+			case DOUBLE: return "Codec<OptionalDouble>";
+			default: throw Unreachable.exhaustive();
+			} // @formatter:on
+		}
+	}
+
+	public static class OptionalCodec<E> extends ContainerCodec<E, Optional<E>> implements NullAware {
+		private final Codec<E> elementCodec;
+		public OptionalCodec(Codec<E> elementCodec) {
+			this.elementCodec = elementCodec;
+		}
+		@Override
+		public Optional<E> decode(In in) throws IOException {
+			if (in.peek() == At.NULL) {
+				in.takeNull();
+				return Optional.empty();
+			}
+			return Optional.ofNullable(elementCodec.decode(in)); // Optional.of ?
+		}
+		@Override
+		public boolean supportsNull() {
+			return true;
+		}
+		@Override
+		public void encode(Out out, Optional<E> instance) throws IOException {
+			if (instance != null && instance.isPresent()) {
+				elementCodec.encode(out, instance.get());
+			} else {
+				out.putNull();
+			}
+		}
+		@Override
+		public String toString() {
+			return "Codec<Optional<E>> for " + elementCodec;
+		}
+		@Override
+		public Codec<E> element() {
+			return elementCodec;
+		}
+		@SuppressWarnings("unchecked")
+		@Override
+		public <R, K> ContainerCodec<R, K> withElement(Codec<R> newElement) {
+			return (ContainerCodec<R, K>) new OptionalCodec<>(newElement);
+		}
+	}
+
 	private static class StringValueIo implements In, Out {
 		private @Nullable String value;
 
@@ -345,7 +575,7 @@ final class Codecs {
 		}
 
 		@Override
-		public Object unwrap() {
+		public Object adapts() {
 			return value;
 		}
 
@@ -467,8 +697,168 @@ final class Codecs {
 		}
 
 		@Override
-		public void beginStruct(FieldMapper f) throws IOException {
+		public void beginStruct(FieldIndex f) throws IOException {
 			onlyStringrExpected();
+		}
+	}
+
+	public abstract class ForwardingOut implements Out {
+		protected abstract Out delegate();
+
+		@Override
+		public void putInt(int i) throws IOException {
+			delegate().putInt(i);
+		}
+
+		@Override
+		public void putLong(long l) throws IOException {
+			delegate().putLong(l);
+		}
+
+		@Override
+		public void putDouble(double d) throws IOException {
+			delegate().putDouble(d);
+		}
+
+		@Override
+		public void putBoolean(boolean b) throws IOException {
+			delegate().putBoolean(b);
+		}
+
+		@Override
+		public void putSpecial(Object o) throws IOException {
+			delegate().putSpecial(o);
+		}
+
+		@Override
+		public void putNull() throws IOException {
+			delegate().putNull();
+		}
+
+		@Override
+		public void putString(CharSequence s) throws IOException {
+			delegate().putString(s);
+		}
+
+		@Override
+		public void endArray() throws IOException {
+			delegate().endArray();
+		}
+
+		@Override
+		public void beginArray() throws IOException {
+			delegate().beginArray();
+		}
+
+		@Override
+		public void beginStruct(FieldIndex f) throws IOException {
+			delegate().beginStruct(f);
+		}
+
+		@Override
+		public void putField(@Field int field) throws IOException {
+			delegate().putField(field);
+		}
+
+		@Override
+		public void endStruct() throws IOException {
+			delegate().endStruct();
+		}
+
+		@Override
+		public String getPath() {
+			return delegate().getPath();
+		}
+
+		@Override
+		public void expect(boolean condition, Supplier<String> message) throws IOException {
+			delegate().expect(condition, message);
+		}
+
+		@Override
+		public void unexpected(String message) throws IOException {
+			delegate().unexpected(message);
+		}
+
+		@Override
+		public Object adapts() {
+			return delegate().adapts();
+		}
+	}
+
+	public abstract class ForwardingIn implements In {
+		protected abstract Out delegate();
+
+		public void putInt(int i) throws IOException {
+			delegate().putInt(i);
+		}
+
+		public void putLong(long l) throws IOException {
+			delegate().putLong(l);
+		}
+
+		public void putDouble(double d) throws IOException {
+			delegate().putDouble(d);
+		}
+
+		public void putBoolean(boolean b) throws IOException {
+			delegate().putBoolean(b);
+		}
+
+		public void putSpecial(Object o) throws IOException {
+			delegate().putSpecial(o);
+		}
+
+		public void putNull() throws IOException {
+			delegate().putNull();
+		}
+
+		public void putString(CharSequence s) throws IOException {
+			delegate().putString(s);
+		}
+
+		@Override
+		public void endArray() throws IOException {
+			delegate().endArray();
+		}
+
+		@Override
+		public void beginArray() throws IOException {
+			delegate().beginArray();
+		}
+
+		@Override
+		public void beginStruct(FieldIndex f) throws IOException {
+			delegate().beginStruct(f);
+		}
+
+		public void putField(@Field int field) throws IOException {
+			delegate().putField(field);
+		}
+
+		@Override
+		public void endStruct() throws IOException {
+			delegate().endStruct();
+		}
+
+		@Override
+		public String getPath() {
+			return delegate().getPath();
+		}
+
+		@Override
+		public void expect(boolean condition, Supplier<String> message) throws IOException {
+			delegate().expect(condition, message);
+		}
+
+		@Override
+		public void unexpected(String message) throws IOException {
+			delegate().unexpected(message);
+		}
+
+		@Override
+		public Object adapts() {
+			return delegate().adapts();
 		}
 	}
 }

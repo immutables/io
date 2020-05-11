@@ -5,12 +5,10 @@ java_module(
 	exported_deps = [
 		'//lib/google/common:common',
 		'//lib/immutables/value:annotations',
+		'//lib/javax/annotation:annotation',
 	],
 	test_deps = [
 		'//mod/that:that',
-	],
-	provided_deps = [
-		'//lib/javax/annotation:annotation',
 	],
 )
 

@@ -1,5 +1,6 @@
 package io.immutables.that;
 
+import io.immutables.that.Assert.CanThrow;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,7 +19,7 @@ import javax.annotation.Nullable;
  * @see Assert
  * @see That.Condition
  * @see That.Object
- * @see That.Runnable
+ * @see That.Block
  * @see That.Iterable
  * @see That.Optional
  * @see That.String
@@ -108,7 +109,7 @@ public interface That<T, S extends That<T, S>> {
 	/**
 	 * That runnable or lambda/block.
 	 */
-	public interface Runnable extends That<java.lang.Runnable, Runnable> {
+	public interface Block extends That<CanThrow, Block> {
 		/**
 		 * Fails if that runnable doesn't throw exception of expected type (or subtype of
 		 * expected type) when called.
@@ -117,7 +118,7 @@ public interface That<T, S extends That<T, S>> {
 		 */
 		default <E extends Throwable> That.Object<E> thrown(Class<E> thrownType) {
 			try {
-				java.lang.Runnable runnable = What.get(this);
+				CanThrow runnable = What.get(this);
 				runnable.run();
 				throw What.newAssertionError(
 						"expected thrown " + thrownType.getCanonicalName(),

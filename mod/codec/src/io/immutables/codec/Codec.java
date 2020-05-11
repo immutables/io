@@ -10,12 +10,10 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Target;
 import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Supplier;
 import static java.lang.annotation.ElementType.TYPE_USE;
 
@@ -38,7 +36,7 @@ public abstract class Codec<T> {
 		EOF,
 	}
 
-	public interface Out extends Err, Wrapper {
+	public interface Out extends Err, Adapter {
 		void putInt(int i) throws IOException;
 		void putLong(long l) throws IOException;
 		void putDouble(double d) throws IOException;
@@ -48,12 +46,12 @@ public abstract class Codec<T> {
 		void putString(CharSequence s) throws IOException;
 		void endArray() throws IOException;
 		void beginArray() throws IOException;
-		void beginStruct(FieldMapper f) throws IOException;
+		void beginStruct(FieldIndex f) throws IOException;
 		void putField(@Field int field) throws IOException;
 		void endStruct() throws IOException;
 	}
 
-	public interface In extends Err, Wrapper {
+	public interface In extends Err, Adapter {
 		At peek() throws IOException;
 		int takeInt() throws IOException;
 		long takeLong() throws IOException;
@@ -66,7 +64,7 @@ public abstract class Codec<T> {
 		boolean hasNext() throws IOException;
 		void beginArray() throws IOException;
 		void endArray() throws IOException;
-		void beginStruct(FieldMapper f) throws IOException;
+		void beginStruct(FieldIndex f) throws IOException;
 		@Field
 		int takeField() throws IOException;
 		void endStruct() throws IOException;
@@ -83,9 +81,9 @@ public abstract class Codec<T> {
 		}
 	}
 
-	public interface Wrapper {
+	public interface Adapter {
 		@Nullable
-		Object unwrap();
+		Object adapts();
 	}
 
 	public Codec<T> toNullable() {
@@ -128,27 +126,31 @@ public abstract class Codec<T> {
 		}
 	}
 
-	@SuppressWarnings("unchecked") // unsupported for any type
-	public static <T> Codec<T> unsupported() {
-		return (Codec<T>) UNSUPPORTED;
+	// Experimental
+	public static abstract class ContainerCodec<E, T> extends Codec<T> {
+		public abstract Codec<E> element();
+		public abstract <R, K> ContainerCodec<R, K> withElement(Codec<R> element);
 	}
 
-	private static final Codec<?> UNSUPPORTED = new Codec<Object>() {
-		@Override
-		public Object decode(In in) {
-			// TODO better reporting / message
-			throw new UnsupportedOperationException();
-		}
-		@Override
-		public void encode(Out out, Object instance) {
-			// TODO better reporting / message
-			throw new UnsupportedOperationException();
-		}
-		@Override
-		public String toString() {
-			return "Codec.unsupported()";
-		}
-	};
+	@SuppressWarnings("unchecked") // unsupported for any type
+	public static <T> Codec<T> unsupported(TypeToken<T> type, @Nullable Annotation qualifier) {
+		return new Codec<T>() {
+			@Override
+			public T decode(In in) {
+				// TODO better reporting / message
+				throw new UnsupportedOperationException();
+			}
+			@Override
+			public void encode(Out out, T instance) {
+				// TODO better reporting / message
+				throw new UnsupportedOperationException();
+			}
+			@Override
+			public String toString() {
+				return "Codec.unsupported(" + type + (qualifier != null ? " @" + qualifier : "") + ")";
+			}
+		};
+	}
 
 	/**
 	 * Sub interface that allows codes to communicate that they already handles null well. Because
@@ -166,13 +168,18 @@ public abstract class Codec<T> {
 	 * statically known codecs or dynamically built ones depending on requested type (and qualifier).
 	 */
 	public interface Factory {
-		<T> Codec<T> get(Lookup lookup, TypeToken<T> type);
+		@Nullable
+		<T> Codec<T> get(Resolver lookup, TypeToken<T> type);
 	}
 
 	@Target(TYPE_USE)
-	@interface Field {}
+	public @interface Field {}
 
-	public interface FieldMapper {
+	// The opposite of order, the bigger - the higher priority.
+	@Target(TYPE_USE)
+	public @interface Priority {}
+
+	public interface FieldIndex {
 		@Field
 		int nameToIndex(CharSequence name);
 		CharSequence indexToName(@Field int field);
@@ -183,14 +190,20 @@ public abstract class Codec<T> {
 			return true;
 		}
 
-		void put(Object obj);
+		void put(Object o);
+
 		@Nullable
 		Object get();
 	}
 
-	public static FieldMapper knownFields(String... fields) {
-		return new FieldMapper() {
+	public static FieldIndex knownFields(String... fields) {
+		return new FieldIndex() {
 			private final BiMap<String, Integer> order = HashBiMap.create();
+			{
+				for (int i = 0; i < fields.length; i++) {
+					order.put(fields[i], i);
+				}
+			}
 			private @Nullable Object cache;
 
 			@Override
@@ -229,8 +242,8 @@ public abstract class Codec<T> {
 		};
 	}
 
-	public static FieldMapper arbitraryFields() {
-		return new FieldMapper() {
+	public static FieldIndex arbitraryFields() {
+		return new FieldIndex() {
 			private final BiMap<String, Integer> order = HashBiMap.create();
 
 			@Override
@@ -258,7 +271,7 @@ public abstract class Codec<T> {
 		};
 	}
 
-	public interface Lookup {
+	public interface Resolver {
 		<T> Codec<T> get(TypeToken<T> type, @Nullable Annotation qualifier);
 
 		default <T> Codec<T> get(TypeToken<T> type) {
@@ -276,16 +289,37 @@ public abstract class Codec<T> {
 		}
 	}
 
-	public static final class Compound implements Lookup {
-		private final Map<Factory, Annotation> factories = new IdentityHashMap<>();
+	public static final class Compound implements Resolver {
+		static final @Priority int DEFAULT_PRIORITY = 0;
+		static final @Priority int LOWEST_PRIORITY = Integer.MIN_VALUE;
+
+		private final List<FactoryEntry> factories = new ArrayList<>();
 		private final Table<TypeToken<?>, Object, Codec<?>> memoised = HashBasedTable.create();
 
-		public Compound add(Factory factory) {
-			return add(factory, null);
+		private static class FactoryEntry implements Comparable<FactoryEntry> {
+			Factory factory;
+			@Nullable
+			Annotation qualifier;
+			@Priority
+			int priority = DEFAULT_PRIORITY;
+
+			@Override
+			public int compareTo(FactoryEntry o) {
+				return o.priority - priority;
+			}
 		}
 
-		public Compound add(Factory factory, @Nullable Annotation qualifier) {
-			factories.put(factory, qualifier);
+		public Compound add(Factory factory) {
+			return add(factory, null, DEFAULT_PRIORITY);
+		}
+
+		public Compound add(Factory factory, @Nullable Annotation qualifier, @Priority int priority) {
+			FactoryEntry e = new FactoryEntry();
+			e.factory = factory;
+			e.qualifier = qualifier;
+			e.priority = priority;
+			factories.add(e);
+			Collections.sort(factories);
 			return this;
 		}
 
@@ -293,43 +327,54 @@ public abstract class Codec<T> {
 			return qualifier != null ? qualifier : UNQUALIFIED;
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public <T> Codec<T> get(TypeToken<T> type, @Nullable Annotation qualifier) {
-			@SuppressWarnings("unchecked") Codec<T> codec =
-					(Codec<T>) memoised.get(type, qualifierKey(qualifier));
+			// (type.getType())
+			Codec<T> codec = (Codec<T>) memoised.get(type, qualifierKey(qualifier));
 			if (codec == null) {
-				codec = findUnique(type, qualifier);
+				codec = findBestUncontested(type, qualifier);
 				memoised.put(type, qualifierKey(qualifier), codec);
 			}
 			return codec;
 		}
 
-		private <T> Codec<T> findUnique(TypeToken<T> type, Annotation qualifier) {
-			@Nullable Set<Codec<T>> conflicting = null;
-			@Nullable Codec<T> unique = null;
+		@SuppressWarnings("null") // cannot be null, bestEntry assigned with best
+		private <T> Codec<T> findBestUncontested(TypeToken<T> type, @Nullable Annotation qualifier) {
+			@Nullable List<FactoryEntry> contesters = null;
+			@Nullable FactoryEntry bestEntry = null;
+			@Nullable Codec<T> best = null;
 
-			for (Entry<Factory, Annotation> e : factories.entrySet()) {
-				Factory f = e.getKey();
-				if (Objects.equals(qualifier, e.getValue())) {
+			for (FactoryEntry e : factories) {
+				// short circuit search if we already found something and priority is lower now
+				if (bestEntry != null && bestEntry.priority > e.priority) break;
+
+				Factory f = e.factory;
+				if (Objects.equals(qualifier, e.qualifier)) {
 					@Nullable Codec<T> c = f.get(this, type);
-					if (c != unsupported()) {
-						if (unique == null) {
-							unique = c;
-						} else {
-							if (conflicting == null) {
-								conflicting = new HashSet<>();
+					if (c != null) {
+						if (best != null) {
+							assert bestEntry != null;
+							assert bestEntry.priority == e.priority;
+							if (contesters == null) {
+								contesters = new ArrayList<>(2);
+								contesters.add(bestEntry);
 							}
-							conflicting.add(unique);
+							contesters.add(e);
+						} else {
+							best = c;
+							bestEntry = e;
 						}
 					}
 				}
 			}
-			if (conflicting != null) {
+			if (contesters != null) {
+				assert bestEntry != null;
 				throw new RuntimeException(
-						String.format("More than one applicable adapter found for %s @%s: %s",
-								type, qualifier, conflicting));
+						String.format("More than one applicable adapter founds for %s @%s. Factories with priority %s: %s",
+								type, qualifier, bestEntry.priority, contesters));
 			}
-			return unique != null ? unique : unsupported();
+			return best != null ? best : unsupported(type, qualifier);
 		}
 
 		@Override

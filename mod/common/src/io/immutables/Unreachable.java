@@ -12,4 +12,9 @@ public interface Unreachable {
 	static AssertionError contractual() {
 		throw new AssertionError("code should be unreachable by design contract");
 	}
+
+	@SuppressWarnings("unchecked")
+	static <X extends Throwable> X uncheckedThrow(Throwable hideous) throws X {
+		throw (X) hideous;
+	}
 }

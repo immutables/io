@@ -48,5 +48,4 @@ default:
 up: .ext/highlands
 	$(prereq_check)
 	@printf "\e[00;33m[updating dependencies, regen all]\e[00m\n"
-	buck clean
 	node up --uplock --lib --intellij --eclipse --trace

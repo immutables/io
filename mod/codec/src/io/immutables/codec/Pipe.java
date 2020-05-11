@@ -2,7 +2,7 @@ package io.immutables.codec;
 
 import io.immutables.Unreachable;
 import io.immutables.codec.Codec.At;
-import io.immutables.codec.Codec.FieldMapper;
+import io.immutables.codec.Codec.FieldIndex;
 import io.immutables.codec.Codec.In;
 import io.immutables.codec.Codec.Out;
 import java.io.IOException;
@@ -33,7 +33,7 @@ class Pipe {
 	}
 
 	private static void onStruct(Out out, In in) throws IOException {
-		FieldMapper mapper = Codec.arbitraryFields();
+		FieldIndex mapper = Codec.arbitraryFields();
 		in.beginStruct(mapper);
 		out.beginStruct(mapper);
 		while (in.hasNext()) {

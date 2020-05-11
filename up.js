@@ -8,6 +8,7 @@ const ver = {
 	guice: '4.2.2',
 	gson: '2.8.6',
 	immutables: '2.8.7',
+	immutablesExp: '2.8.6.datatypes',
 }
 
 require('./.ext/highlands/')
@@ -17,10 +18,11 @@ require('./.ext/highlands/')
 	.lib('//lib/google/inject', `com.google.inject:guice:no_aop:${ver.guice}`, {
 		srcs: `com.google.inject:guice:${ver.guice}`,
 	})
-	.lib('//lib/immutables/value:annotations', `org.immutables:value:annotations:${ver.immutables}`)
-	.lib('//lib/immutables/value', `org.immutables:value:${ver.immutables}`, {
+	.lib('//lib/immutables/value:annotations', `org.immutables:value:annotations:${ver.immutablesExp}`)
+	.lib('//lib/immutables/value', `org.immutables:value:${ver.immutablesExp}`, {
 		srcs: [],
 	})
+	.lib('//lib/immutables/data', `org.immutables:data:${ver.immutablesExp}`)
 	.lib('//lib/immutables/value:processor', [], {
 		processor: 'org.immutables.processor.ProxyProcessor',
 		deps: ['//lib/immutables/value'],

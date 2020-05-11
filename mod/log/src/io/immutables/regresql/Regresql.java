@@ -1,7 +1,6 @@
 package io.immutables.regresql;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -11,17 +10,36 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 import com.google.common.io.Resources;
+import com.google.common.reflect.AbstractInvocationHandler;
+import com.google.common.reflect.TypeToken;
 import io.immutables.Nullable;
 import io.immutables.Source;
 import io.immutables.Source.Position;
+import io.immutables.codec.Codec;
+import io.immutables.codec.Codec.ContainerCodec;
+import io.immutables.codec.Codec.FieldIndex;
+import io.immutables.codec.Codecs;
 import io.immutables.collect.Vect;
+import io.immutables.regresql.Coding.StatementParameterOut;
+import io.immutables.regresql.SqlAccessor.Batch;
+import io.immutables.regresql.SqlAccessor.Column;
+import io.immutables.regresql.SqlAccessor.Named;
+import io.immutables.regresql.SqlAccessor.Single;
+import io.immutables.regresql.SqlAccessor.Spread;
+import io.immutables.regresql.SqlAccessor.UpdateCount;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -32,15 +50,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.MissingResourceException;
+import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.immutables.value.Value.Derived;
+import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
 import static com.google.common.base.Preconditions.checkArgument;
 
+@Enclosing
 public final class Regresql {
 	private Regresql() {}
 
@@ -54,7 +78,7 @@ public final class Regresql {
 		Source.Range statementsRange();
 		String preparedStatements();
 
-		class Builder extends ImmutableMethodSnippet.Builder {}
+		class Builder extends ImmutableRegresql.MethodSnippet.Builder {}
 	}
 
 	@Immutable
@@ -71,31 +95,60 @@ public final class Regresql {
 			return new Source.Problem(filename(), content(), lines(), range, message, hint);
 		}
 
-		class Builder extends ImmutableSqlSource.Builder {}
+		class Builder extends ImmutableRegresql.SqlSource.Builder {}
 	}
-	
+
 	@Immutable
-	interface InOutProfile {
-		
-		default boolean useBatch() {
-			return false;
+	interface MethodProfile {
+		String name();
+		OptionalInt batchParameter();
+		default boolean useBatching() {
+			return batchParameter().isPresent();
 		}
-		
-		default boolean useUpdateCount() {
-			return false;
+
+		boolean returnUpdateCount();
+
+		public boolean extractColumn();
+
+		default boolean returnResultSet() {
+			return !returnUpdateCount();
 		}
-		
-		default void set(PreparedStatement statement, int parameterIndex, String placeholder, int batchIndex) {
-			
+
+		List<ParameterProfile> parameters();
+
+		Optional<Codec<Object>> returnTypeCodec();
+
+		Type returnType();
+
+		@Derived
+		default FieldIndex parameterIndex() {
+			return Codec.knownFields(parameters().stream()
+					.map(ParameterProfile::name)
+					.toArray(String[]::new));
 		}
-		
-		default void resultSet() {
-			
+
+		@Derived
+		default Map<String, ParameterProfile> parametersByName() {
+			return Maps.uniqueIndex(parameters(), ParameterProfile::name);
 		}
+		// future
+		// boolean returnGeneratedKeys();
+		class Builder extends ImmutableRegresql.MethodProfile.Builder {}
+	}
+
+	@Immutable
+	interface ParameterProfile {
+		String name();
+		boolean batch();
+		Optional<String> spread();
+		Codec<Object> codec();
+		TypeToken<?> type();
+
+		class Builder extends ImmutableRegresql.ParameterProfile.Builder {}
 	}
 
 	@SuppressWarnings("unchecked") // cast guaranteed by Proxy contract, runtime verified
-	public static <T> T load(Class<T> accessor) {
+	public static <T> T create(Class<T> accessor, Codec.Resolver codecs) {
 		checkArgument(accessor.isInterface()
 				&& accessor.getCanonicalName() != null,
 				"%s is not valid SQL access interface", accessor);
@@ -103,37 +156,234 @@ public final class Regresql {
 		return (T) Proxy.newProxyInstance(
 				accessor.getClassLoader(),
 				new Class<?>[] {accessor},
-				handlerFor(accessor));
-	}
-	
-	private static ImmutableMap<String, InOutProfile> compileProfiles(Class<?> accessor, Set<String> methods) {
-		return null; //TODO auto
+				handlerFor(accessor, codecs));
 	}
 
-	static InvocationHandler handlerFor(Class<?> accessor) {
+	private static ImmutableMap<String, MethodProfile> compileProfiles(
+			Class<?> accessor,
+			Set<String> methods,
+			Codec.Resolver codecs) {
+		ImmutableMap.Builder<String, MethodProfile> builder = ImmutableMap.builder();
+
+		for (Method m : accessor.getMethods()) {
+			String name = m.getName();
+			if (methods.contains(name)) {
+				builder.put(name, profileMethod(m, codecs));
+			}
+			// ignore here everything else, either assume these kind of mismatches handled elsewhere
+			// or just wish it will be ok.
+		}
+		return builder.build();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static MethodProfile profileMethod(Method method, Codec.Resolver codecs) {
+		MethodProfile.Builder builder = new MethodProfile.Builder();
+
+		@Nullable UpdateCount updateCount = method.getAnnotation(UpdateCount.class);
+		@Nullable Column column = method.getAnnotation(Column.class);
+		@Nullable Single single = method.getAnnotation(Single.class);
+
+		Type returnType = method.getGenericReturnType();
+
+		if (updateCount != null && (column != null || single != null)) throw new IllegalStateException(
+				"@UpdateCount and (@Column extraction or @Single result) cannot be used together on " + method);
+
+		if (updateCount != null
+				&& returnType != int.class
+				&& returnType != int[].class
+				&& returnType != long.class
+				&& returnType != long[].class) {
+			throw new IllegalStateException(
+					"@UpdateCount requires return type int, int[], long, or long[] on " + method);
+		}
+
+		ImmutableList<ParameterProfile> parameters = profileParameters(method, codecs);
+
+		builder.addAllParameters(parameters);
+
+		boolean useBatch = false;
+		for (int i = 0; i < parameters.size(); i++) {
+			if (parameters.get(i).batch()) {
+				builder.batchParameter(i);
+				useBatch = true;
+				break;
+			}
+		}
+
+		boolean returnUpdateCount = updateCount != null || returnType == void.class;
+
+		if (useBatch && !returnUpdateCount) {
+			throw new IllegalStateException(
+					"@Batch requires returning @UpdateCount or void return type" + method);
+		}
+
+		if (!returnUpdateCount) {
+			TypeToken<Object> t = (TypeToken<Object>) TypeToken.of(returnType);
+			Codec<Object> c = codecs.get(t, Codecs.findQualifier(method));
+
+			if (column != null) {
+				if (single != null) {
+					c = new Coding.ColumnExtractor(c, column);
+				} else if (c instanceof ContainerCodec<?, ?>) {
+					ContainerCodec<Object, Object> cc = (ContainerCodec<Object, Object>) c;
+					c = cc.withElement(new Coding.ColumnExtractor(cc.element(), column));
+				} else throw new IllegalStateException(
+						"@Column can only be used with @Single for " + method
+								+ ". The codec for " + t + " is not known to support such extraction (ContainerCodec can)");
+			}
+
+			if (single != null) {
+				c = new Coding.SingleRowDecoder(c, single);
+			}
+
+			builder.returnTypeCodec(c);
+		}
+
+		builder.name(method.getName());
+		builder.returnType(returnType);
+		builder.returnUpdateCount(returnUpdateCount);
+		builder.extractColumn(column != null);
+
+		return builder.build();
+	}
+
+	private static final TypeVariable<?> ITERABLE_ELEMENT = Iterable.class.getTypeParameters()[0];
+
+	@SuppressWarnings("unchecked")
+	private static ImmutableList<ParameterProfile> profileParameters(Method m, Codec.Resolver codecs) {
+		ImmutableList.Builder<ParameterProfile> profiles = ImmutableList.builder();
+		Type[] types = m.getGenericParameterTypes();
+
+		int batchCount = 0;
+		Parameter[] parameters = m.getParameters();
+
+		for (int i = 0; i < parameters.length; i++) {
+			Parameter p = parameters[i];
+
+			@Nullable Named named = p.getAnnotation(Named.class);
+			@Nullable Batch batch = p.getAnnotation(Batch.class);
+			@Nullable Spread spread = p.getAnnotation(Spread.class);
+
+			TypeToken<?> type = TypeToken.of(types[i]);
+
+			if (batch != null) {
+				batchCount++;
+
+				Class<?> raw = type.getRawType();
+				if (raw.isArray()) {
+					type = TypeToken.of(raw.getComponentType());
+
+				} else if (Iterable.class.isAssignableFrom(raw)) {
+					type = type.resolveType(ITERABLE_ELEMENT);
+
+				} else throw new IllegalStateException(
+						"@Batch parameter must an Iterable or an array, but was " + type);
+			}
+
+			Codec<Object> codec = codecs.get((TypeToken<Object>) type, Codecs.findQualifier(p));
+
+			profiles.add(new ParameterProfile.Builder()
+					.name(named != null ? named.value() : p.getName())
+					.batch(batch != null)
+					.spread(Optional.ofNullable(spread).map(Spread::prefix))
+					.codec(codec)
+					.type(type)
+					.build());
+		}
+
+		if (batchCount > 1) throw new IllegalStateException(
+				"@Batch should not be present on more than one parameter on " + m);
+
+		return profiles.build();
+	}
+
+	static InvocationHandler handlerFor(Class<?> accessor, Codec.Resolver resolver) {
 		SqlSource source = loadSqlSource(accessor);
 		Set<String> methods = uniqueAccessMethods(accessor);
 		ImmutableMap<String, MethodSnippet> snippets = parseSnippets(source, methods);
-		ImmutableMap<String, InOutProfile> profiles = compileProfiles(accessor, methods);
+		ImmutableMap<String, MethodProfile> profiles = compileProfiles(accessor, methods, resolver);
 
-		return new InvocationHandler() {
+		return new AbstractInvocationHandler() {
 			@Override
-			public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-				MethodSnippet snippet = snippets.get(method.getName());
+			protected Object handleInvocation(Object proxy, Method method, Object[] args) throws Throwable {
+				String name = method.getName();
+				MethodSnippet snippet = snippets.get(name);
+				MethodProfile profile = profiles.get(name);
+
+				assert profile != null && snippet != null : "validated in parseSnippets";
 
 				try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres");
 						PreparedStatement statement = connection.prepareStatement(snippet.preparedStatements())) {
-					List<String> placeholders = snippet.placeholders();
-					int i = 0;
-					for (String p : placeholders) {
-						statement.setInt(++i, i);
-					}
-					return statement.executeUpdate();
+					prepareStatement(statement, profile, snippet, args);
+					return executeStatement(statement, profile);
 				} catch (SQLException sqlException) {
-					throw ErrorRefining.refineException(source, method, snippet, sqlException);
+					System.out.println(snippet.preparedStatements());
+					throw Errors.refineException(source, method, snippet, sqlException);
 				}
 			}
 		};
+	}
+
+	private static void prepareStatement(
+			PreparedStatement statement,
+			MethodProfile profile,
+			MethodSnippet snippet,
+			Object[] args) throws SQLException, IOException {
+
+		List<ParameterProfile> parameters = profile.parameters();
+		StatementParameterOut out = new Coding.StatementParameterOut(profile.parameterIndex());
+
+		if (profile.useBatching()) {
+			int batchIndex = profile.batchParameter().getAsInt();
+			for (int i = 0; i < parameters.size(); i++) {
+				if (i != batchIndex) {
+					putArgument(out, parameters.get(i), i, args[i]);
+				}
+			}
+			ParameterProfile batcher = parameters.get(batchIndex);
+			Object batch = args[batchIndex];
+			if (batch instanceof Iterable<?>) {
+				for (Object o : (Iterable<?>) batch) {
+					putArgument(out, batcher, batchIndex, o);
+					fillStatement(statement, snippet.placeholders(), out);
+					statement.addBatch();
+				}
+			} else {
+				assert batch.getClass().isArray();
+				int length = Array.getLength(batch);
+				for (int i = 0; i < length; i++) {
+					Object o = Array.get(batch, i);
+					putArgument(out, batcher, batchIndex, o);
+					fillStatement(statement, snippet.placeholders(), out);
+					statement.addBatch();
+				}
+			}
+		} else {
+			for (int i = 0; i < parameters.size(); i++) {
+				putArgument(out, parameters.get(i), i, args[i]);
+			}
+			fillStatement(statement, snippet.placeholders(), out);
+		}
+	}
+
+	private static void putArgument(StatementParameterOut out, ParameterProfile p, int index, Object value)
+			throws IOException {
+		out.putField(index);
+		if (p.spread().isPresent()) {
+			out.spread(p.spread().get());
+		}
+		p.codec().encode(out, value);
+	}
+
+	private static void fillStatement(
+			PreparedStatement statement,
+			List<String> placeholders,
+			StatementParameterOut out) throws SQLException {
+		int i = 0;
+		for (String p : placeholders) {
+			statement.setObject(++i, out.get(p));
+		}
 	}
 
 	private static SqlSource loadSqlSource(Class<?> accessorInterface) throws AssertionError {
@@ -168,9 +418,7 @@ public final class Regresql {
 				.build();
 	}
 
-	private static ImmutableMap<String, MethodSnippet> parseSnippets(
-			SqlSource source,
-			Set<String> methods) {
+	private static ImmutableMap<String, MethodSnippet> parseSnippets(SqlSource source, Set<String> methods) {
 		ImmutableList<MethodSnippet> snippets = parse(source.content(), source.lines());
 		ImmutableListMultimap<String, MethodSnippet> byName = Multimaps.index(snippets, m -> m.name());
 
@@ -199,6 +447,15 @@ public final class Regresql {
 							"Duplicate `" + name + "` declaration",
 							"No method duplicates or overloads are allowed"));
 				}
+			}
+		}
+
+		SetView<String> missingSnippets = Sets.difference(methods, byName.keySet());
+		if (!missingSnippets.isEmpty()) {
+			for (String name : missingSnippets) {
+				problems.add(source.problemAt(Source.Range.of(source.get(0)),
+						"Missing `" + name + "` declaration",
+						"Method declared in interface but has no SQL"));
 			}
 		}
 
@@ -364,14 +621,111 @@ public final class Regresql {
 		return allMethods.build();
 	}
 
-	public static void main(String... args) throws Exception {
-		Stopwatch sw = Stopwatch.createStarted();
-		try {
-			Sample sample = load(Sample.class);
-			System.out.println(sw);
-			sample.method1();
-		} finally {
-			System.out.println(sw);
-		}
+	static Object executeStatement(PreparedStatement statement, MethodProfile profile)
+			throws SQLException, IOException {
+
+		Type returnType = profile.returnType();
+		boolean useUpdateCount = profile.returnUpdateCount();
+		boolean voidUpdateCount = useUpdateCount && returnType == void.class;
+		boolean largeUpdateCount = useUpdateCount && (returnType == long.class || returnType == long[].class);
+		boolean sumUpdateCount = useUpdateCount && (returnType == int.class || returnType == long.class);
+
+		// While I usually use early returns, here, for the sake of symmetry and clarity
+		// (yep seems to be clearer in this case) we use return value and if/else branches.
+		// do not initialize, forcing compiler to check branches
+		Object returnValue;
+
+		if (profile.useBatching()) {
+			if (largeUpdateCount) { // large update count
+				long[] updates = statement.executeLargeBatch();
+
+				if (sumUpdateCount) {
+					returnValue = Arrays.stream(updates).sum();
+				} else {
+					returnValue = updates;
+				}
+			} else { // long update count and void
+				int[] updates = statement.executeBatch();
+
+				if (voidUpdateCount) {
+					returnValue = null;
+				} else if (sumUpdateCount) {
+					returnValue = Arrays.stream(updates).sum();
+				} else {
+					returnValue = updates;
+				}
+			}
+		} else { // not batching
+			boolean hasResultSet = statement.execute();
+
+			if (useUpdateCount) {
+				if (voidUpdateCount) {
+					returnValue = null;
+				} else if (largeUpdateCount) { // long update count
+					List<Long> updates = new ArrayList<>();
+					for (long count;;) {
+						count = statement.getLargeUpdateCount();
+						if (count >= 0) {
+							updates.add(count);
+						}
+						if (!hasResultSet && count < 0) break;
+						hasResultSet = statement.getMoreResults();
+					}
+					if (sumUpdateCount) {
+						returnValue = updates.stream().mapToLong(l -> l).sum();
+					} else {
+						returnValue = updates.stream().mapToLong(l -> l).toArray();
+					}
+				} else { // int update count
+					List<Integer> updates = new ArrayList<>();
+					for (int count;;) {
+						count = statement.getUpdateCount();
+						if (count >= 0) {
+							updates.add(count);
+						}
+						if (!hasResultSet && count < 0) break;
+						hasResultSet = statement.getMoreResults();
+					}
+					if (sumUpdateCount) {
+						returnValue = updates.stream().mapToInt(l -> l).sum();
+					} else {
+						returnValue = updates.stream().mapToInt(l -> l).toArray();
+					}
+				}
+			} else { // reading result set (not update count)
+				Codec<Object> codec = profile.returnTypeCodec()
+						.orElseThrow(() -> new AssertionError("Codec expected for this case"));
+
+				boolean wasResultSet = false;
+
+				returnValue = null; // cannot use clean branching with uninitialized var checked
+
+				if (hasResultSet) {
+					Coding.ResultSetIn in = new Coding.ResultSetIn(statement.getResultSet());
+					returnValue = codec.decode(in);
+					wasResultSet = true;
+				}
+
+				for (int count;;) {
+					count = statement.getUpdateCount();
+					if (!hasResultSet && count < 0) break;
+					hasResultSet = statement.getMoreResults();
+
+					if (hasResultSet) {
+						if (wasResultSet) throw new IllegalStateException(
+								"Only single result set can be processes, Use sql UNION ALL to merge multiple results");
+
+						Coding.ResultSetIn in = new Coding.ResultSetIn(statement.getResultSet());
+						returnValue = codec.decode(in);
+						wasResultSet = true;
+					}
+				}
+
+				if (!wasResultSet) throw new IllegalStateException(
+						"ResultSet exected but there was none. Fix SQL query, or use void return type or int/long @UpdateCount");
+			} // end resultsets
+		} // end not batch
+
+		return returnValue;
 	}
 }

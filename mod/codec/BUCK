@@ -6,9 +6,15 @@ java_module(
     '//mod/common:common',
 		'//lib/square/moshi:moshi',
 		'//lib/square/okio:okio',
-		'//lib/javax/annotation:annotation'
+		'//lib/javax/annotation:annotation',
+  ],
+  exported_deps = [
+    '//lib/immutables/data:data',
   ],
   test_deps = [
   	'//mod/that:that',
+  ],
+  plugins = [
+  	'//lib/immutables/value:processor',
   ],
 )

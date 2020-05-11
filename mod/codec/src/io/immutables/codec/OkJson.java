@@ -1,13 +1,17 @@
 package io.immutables.codec;
 
+import com.google.common.reflect.TypeToken;
 import com.squareup.moshi.JsonReader;
+import com.squareup.moshi.JsonReader.Options;
 import com.squareup.moshi.JsonReader.Token;
 import com.squareup.moshi.JsonWriter;
 import io.immutables.Capacity;
 import io.immutables.Unreachable;
 import io.immutables.codec.Codec.At;
 import io.immutables.codec.Codec.Field;
-import io.immutables.codec.Codec.FieldMapper;
+import io.immutables.codec.Codec.FieldIndex;
+import io.immutables.codec.Codec.NullAware;
+import io.immutables.codec.Codec.Resolver;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -15,12 +19,6 @@ import okio.Buffer;
 
 public final class OkJson {
 	private OkJson() {}
-
-	public static Codec.In in(CharSequence chars) {
-		Buffer buffer = new Buffer();
-		buffer.writeUtf8(chars.toString());
-		return in(JsonReader.of(buffer));
-	}
 
 	public static Codec.In in(JsonReader reader) {
 		return new FromJsonReader(reader);
@@ -31,14 +29,14 @@ public final class OkJson {
 	}
 
 	private static abstract class IoBase implements Codec.Err {
-		private FieldMapper[] mappersStack = new FieldMapper[4];
+		private FieldIndex[] mappersStack = new FieldIndex[4];
 		private int mapperCount;
 
-		final FieldMapper topMapper() {
+		final FieldIndex topMapper() {
 			return mappersStack[mapperCount - 1];
 		}
 
-		final void pushMapper(FieldMapper mapper) {
+		final void pushMapper(FieldIndex mapper) {
 			mappersStack = Capacity.ensure(mappersStack, mapperCount, 1);
 			mappersStack[mapperCount++] = mapper;
 		}
@@ -55,13 +53,14 @@ public final class OkJson {
 
 	private static final class FromJsonReader extends IoBase implements Codec.In {
 		private final JsonReader reader;
+		private Options options;
 
 		FromJsonReader(JsonReader reader) {
 			this.reader = reader;
 		}
 
 		@Override
-		public Object unwrap() {
+		public Object adapts() {
 			return reader;
 		}
 
@@ -97,6 +96,9 @@ public final class OkJson {
 
 		@Override
 		public @Field int takeField() throws IOException {
+			if (options != null) {
+				return reader.selectName(options);
+			}
 			return topMapper().nameToIndex(reader.nextName());
 		}
 
@@ -136,13 +138,30 @@ public final class OkJson {
 		}
 
 		@Override
-		public void beginStruct(FieldMapper mapper) throws IOException {
+		public void beginStruct(FieldIndex mapper) throws IOException {
 			reader.beginObject();
 			pushMapper(Objects.requireNonNull(mapper));
+			
+			options = null; // clear paranoia
+			if (!mapper.isDynamic()) {
+				Object cached = mapper.get();
+				if (cached == null) {
+					int count = mapper.count();
+					String[] knownFields = new String[count];
+					for (int i = 0; i < count; i++) {
+						knownFields[i] = mapper.indexToName(i).toString();
+					}
+					options = Options.of(knownFields);
+					mapper.put(options);
+				} else if (cached instanceof Options) {
+					options = (Options) cached;
+				} // else this is not our business if cached is smth
+			}
 		}
 
 		@Override
 		public void endStruct() throws IOException {
+			options = null;
 			popMapper();
 			reader.endObject();
 		}
@@ -162,7 +181,7 @@ public final class OkJson {
 		}
 
 		@Override
-		public Object unwrap() {
+		public Object adapts() {
 			return writer;
 		}
 
@@ -217,7 +236,7 @@ public final class OkJson {
 		}
 
 		@Override
-		public void beginStruct(FieldMapper f) throws IOException {
+		public void beginStruct(FieldIndex f) throws IOException {
 			writer.beginObject();
 			pushMapper(f);
 		}
@@ -243,5 +262,65 @@ public final class OkJson {
 		case END_DOCUMENT: return At.EOF;
 		default: throw Unreachable.exhaustive();
 		} // @formatter:on
+	}
+
+	public final static class JsonStringFactory implements Codec.Factory {
+		private final String indent;
+		public JsonStringFactory() {
+			this("");
+		}
+		public JsonStringFactory(String indent) {
+			this.indent = indent;
+		}
+		// ! this factory should only be used in qualified form
+		@Override
+		public <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
+			return new JsonCodec<>(lookup.get(type), indent, false);
+		}
+
+		private static class JsonCodec<T> extends Codec<T> implements NullAware {
+			private final Codec<T> original;
+			private final boolean supportsNull;
+			private final String indent;
+
+			JsonCodec(Codec<T> original, String indent, boolean supportsNull) {
+				this.original = original;
+				this.indent = indent;
+				this.supportsNull = supportsNull;
+			}
+
+			@Override
+			public T decode(In in) throws IOException {
+				CharSequence c = in.takeString();
+				Buffer buffer = new Buffer();
+				buffer.writeUtf8(c.toString());
+				return original.decode(in(JsonReader.of(buffer)));
+			}
+
+			@Override
+			public void encode(Out out, T instance) throws IOException {
+				Buffer buffer = new Buffer();
+				JsonWriter writer = JsonWriter.of(buffer);
+				writer.setIndent(indent);
+				original.encode(out(writer), instance);
+				out.putString(buffer.readUtf8());
+			}
+
+			@Override
+			public boolean supportsNull() {
+				return supportsNull;
+			}
+
+			@Override
+			public Codec<T> toNullable() {
+				if (supportsNull) return this;
+				return new JsonCodec<>(original.toNullable(), indent, true);
+			}
+
+			@Override
+			public String toString() {
+				return "json for " + original;
+			}
+		}
 	}
 }

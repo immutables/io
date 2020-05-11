@@ -27,9 +27,13 @@ public final class Assert {
 	 * @return that runnable
 	 */
 	@CheckReturnValue
-	public static That.Runnable that(Runnable actualRuns) {
-		class Tested extends That.What<Runnable, That.Runnable> implements That.Runnable {}
+	public static That.Block that(CanThrow actualRuns) {
+		class Tested extends That.What<CanThrow, That.Block> implements That.Block {}
 		return new Tested().set(actualRuns);
+	}
+
+	public interface CanThrow {
+		void run() throws Exception;
 	}
 
 	/**
@@ -86,6 +90,39 @@ public final class Assert {
 	public static <T> That.Iterable<T> that(T... actual) {
 		class Tested extends That.What<Iterable<T>, That.Iterable<T>> implements That.Iterable<T> {}
 		return new Tested().set(Arrays.asList(actual));
+	}
+
+	/**
+	 * @param actual array object
+	 * @return that iterable
+	 */
+	@CheckReturnValue
+	@SafeVarargs
+	public static That.Iterable<Integer> that(int... actual) {
+		class Tested extends That.What<Iterable<Integer>, That.Iterable<Integer>> implements That.Iterable<Integer> {}
+		return new Tested().set(Arrays.stream(actual).mapToObj(x -> x).collect(Collectors.toList()));
+	}
+
+	/**
+	 * @param actual array object
+	 * @return that iterable
+	 */
+	@CheckReturnValue
+	@SafeVarargs
+	public static That.Iterable<Long> that(long... actual) {
+		class Tested extends That.What<Iterable<Long>, That.Iterable<Long>> implements That.Iterable<Long> {}
+		return new Tested().set(Arrays.stream(actual).mapToObj(x -> x).collect(Collectors.toList()));
+	}
+
+	/**
+	 * @param actual array object
+	 * @return that iterable
+	 */
+	@CheckReturnValue
+	@SafeVarargs
+	public static That.Iterable<Double> that(double... actual) {
+		class Tested extends That.What<Iterable<Double>, That.Iterable<Double>> implements That.Iterable<Double> {}
+		return new Tested().set(Arrays.stream(actual).mapToObj(x -> x).collect(Collectors.toList()));
 	}
 
 	/**

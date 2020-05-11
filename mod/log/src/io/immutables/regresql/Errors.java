@@ -12,13 +12,12 @@ import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.postgresql.util.ServerErrorMessage;
 
-class ErrorRefining {
-	private ErrorRefining() {}
+class Errors {
+	private Errors() {}
 	private static final boolean postgresqlPresent;
 	static {
 		boolean isPresent = false;
-		try {
-			// trigger classloading
+		try { // trigger classloading
 			PSQLException.class.getCanonicalName();
 			isPresent = true;
 		} catch (NoClassDefFoundError postgressDriverNotAvailable) {}
@@ -38,6 +37,7 @@ class ErrorRefining {
 
 		PSQLException ex = (PSQLException) originalException;
 		ServerErrorMessage errorMessage = ex.getServerErrorMessage();
+		if (errorMessage == null) return originalException;
 		// correction for 1-based position, which can be 0 if unknown
 		int position = Math.max(0, errorMessage.getPosition() - 1);
 		Source.Range range =

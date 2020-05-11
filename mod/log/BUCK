@@ -3,13 +3,20 @@ load('//mod:rules.bzl', 'java_module')
 java_module(
 	name = 'log',
   deps = [
+    '//lib/postresql:postresql',
+		'//lib/square/moshi:moshi',
+		'//lib/square/okio:okio',
 	  '//lib/immutables/value:annotations',
     '//mod/common:common',
-    '//lib/postresql:postresql',
-    '//lib/google/gson:gson',
+  ],
+  exported_deps = [
+  	'//mod/codec:codec',
   ],
   plugins = [
     '//lib/immutables/value:processor'
   ],
+  test_deps = [
+		'//mod/that:that',
+	],
   maven_coords = 'io.immutables:log:0.0.1',
 )

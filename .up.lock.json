@@ -72,14 +72,14 @@
       "options": {},
       "jars": [
         {
-          "coords": "org.immutables:value:annotations:2.8.7",
-          "sha1": "c6e43c2a854ec396006f68266fbd2aa22c27d5fe"
+          "coords": "org.immutables:value:annotations:2.8.6.datatypes",
+          "sha1": "0fd36e7a46b3f596802e69c52493c04f716b66a0"
         }
       ],
       "srcs": [
         {
-          "coords": "org.immutables:value:annotations:2.8.7",
-          "sha1": "746b12a56496b06c999abf0aed09ded386486e35"
+          "coords": "org.immutables:value:annotations:2.8.6.datatypes",
+          "sha1": "91dce37bfc3b9e3bc5007248e142b4e0651d8c26"
         }
       ]
     },
@@ -90,11 +90,27 @@
       },
       "jars": [
         {
-          "coords": "org.immutables:value:2.8.7",
-          "sha1": "5b66e0a6187e9458496bf4de832255b20c3123a3"
+          "coords": "org.immutables:value:2.8.6.datatypes",
+          "sha1": "4c8905eea77318499d63e9739bd9c7abd2236a8e"
         }
       ],
       "srcs": []
+    },
+    {
+      "target": "//lib/immutables/data:data",
+      "options": {},
+      "jars": [
+        {
+          "coords": "org.immutables:data:2.8.6.datatypes",
+          "sha1": "41501b936083ca793d8e2266e0c392a0cd426f74"
+        }
+      ],
+      "srcs": [
+        {
+          "coords": "org.immutables:data:2.8.6.datatypes",
+          "sha1": "9fbc51ae982d7970e5490f2d085c9663507e4a85"
+        }
+      ]
     },
     {
       "target": "//lib/immutables/value:processor",
