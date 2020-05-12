@@ -1,0 +1,38 @@
+load('//io:rules.bzl', 'java_test_vm_args')
+
+java_library(
+	name = 'ecs',
+	srcs = glob(['src/io/immutables/ecs/lang/*.java']),
+	resources = glob(['src/io/immutables/ecs/lang/*.grammar']),
+	deps = [
+		'//lib/immutables/value:annotations',
+	],
+	exported_deps = [
+		'//io/common:common',
+		'//io/grammar:grammar',
+		'//lib/immutables/trees:trees',
+	],
+	resources_root = 'src',
+	extra_arguments = ['-Aresources.root={}/src'.format(package_name())],
+	plugins = [
+		'//io/grammar:processor',
+		'//io/common:immutables',
+	],
+)
+
+java_test(
+	name = 'test',
+	srcs = glob(['test/**/*.java']),
+	resources = glob(['test/**'], exclude=['*.java']),
+	deps = [
+		':ecs',
+		'//io/that:that',
+		'//lib/junit:junit',
+	],
+	extra_arguments = ['-Aresources.root={}/test'.format(package_name())],
+	resources_root = 'test',
+	plugins = [
+		'//io/common:immutables',
+	],
+	vm_args = java_test_vm_args(),
+)

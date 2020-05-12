@@ -1,0 +1,91 @@
+-- Keywords should not be followed by a word identifier without delimiter
+keyword:
+  'type' ~ 'type' ! [a-zA-Z0-9]
+  'concept' ~ 'concept' ! [a-zA-Z0-9]
+  'impl' ~ 'impl' ! [a-zA-Z0-9]
+  'return' ~ 'return' ! [a-zA-Z0-9]
+  'if' ~ 'if' ! [a-zA-Z0-9]
+  'else' ~ 'else' ! [a-zA-Z0-9]
+  'for' ~ 'for' ! [a-zA-Z0-9]
+  'case' ~ 'case' ! [a-zA-Z0-9]
+
+keyword-types:
+  'int' ~ 'int' ! [a-zA-Z0-9]
+  'bool' ~ 'bool' ! [a-zA-Z0-9]
+  'float' ~ 'float' ! [a-zA-Z0-9]
+
+keyword-values:
+  'true' ~ 'true' ! [a-zA-Z0-9]
+  'false' ~ 'false' ! [a-zA-Z0-9]
+
+other:
+  <string> ~ ["][^"]*["]
+  <decimal> ~ [0-9]+
+  <hexadecimal> ~ [#][0-9a-fA-F]+
+  -- FIXME if there's no newline at the end of file lexer breaks
+  <comment-newline> ~ [/][/][^\n]*[\n]
+  <newline> ~ [\n]
+
+-- Only forcing the priority order for compound operators
+delimiters:
+  '::' ~ '::'
+  '??' ~ '??'
+  '||' ~ '||'
+  '&&' ~ '&&'
+  '^^' ~ '^^'
+  ':=' ~ ':='
+  '==' ~ '=='
+  '!=' ~ '!='
+  '++' ~ '++'
+  '+=' ~ '+='
+  '-=' ~ '-='
+  '*=' ~ '*='
+  '/=' ~ '/='
+  '%=' ~ '%='
+  '--' ~ '--'
+  '->' ~ '->'
+  '<-' ~ '<-'
+  '-' ~ '-'
+  '<=' ~ '<='
+  '>=' ~ '>='
+  '>..' ~ '>..'
+  '..<' ~ '..<'
+  '...' ~ '...'
+  '..' ~ '..'
+  '.' ~ '.'
+  ':' ~ ':'
+  '=' ~ '='
+  '+' ~ '+'
+  '/' ~ '/'
+  '<' ~ '<'
+  '>' ~ '>'
+  '?' ~ '?'
+  '%' ~ '%'
+  '*' ~ '*'
+  '?' ~ '?'
+  '!' ~ '!'
+  '|' ~ '|'
+  '&' ~ '&'
+
+identifier:
+  <name> ~ [a-z][a-zA-Z0-9]*
+  <typename> ~ [A-Z][a-zA-Z0-9]*
+
+-- lists terms which are skipped by parser
+ignored:
+  <spacing> ~ [\s\r\t]+
+
+
+unit
+  elements:unit-element+
+
+unit-element
+  | empty
+--  | type-declaration
+
+empty
+  nl
+
+(nl)
+  | comment:<comment-newline>
+  | <newline>
