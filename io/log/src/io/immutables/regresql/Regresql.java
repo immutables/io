@@ -21,6 +21,7 @@ import io.immutables.codec.Codec;
 import io.immutables.codec.Codec.ContainerCodec;
 import io.immutables.codec.Codec.FieldIndex;
 import io.immutables.codec.Codecs;
+import io.immutables.codec.Resolver;
 import io.immutables.collect.Vect;
 import io.immutables.regresql.Coding.StatementParameterOut;
 import io.immutables.regresql.SqlAccessor.Batch;
@@ -174,7 +175,7 @@ public final class Regresql {
 	}
 
 	@SuppressWarnings("unchecked") // cast guaranteed by Proxy contract, runtime verified
-	public static <T> T create(Class<T> accessor, Codec.Resolver codecs, ConnectionProvider connections) {
+	public static <T> T create(Class<T> accessor, Resolver codecs, ConnectionProvider connections) {
 		checkArgument(accessor.isInterface() && accessor.getCanonicalName() != null,
 				"%s is not valid SQL access interface", accessor);
 
@@ -187,7 +188,7 @@ public final class Regresql {
 	private static ImmutableMap<String, MethodProfile> compileProfiles(
 			Class<?> accessor,
 			Set<String> methods,
-			Codec.Resolver codecs) {
+			Resolver codecs) {
 		ImmutableMap.Builder<String, MethodProfile> builder = ImmutableMap.builder();
 
 		for (Method m : accessor.getMethods()) {
@@ -202,7 +203,7 @@ public final class Regresql {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static MethodProfile profileMethod(Method method, Codec.Resolver codecs) {
+	private static MethodProfile profileMethod(Method method, Resolver codecs) {
 		MethodProfile.Builder builder = new MethodProfile.Builder();
 
 		@Nullable UpdateCount updateCount = method.getAnnotation(UpdateCount.class);
@@ -276,7 +277,7 @@ public final class Regresql {
 	private static final TypeVariable<?> ITERABLE_ELEMENT = Iterable.class.getTypeParameters()[0];
 
 	@SuppressWarnings("unchecked")
-	private static Vect<ParameterProfile> profileParameters(Method m, Codec.Resolver codecs) {
+	private static Vect<ParameterProfile> profileParameters(Method m, Resolver codecs) {
 		Vect.Builder<ParameterProfile> profiles = Vect.builder();
 		Type[] types = m.getGenericParameterTypes();
 
@@ -323,7 +324,7 @@ public final class Regresql {
 		return profiles.build();
 	}
 
-	static InvocationHandler handlerFor(Class<?> accessor, Codec.Resolver resolver, ConnectionProvider provider) {
+	static InvocationHandler handlerFor(Class<?> accessor, Resolver resolver, ConnectionProvider provider) {
 		SqlSource source = loadSqlSource(accessor);
 		Set<String> methods = uniqueAccessMethods(accessor);
 		ImmutableMap<String, MethodSnippet> snippets = parseSnippets(source, methods);

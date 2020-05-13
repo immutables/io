@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.squareup.moshi.JsonReader;
 import com.squareup.moshi.JsonWriter;
-import io.immutables.codec.Codec.Resolver;
 import io.immutables.codec.Dutu.Bubu;
 import io.immutables.codec.Dutu.Opts;
 import java.io.IOException;
@@ -19,7 +18,7 @@ import org.junit.Test;
 import static io.immutables.that.Assert.that;
 
 public class TestCodec {
-	static final Resolver l = Codecs.builtin();
+	static final Resolver l = Codecs.builtin().toResolver();
 	final Buffer buffer = new Buffer();
 
 	@Test

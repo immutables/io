@@ -11,7 +11,6 @@ import io.immutables.codec.Codec.At;
 import io.immutables.codec.Codec.Field;
 import io.immutables.codec.Codec.FieldIndex;
 import io.immutables.codec.Codec.NullAware;
-import io.immutables.codec.Codec.Resolver;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;

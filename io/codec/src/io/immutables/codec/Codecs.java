@@ -9,14 +9,12 @@ import com.google.common.reflect.TypeToken;
 import io.immutables.Nullable;
 import io.immutables.Unreachable;
 import io.immutables.codec.Codec.At;
-import io.immutables.codec.Codec.Compound;
 import io.immutables.codec.Codec.ContainerCodec;
 import io.immutables.codec.Codec.Field;
 import io.immutables.codec.Codec.FieldIndex;
 import io.immutables.codec.Codec.In;
 import io.immutables.codec.Codec.NullAware;
 import io.immutables.codec.Codec.Out;
-import io.immutables.codec.Codec.Resolver;
 import io.immutables.collect.Vect;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -51,13 +49,13 @@ public final class Codecs {
 		return found;
 	}
 
-	public static Codec.Compound builtin() {
-		return new Codec.Compound()
-				.add(SCALARS, null, Compound.LOWEST_PRIORITY + 1)
-				.add(ENUMS, null, Compound.LOWEST_PRIORITY + 1)
-				.add(COLLECTIONS, null, Compound.LOWEST_PRIORITY + 1)
-				.add(OPTIONALS, null, Compound.LOWEST_PRIORITY + 1)
-				.add(DATATYPES, null, Compound.LOWEST_PRIORITY);
+	public static Resolver.Compound builtin() {
+		return new Resolver.Compound()
+				.add(SCALARS, null, Resolver.Compound.LOWEST_PRIORITY + 1)
+				.add(ENUMS, null, Resolver.Compound.LOWEST_PRIORITY + 1)
+				.add(COLLECTIONS, null, Resolver.Compound.LOWEST_PRIORITY + 1)
+				.add(OPTIONALS, null, Resolver.Compound.LOWEST_PRIORITY + 1)
+				.add(DATATYPES, null, Resolver.Compound.LOWEST_PRIORITY);
 	}
 
 	private static Codec.Factory DATATYPES = new Codec.Factory() {
@@ -95,6 +93,26 @@ public final class Codecs {
 			return "Codec.Factory for enums";
 		}
 	};
+
+	@SuppressWarnings("unchecked") // unsupported for any type
+	public static <T> Codec<T> unsupported(TypeToken<T> type, @Nullable Annotation qualifier) {
+		return new Codec<T>() {
+			@Override
+			public T decode(Codec.In in) {
+				// TODO better reporting / message
+				throw new UnsupportedOperationException();
+			}
+			@Override
+			public void encode(Codec.Out out, T instance) {
+				// TODO better reporting / message
+				throw new UnsupportedOperationException();
+			}
+			@Override
+			public String toString() {
+				return "Codec.unsupported(" + type + (qualifier != null ? " @" + qualifier : "") + ")";
+			}
+		};
+	}
 
 	@FunctionalInterface
 	interface CollectionConstructor {

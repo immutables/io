@@ -2,10 +2,10 @@ package io.immutables.regresql;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import io.immutables.codec.Codec.Compound;
 import io.immutables.regresql.ImmutableJsonb;
 import io.immutables.codec.Codecs;
 import io.immutables.codec.OkJson;
+import io.immutables.codec.Resolver;
 import io.immutables.regresql.Regresql;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -16,9 +16,9 @@ import static io.immutables.that.Assert.that;
 //@Ignore
 public class TestRegresql {
 	static final Jsonb jsonb = ImmutableJsonb.of();
-	static final Compound codecs;
+	static final Resolver codecs;
 	static {
-		codecs = Codecs.builtin().add(new OkJson.JsonStringFactory(), jsonb, 0);
+		codecs = Codecs.builtin().add(new OkJson.JsonStringFactory(), jsonb, 0).toResolver();
 	}
 
 	final Sample sample = Regresql.create(Sample.class, codecs,
