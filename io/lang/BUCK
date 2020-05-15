@@ -21,27 +21,30 @@ java_library(
 )
 
 java_library(
-	name = 'sourcerun_annotation',
-	srcs = glob(['test/io/immutables/lang/*.java']),
-	resources_root = 'test',
+	name = 'processor_annotation',
+	srcs = glob([
+		'src/io/immutables/lang/Compile.java',
+		'src/io/immutables/lang/SourceRun.java',
+	]),
+	resources_root = 'src',
 )
 
 java_library(
-	name = 'sourcerun_processor_generator',
+	name = 'processor_generator',
 	srcs = [],
-	resources = glob(['test/io/immutables/lang/processor/*.generator']),
-	resources_root = 'test',
+	resources = glob(['src/io/immutables/lang/processor/*.generator']),
+	resources_root = 'src',
 )
 
 java_library(
-	name = 'sourcerun_processor_library',
-	srcs = glob(['test/io/immutables/lang/processor/*.java']),
+	name = 'processor_library',
+	srcs = glob(['src/io/immutables/lang/processor/*.java']),
 	deps = [
 		':lang',
-		':sourcerun_annotation',
-		':sourcerun_processor_generator',
+		':processor_annotation',
+		':processor_generator',
 		'//lib/immutables/value:annotations',
-		'//lib/immutables/generator:processor',
+		'//lib/immutables/generator:generator',
 		'//io/common:common',
 	],
 	annotation_processors = [
@@ -59,9 +62,17 @@ java_library(
 java_annotation_processor(
 	name = 'sourcerun_processor',
 	deps = [
-		':sourcerun_processor_library',
+		':processor_library',
 	],
 	processor_class = 'io.immutables.lang.processor.SourceRunProcessor',
+)
+
+java_annotation_processor(
+	name = 'compile_processor',
+	deps = [
+		':processor_library',
+	],
+	processor_class = 'io.immutables.lang.processor.CompileProcessor',
 )
 
 java_test(
@@ -70,7 +81,7 @@ java_test(
 	resources = glob(['test/io/immutables/lang/fixture/*.test.im']),
 	deps = [
 		':lang',
-		':sourcerun_annotation',
+		':processor_annotation',
 		'//io/that:that',
 		'//lib/junit:junit',
 	],

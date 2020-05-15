@@ -23,7 +23,7 @@
 package [pack];
 
 @SuppressWarnings("all")
-@javax.annotation.Generated({"[grmp].processor.Generator", "[name].grammar"})
+@org.immutables.value.Generated(generator = "[grmp].processor.Generator", from = "[name].grammar")
 public final class [className] extends [grmp].Terms {
 	[tokenConstants]
 
@@ -249,7 +249,7 @@ package [pack];
 import static [pack].[termsClass].*;
 
 @SuppressWarnings("all")
-@javax.annotation.Generated({"[grmp].processor.Generator", "[name].grammar"})
+@org.immutables.value.Generated(generator = "[grmp].processor.Generator", from = "[name].grammar")
 public final class [className]<T extends [grmp].TreeProduction<[treesClass]>> extends [grmp].Productions<[treesClass], T> {
 	[for p in productions if not (p.ephemeral or p.subtypes)]
 	/** Production {@code [p.id]}. */
@@ -456,7 +456,7 @@ package [pack];
 @org.immutables.value.Value.Enclosing
 @org.immutables.trees.Trees.Visit
 @SuppressWarnings("all")
-@javax.annotation.Generated({"[grmp].processor.Generator", "[name].grammar"})
+@org.immutables.value.Generated(generator = "[grmp].processor.Generator", from = "[name].grammar")
 public interface [className] {
 	[for p in productions if not p.ephemeral, String type = asType p.id]
 	[if p.subtypes]

@@ -109,7 +109,7 @@ public class Processor extends AbstractGenerator {
 	private Generator generator() throws Exception {
 		Class<Generator> c = Generator.class;
 		String generatorClassname = c.getPackage().getName() + ".Generator_" + c.getSimpleName();
-		return (Generator) Class.forName(generatorClassname).newInstance();
+		return (Generator) Class.forName(generatorClassname).getConstructor().newInstance();
 	}
 
 	private String messageOrStacktrace(Throwable exception) {

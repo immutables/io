@@ -9,6 +9,8 @@ _java_test_deps_default = [
 ]
 
 _java_test_vm_args = [
+  '-XX:+UnlockExperimentalVMOptions',
+  '-XX:+UseEpsilonGC',
   '-ea',
   '-Dio.immutables.that.replace-error-message= ',
 ]

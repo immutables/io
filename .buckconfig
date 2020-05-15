@@ -30,9 +30,14 @@
 	polyglot_parsing_enabled = true
 	default_build_file_syntax = SKYLARK
 
+[tools]
+	java_home = /Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
+	java = $(config tools.java_home)/bin/java
+	javac = $(config tools.java_home)/bin/javac
+
 [java]
-	source_level = 8
-	target_level = 8
+	source_level = 11
+	target_level = 11
 	# compile classes in memory, then flush to jar file
 	jar_spool_mode = direct_to_jar
 	# compile against public declaration

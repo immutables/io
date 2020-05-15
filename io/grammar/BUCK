@@ -31,7 +31,7 @@ java_library(
 		':grammar',
 		':processor_generator',
 		'//lib/immutables/value:annotations',
-		'//lib/immutables/generator:processor', # for parboiled runtime
+		'//lib/immutables/generator:processor',
 		'//io/common:common',
 	],
 	annotation_processors = [
