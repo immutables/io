@@ -15,7 +15,7 @@ import org.immutables.generator.AbstractGenerator;
 import org.immutables.generator.Generator.SupportedAnnotations;
 
 /** Compiler embedded as annotation processor. */
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_11)
 @SupportedAnnotations(Compile.class)
 public final class CompileProcessor extends AbstractGenerator {
 
@@ -32,10 +32,9 @@ public final class CompileProcessor extends AbstractGenerator {
 					Files.newDirectoryStream(packageDir(fixturePackage), glob)) {
 
 				for (Path path : sources) {
-					byte[] bytes = Files.readAllBytes(path);
-					String content = new String(bytes, StandardCharsets.UTF_8);
+					String content = Files.readString(path, StandardCharsets.UTF_8);
 					String filename = path.getFileName().toString();
-
+					processing().getFiler();
 				}
 			} catch (Exception ex) {
 				throw new RuntimeException(ex);

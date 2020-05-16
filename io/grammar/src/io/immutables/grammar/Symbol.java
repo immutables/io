@@ -18,7 +18,7 @@ public final class Symbol implements CharSequence {
 	}
 
 	@Override
-	public CharSequence subSequence(int begin, int end) {
+	public Symbol subSequence(int begin, int end) {
 		return new Symbol(value.substring(begin, end));
 	}
 

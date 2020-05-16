@@ -1,4 +1,4 @@
-package io.immutables.lang.processor;
+package io.immutables.lang.fixture;
 
 import com.google.common.io.Resources;
 import io.immutables.lang.SyntaxProductions;
@@ -21,7 +21,7 @@ public class Imc {
 			System.out.println(productions.construct());
 		} else {
 			System.out.println(productions.messageForFile(sourceName));
-			System.out.println(productions.show());
+			//System.out.println(productions.show());
 		}
 	}
 }

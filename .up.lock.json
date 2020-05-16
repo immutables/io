@@ -176,6 +176,22 @@
       ]
     },
     {
+      "target": "//lib/square/javapoet:javapoet",
+      "options": {},
+      "jars": [
+        {
+          "coords": "com.squareup:javapoet:1.12.1",
+          "sha1": "e0e49f502697522ef047470b117ff81edc9f9a07"
+        }
+      ],
+      "srcs": [
+        {
+          "coords": "com.squareup:javapoet:1.12.1",
+          "sha1": "cc8234ee4e33415a5888a964e3690092fc112419"
+        }
+      ]
+    },
+    {
       "target": "//lib/immutables/trees:trees",
       "options": {},
       "jars": [
@@ -273,22 +289,6 @@
         {
           "coords": "org.ow2.asm:asm-util:8.0.1",
           "sha1": "1cc2f064eb65238dd3e9139784ad9321278e1b16"
-        }
-      ]
-    },
-    {
-      "target": "//lib/javapoet:javapoet",
-      "options": {},
-      "jars": [
-        {
-          "coords": "com.squareup:javapoet:1.12.1",
-          "sha1": "e0e49f502697522ef047470b117ff81edc9f9a07"
-        }
-      ],
-      "srcs": [
-        {
-          "coords": "com.squareup:javapoet:1.12.1",
-          "sha1": "cc8234ee4e33415a5888a964e3690092fc112419"
         }
       ]
     },

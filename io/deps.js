@@ -27,6 +27,7 @@ module.exports = function(up) { up
 	.lib('//lib/square/moshi', `com.squareup.moshi:moshi:1.9.2`, {
 		deps: ['//lib/square/okio']
 	})
+	.lib('//lib/square/javapoet', `com.squareup:javapoet:1.12.1`)
 	.lib('//lib/immutables/trees', `org.immutables:trees:${ver.immutables}`)
 	.lib('//lib/immutables/ordinal', `org.immutables:ordinal:${ver.immutables}`)
 	.lib('//lib/immutables/generator', `org.immutables:generator:${ver.immutables}`)
@@ -39,7 +40,6 @@ module.exports = function(up) { up
 	], {
 		deps: ['//lib/google/common', '//lib/immutables/trees'],
 	})
-  .lib('//lib/javapoet', `com.squareup:javapoet:1.12.1`)
 	.lib('//lib/postresql', `org.postgresql:postgresql:42.2.12`)
 	.lib('//lib/junit', [
 		`junit:junit:4.12`,

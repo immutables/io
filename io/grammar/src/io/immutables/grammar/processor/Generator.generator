@@ -455,6 +455,7 @@ package [pack];
 @[grmp].Node
 @org.immutables.value.Value.Enclosing
 @org.immutables.trees.Trees.Visit
+@org.immutables.trees.Trees.Transform
 @SuppressWarnings("all")
 @org.immutables.value.Generated(generator = "[grmp].processor.Generator", from = "[name].grammar")
 public interface [className] {
@@ -474,8 +475,8 @@ public interface [className] {
 	}
 	[/if]
 	[/for]
-
 	[generateMatcher className productionsClass]
+	[generateVisitor className productionsClass]
 }
 [/template]
 
@@ -509,6 +510,7 @@ io.immutables.collect.Vect<[partTypeName]> [n]();
 [/template]
 
 [template generateMatcher String className String productionsClass]
+
 static abstract class Matcher<IN, OUT> {
 
 	public final OUT match([grmp].TreeProduction<[className]> v, IN in) {
@@ -537,8 +539,15 @@ static abstract class Matcher<IN, OUT> {
 	[/if]
 	[/for]
 }
-[-- Ad-hoc visitor, I used to rely on --]
+[/template]
 
+[template generateVisitor String className String productionsClass]
+[-- Do we need to disambiguate if production class/interface have
+    literally the same 'Visitor' or 'Transformer' name --]
+
+static abstract class Visitor extends [className]Visitor {}
+
+static abstract class Transformer extends [className]Transformer {}
 [/template]
 
 [template arr]['[]'][/template]

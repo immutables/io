@@ -52,6 +52,8 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 	public final T construct() {
 		Traversal traverse = traverse();
 		Traversal.At at = traverse.next();
+		// TODO fix when document is empty an there are no productions
+		// it can still be some default production when nothing is there
 		assert at != Traversal.At.EOP;
 		T result = constructor.construct(traverse);
 		at = traverse.next();

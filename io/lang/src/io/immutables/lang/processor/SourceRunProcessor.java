@@ -15,7 +15,7 @@ import javax.tools.Diagnostic;
 import org.immutables.generator.AbstractGenerator;
 import org.immutables.generator.Generator.SupportedAnnotations;
 
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_11)
 @SupportedAnnotations(SourceRun.class)
 public final class SourceRunProcessor extends AbstractGenerator {
 
@@ -37,8 +37,7 @@ public final class SourceRunProcessor extends AbstractGenerator {
 				generator.fixtureName = fixtureType.getSimpleName().toString();
 
 				for (Path path : sources) {
-					byte[] bytes = Files.readAllBytes(path);
-					String content = new String(bytes, StandardCharsets.UTF_8);
+					String content = Files.readString(path, StandardCharsets.UTF_8);
 					String filename = path.getFileName().toString();
 					String testname = filename.replace('.', '_');
 					generator.process(testname, filename, content);
@@ -65,6 +64,6 @@ public final class SourceRunProcessor extends AbstractGenerator {
 	private SourceRuns generator() throws Exception {
 		Class<SourceRuns> c = SourceRuns.class;
 		String generatorClassname = c.getPackage().getName() + ".Generator_" + c.getSimpleName();
-		return (SourceRuns) Class.forName(generatorClassname).newInstance();
+		return (SourceRuns) Class.forName(generatorClassname).getConstructor().newInstance();
 	}
 }

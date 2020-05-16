@@ -21,12 +21,19 @@ java_library(
 )
 
 java_library(
-	name = 'processor_annotation',
-	srcs = glob([
-		'src/io/immutables/lang/Compile.java',
-		'src/io/immutables/lang/SourceRun.java',
-	]),
+	name = 'compiler',
+	srcs = glob(['src/io/immutables/lang/compiler/*.java']),
+	deps = [
+		'//lib/immutables/value:annotations',
+	],
+	exported_deps = [
+		':lang',
+		'//lib/square/javapoet:javapoet',
+	],
 	resources_root = 'src',
+	plugins = [
+		'//io/common:immutables',
+	],
 )
 
 java_library(
@@ -41,7 +48,7 @@ java_library(
 	srcs = glob(['src/io/immutables/lang/processor/*.java']),
 	deps = [
 		':lang',
-		':processor_annotation',
+		':compiler',
 		':processor_generator',
 		'//lib/immutables/value:annotations',
 		'//lib/immutables/generator:generator',
@@ -81,7 +88,6 @@ java_test(
 	resources = glob(['test/io/immutables/lang/fixture/*.test.im']),
 	deps = [
 		':lang',
-		':processor_annotation',
 		'//io/that:that',
 		'//lib/junit:junit',
 	],
