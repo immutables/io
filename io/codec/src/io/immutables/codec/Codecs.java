@@ -6,10 +6,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
+import io.immutables.Capacity;
 import io.immutables.Nullable;
 import io.immutables.Unreachable;
+import io.immutables.codec.Codec.Adapter;
 import io.immutables.codec.Codec.At;
 import io.immutables.codec.Codec.ContainerCodec;
+import io.immutables.codec.Codec.Err;
 import io.immutables.codec.Codec.Field;
 import io.immutables.codec.Codec.FieldIndex;
 import io.immutables.codec.Codec.In;
@@ -69,8 +72,11 @@ public final class Codecs {
 				cannotConstructDatatype.printStackTrace();
 				return null;
 			}
-
-			return t != null ? new DatatypeCodec<>(t, lookup) : null;
+			if (t == null) return null;
+			if (!t.cases().isEmpty()) {
+				return new DatatypeCaseCodec<>(t, lookup);
+			}
+			return new DatatypeCodec<>(t, lookup, false);
 		}
 		@Override
 		public String toString() {
@@ -96,7 +102,7 @@ public final class Codecs {
 
 	@SuppressWarnings("unchecked") // unsupported for any type
 	public static <T> Codec<T> unsupported(TypeToken<T> type, @Nullable Annotation qualifier) {
-		return new Codec<T>() {
+		return new Codec<>() {
 			@Override
 			public T decode(Codec.In in) {
 				// TODO better reporting / message
@@ -227,7 +233,7 @@ public final class Codecs {
 		}
 
 		public static <K, V> Supplier<MapBuilder<K, V, ImmutableMap<K, V>>> immutableMapSupplier() {
-			return () -> new MapCodec.MapBuilder<K, V, ImmutableMap<K, V>>() {
+			return () -> new MapCodec.MapBuilder<>() {
 				final ImmutableMap.Builder<K, V> b = ImmutableMap.builder();
 				@Override
 				public void put(K k, V v) {
@@ -720,67 +726,23 @@ public final class Codecs {
 		}
 	}
 
-	public abstract class ForwardingOut implements Out {
-		protected abstract Out delegate();
+	private static abstract class ForwardingBase implements Err, Adapter {
+		private FieldIndex[] mappersStack = new FieldIndex[4];
+		private int mapperCount;
 
-		@Override
-		public void putInt(int i) throws IOException {
-			delegate().putInt(i);
+		protected abstract Err delegate();
+
+		protected final FieldIndex topMapper() {
+			return mappersStack[mapperCount - 1];
 		}
 
-		@Override
-		public void putLong(long l) throws IOException {
-			delegate().putLong(l);
+		final void pushMapper(FieldIndex mapper) {
+			mappersStack = Capacity.ensure(mappersStack, mapperCount, 1);
+			mappersStack[mapperCount++] = mapper;
 		}
 
-		@Override
-		public void putDouble(double d) throws IOException {
-			delegate().putDouble(d);
-		}
-
-		@Override
-		public void putBoolean(boolean b) throws IOException {
-			delegate().putBoolean(b);
-		}
-
-		@Override
-		public void putSpecial(Object o) throws IOException {
-			delegate().putSpecial(o);
-		}
-
-		@Override
-		public void putNull() throws IOException {
-			delegate().putNull();
-		}
-
-		@Override
-		public void putString(CharSequence s) throws IOException {
-			delegate().putString(s);
-		}
-
-		@Override
-		public void endArray() throws IOException {
-			delegate().endArray();
-		}
-
-		@Override
-		public void beginArray() throws IOException {
-			delegate().beginArray();
-		}
-
-		@Override
-		public void beginStruct(FieldIndex f) throws IOException {
-			delegate().beginStruct(f);
-		}
-
-		@Override
-		public void putField(@Field int field) throws IOException {
-			delegate().putField(field);
-		}
-
-		@Override
-		public void endStruct() throws IOException {
-			delegate().endStruct();
+		final void popMapper() {
+			mappersStack[--mapperCount] = null;
 		}
 
 		@Override
@@ -799,38 +761,47 @@ public final class Codecs {
 		}
 
 		@Override
-		public Object adapts() {
-			return delegate().adapts();
+		final public Object adapts() {
+			Err d = delegate();
+			return d instanceof Adapter ? ((Adapter) d).adapts() : d;
 		}
 	}
 
-	public abstract class ForwardingIn implements In {
+	public static abstract class ForwardingOut extends ForwardingBase implements Out {
+		@Override
 		protected abstract Out delegate();
 
+		@Override
 		public void putInt(int i) throws IOException {
 			delegate().putInt(i);
 		}
 
+		@Override
 		public void putLong(long l) throws IOException {
 			delegate().putLong(l);
 		}
 
+		@Override
 		public void putDouble(double d) throws IOException {
 			delegate().putDouble(d);
 		}
 
+		@Override
 		public void putBoolean(boolean b) throws IOException {
 			delegate().putBoolean(b);
 		}
 
+		@Override
 		public void putSpecial(Object o) throws IOException {
 			delegate().putSpecial(o);
 		}
 
+		@Override
 		public void putNull() throws IOException {
 			delegate().putNull();
 		}
 
+		@Override
 		public void putString(CharSequence s) throws IOException {
 			delegate().putString(s);
 		}
@@ -847,9 +818,11 @@ public final class Codecs {
 
 		@Override
 		public void beginStruct(FieldIndex f) throws IOException {
+			pushMapper(f);
 			delegate().beginStruct(f);
 		}
 
+		@Override
 		public void putField(@Field int field) throws IOException {
 			delegate().putField(field);
 		}
@@ -857,26 +830,89 @@ public final class Codecs {
 		@Override
 		public void endStruct() throws IOException {
 			delegate().endStruct();
+			popMapper();
+		}
+	}
+
+	public static abstract class ForwardingIn extends ForwardingBase implements In {
+		@Override
+		protected abstract In delegate();
+
+		@Override
+		public At peek() throws IOException {
+			return delegate().peek();
 		}
 
 		@Override
-		public String getPath() {
-			return delegate().getPath();
+		public int takeInt() throws IOException {
+			return delegate().takeInt();
 		}
 
 		@Override
-		public void expect(boolean condition, Supplier<String> message) throws IOException {
-			delegate().expect(condition, message);
+		public long takeLong() throws IOException {
+			return delegate().takeLong();
 		}
 
 		@Override
-		public void unexpected(String message) throws IOException {
-			delegate().unexpected(message);
+		public double takeDouble() throws IOException {
+			return delegate().takeDouble();
 		}
 
 		@Override
-		public Object adapts() {
-			return delegate().adapts();
+		public boolean takeBoolean() throws IOException {
+			return delegate().takeBoolean();
+		}
+
+		@Override
+		public void takeNull() throws IOException {
+			delegate().takeNull();
+		}
+
+		@Override
+		public void skip() throws IOException {
+			delegate().skip();
+		}
+
+		@Override
+		public CharSequence takeString() throws IOException {
+			return delegate().takeString();
+		}
+
+		@Override
+		public Object takeSpecial() throws IOException {
+			return delegate().takeSpecial();
+		}
+
+		@Override
+		public boolean hasNext() throws IOException {
+			return delegate().hasNext();
+		}
+
+		@Override
+		public @Field int takeField() throws IOException {
+			return delegate().takeField();
+		}
+
+		@Override
+		public void endArray() throws IOException {
+			delegate().endArray();
+		}
+
+		@Override
+		public void beginArray() throws IOException {
+			delegate().beginArray();
+		}
+
+		@Override
+		public void beginStruct(FieldIndex f) throws IOException {
+			pushMapper(f);
+			delegate().beginStruct(f);
+		}
+
+		@Override
+		public void endStruct() throws IOException {
+			delegate().endStruct();
+			popMapper();
 		}
 	}
 }

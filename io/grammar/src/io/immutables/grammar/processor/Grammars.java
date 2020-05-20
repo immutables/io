@@ -192,7 +192,9 @@ interface Grammars {
 		}
 		@Override
 		public String toString() {
-			return Escapes.singleQuote(value());
+			return placeholder()
+					? Escapes.angleQuote(value())
+					: Escapes.singleQuote(value());
 		}
 		public static Literal of(String key) {
 			return ImmutableGrammars.Literal.of(key);

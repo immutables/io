@@ -2,21 +2,24 @@ load('//io:rules.bzl', 'java_test_vm_args')
 
 java_library(
 	name = 'ecs',
-	srcs = glob(['src/io/immutables/ecs/lang/*.java']),
-	resources = glob(['src/io/immutables/ecs/lang/*.grammar']),
+	srcs = glob(['src/io/immutables/ecs/**/*.java']),
+	resources = glob(['src/io/immutables/ecs/**/*'], exclude = ['*.java']),
 	deps = [
 		'//lib/immutables/value:annotations',
+		'//lib/immutables/generator:generator',
+		'//lib/immutables/data:data',
+		'//lib/immutables/trees:trees',
 	],
 	exported_deps = [
 		'//io/common:common',
-		'//io/grammar:grammar',
-		'//lib/immutables/trees:trees',
+		'//io/codec:codec',
+		'//io/lang:lang',
 	],
 	resources_root = 'src',
 	extra_arguments = ['-Aresources.root={}/src'.format(package_name())],
 	plugins = [
-		'//io/grammar:processor',
 		'//io/common:immutables',
+		'//lib/immutables/generator:templater',
 	],
 )
 
@@ -35,4 +38,11 @@ java_test(
 		'//io/common:immutables',
 	],
 	vm_args = java_test_vm_args(),
+)
+
+java_binary(
+	name = 'gen',
+	deps = [':ecs'],
+	main_class = 'io.immutables.ecs.generate.Main',
+	visibility = ['PUBLIC'],
 )

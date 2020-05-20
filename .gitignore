@@ -3,7 +3,7 @@
 # and scripts, instead of blindly sweep problems under the rug.
 #
 # When adding entries here, please, do your best to briefly specify:
-# * Which program generates or uses this kind of file
+# * Which program generates or uses this kind of files or folders
 # * Why these files are kept out of the repo
 # * Be precise about directories by placing leading / trailing slash where needed
 #
@@ -50,12 +50,14 @@ target/
 *-gen
 *-gen[1234]
 
-# Jetbrains Intellij IDEA project and module files,
-# Eclipse project and module definitions, VSCode settings
-# Can be present on different levels of nesting.
 # Project files can be regenerated `node up --intellij --eclipse`
+# Can be present on different levels of nesting.
+
+# Jetbrains Intellij IDEA project and module files,
 .idea/
 *.iml
+
+# Eclipse project and module definitions
 .classes/
 .test-classes/
 .settings/
@@ -63,10 +65,12 @@ target/
 .classpath
 .project
 .externalToolBuilders
+
+VSCode settings
 .vscode/
 
 # Symlink for experimenting with local highlands,
-# usually for bypassing ./ext/highlands/
+# usually bypassing remote version ./ext/highlands/
 .highlands
 
 # MacOS custom file/folder attributes, irrelevant to the repo

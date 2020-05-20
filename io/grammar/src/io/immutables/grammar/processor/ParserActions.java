@@ -14,7 +14,7 @@ final class ParserActions {
 	private ParserActions() {}
 
 	static Action<Object> with(Cardinality cardinality) {
-		return new Action<Object>() {
+		return new Action<>() {
 			@Override
 			public boolean run(Context<Object> context) {
 				ValueStack<Object> stack = context.getValueStack();
@@ -27,7 +27,7 @@ final class ParserActions {
 	}
 
 	static Action<Object> with(MatchMode mode) {
-		return new Action<Object>() {
+		return new Action<>() {
 			@Override
 			public boolean run(Context<Object> context) {
 				ValueStack<Object> stack = context.getValueStack();
@@ -40,7 +40,7 @@ final class ParserActions {
 	}
 
 	static Action<Object> tagged() {
-		return new Action<Object>() {
+		return new Action<>() {
 			@Override
 			public boolean run(Context<Object> context) {
 				ValueStack<Object> stack = context.getValueStack();

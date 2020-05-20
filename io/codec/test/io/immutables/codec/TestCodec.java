@@ -25,13 +25,10 @@ public class TestCodec {
 	public void stringList() throws IOException {
 		Codec<List<String>> codec = l.get(new TypeToken<List<String>>() {});
 
-		ImmutableList<String> list = ImmutableList.of("a", "b", "c");
+		List<String> list = List.of("a", "b", "c");
+		String json = toJson(codec, list);
 
-		JsonWriter writer = JsonWriter.of(buffer);
-		codec.encode(OkJson.out(writer), list);
-
-		String json = buffer.readUtf8();
-		that(json).is("['a','b','c']".replace('\'', '"'));
+		that(json).is("['a','b','c']");
 		that(codec.decode(in(json))).isOf(list);
 	}
 
@@ -39,10 +36,9 @@ public class TestCodec {
 	public void intList() throws IOException {
 		Codec<List<Integer>> codec = l.get(new TypeToken<List<Integer>>() {});
 
-		ImmutableList<Integer> list = ImmutableList.of(1, 2, 3);
-		codec.encode(OkJson.out(JsonWriter.of(buffer)), list);
+		List<Integer> list = List.of(1, 2, 3);
+		String json = toJson(codec, list);
 
-		String json = buffer.readUtf8();
 		that(json).is("[1,2,3]");
 		that(codec.decode(in(json))).isOf(list);
 	}
@@ -51,13 +47,10 @@ public class TestCodec {
 	public void stringIntMap() throws IOException {
 		Codec<Map<String, Integer>> codec = l.get(new TypeToken<Map<String, Integer>>() {});
 
-		ImmutableMap<String, Integer> map = ImmutableMap.<String, Integer>of("a", 1, "b", 2);
+		Map<String, Integer> map = ImmutableMap.<String, Integer>of("a", 1, "b", 2);
+		String json = toJson(codec, map);
 
-		JsonWriter writer = JsonWriter.of(buffer);
-		codec.encode(OkJson.out(writer), map);
-
-		String json = buffer.readUtf8();
-		that(json).is("{'a':1,'b':2}".replace('\'', '"'));
+		that(json).is("{'a':1,'b':2}");
 		that(codec.decode(in(json))).equalTo(map);
 	}
 
@@ -65,12 +58,10 @@ public class TestCodec {
 	public void intBooleanMap() throws IOException {
 		Codec<Map<Integer, Boolean>> codec = l.get(new TypeToken<Map<Integer, Boolean>>() {});
 
-		ImmutableMap<Integer, Boolean> map = ImmutableMap.<Integer, Boolean>of(1, true, 3, false);
-		JsonWriter writer = JsonWriter.of(buffer);
-		codec.encode(OkJson.out(writer), map);
+		Map<Integer, Boolean> map = ImmutableMap.<Integer, Boolean>of(1, true, 3, false);
+		String json = toJson(codec, map);
 
-		String json = buffer.readUtf8();
-		that(json).is("{'1':true,'3':false}".replace('\'', '"'));
+		that(json).is("{'1':true,'3':false}");
 		that(codec.decode(in(json))).equalTo(map);
 	}
 
@@ -89,11 +80,8 @@ public class TestCodec {
 		s.b = true;
 		s.c = ImmutableList.of("d", "e");
 
-		JsonWriter writer = JsonWriter.of(buffer);
-		codec.encode(OkJson.out(writer), s);
-
-		String json = buffer.readUtf8();
-		that(json).is("{'a':1,'b':true,'c':['d','e']}".replace('\'', '"'));
+		String json = toJson(codec, s);
+		that(json).is("{'a':1,'b':true,'c':['d','e']}");
 
 		Struct<String> s2 = codec.decode(in(json));
 
@@ -111,11 +99,8 @@ public class TestCodec {
 				.s("X")
 				.build();
 
-		JsonWriter writer = JsonWriter.of(buffer);
-		codec.encode(OkJson.out(writer), dutu);
-
-		String json = buffer.readUtf8();
-		that(json).is("{'i':42,'s':'X'}".replace('\'', '"'));
+		String json = toJson(codec, dutu);
+		that(json).is("{'i':42,'s':'X'}");
 
 		Dutu dutu2 = codec.decode(in(json));
 
@@ -129,12 +114,8 @@ public class TestCodec {
 		Codec<Bubu<String>> codec = l.get(new TypeToken<Bubu<String>>() {});
 
 		Bubu<String> bubu = Bubu.of("BOO");
-
-		JsonWriter writer = JsonWriter.of(buffer);
-		codec.encode(OkJson.out(writer), bubu);
-
-		String json = buffer.readUtf8();
-		that(json).is("{'b':'BOO'}".replace('\'', '"'));
+		String json = toJson(codec, bubu);
+		that(json).is("{'b':'BOO'}");
 
 		Bubu<String> bubu2 = codec.decode(in(json));
 
@@ -154,10 +135,10 @@ public class TestCodec {
 		writer.setSerializeNulls(true);
 		codec.encode(OkJson.out(writer), opts);
 
-		String json = buffer.readUtf8();
-		that(json).is("{'s':'X','i':42,'l':null,'d':null}".replace('\'', '"'));
+		String json = buffer.readUtf8().replace('"', '\'');
+		that(json).is("{'s':'X','i':42,'l':null,'d':null}");
 	}
-	
+
 	@Test
 	public void optionals2() throws IOException {
 		Codec<Opts> codec = l.get(new TypeToken<Opts>() {});
@@ -184,6 +165,40 @@ public class TestCodec {
 		that(opts4.d()).same(OptionalDouble.empty());
 	}
 
+	@Test
+	public void caseTypes() throws IOException {
+		Codec<Cases> codec = l.get(new TypeToken<Cases>() {});
+
+		String json = toJson(codec, new Cases.A.Builder().a(33).build());
+		that(json).is("{'@case':'A','a':33}");
+
+		json = toJson(codec, new Cases.B.Builder().b(true).build());
+		that(json).is("{'@case':'B','b':true}");
+
+		json = toJson(codec, Cases.C.of("Z"));
+		that(json).is("{'@case':'C','c':'Z'}");
+
+		json = toJson(codec, Cases.D.of());
+		that(json).is("{'@case':'D'}");
+
+		that(codec.decode(in("{'c':'CCC','@case':'C'}"))).equalTo(Cases.C.of("CCC"));
+		that(codec.decode(in("{'@case':'B','b':false}"))).equalTo(new Cases.B.Builder().b(false).build());
+		that(codec.decode(in("{'@case':'D'}"))).same(Cases.D.of());
+	}
+
+	@Test
+	public void caseList() throws IOException {
+		Codec<List<Cases>> codec = l.get(new TypeToken<List<Cases>>() {});
+
+		Cases.D v1 = Cases.D.of();
+		Cases.C v2 = Cases.C.of("Z");
+		Cases.A v3 = new Cases.A.Builder().a(42).build();
+
+		String json = toJson(codec, ImmutableList.of(v1, v2, v3));
+
+		that(codec.decode(in(json))).isOf(v1, v2, v3);
+	}
+
 	public static Codec.In in(CharSequence chars) {
 		Buffer buffer = new Buffer();
 		buffer.writeUtf8(chars.toString());
@@ -192,4 +207,8 @@ public class TestCodec {
 		return OkJson.in(reader);
 	}
 
+	private <T> String toJson(Codec<T> codec, T instance) throws IOException {
+		codec.encode(OkJson.out(JsonWriter.of(buffer)), instance);
+		return buffer.readUtf8().replace('"', '\'');
+	}
 }

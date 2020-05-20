@@ -24,6 +24,7 @@ public abstract class Terms {
 		this.source = Source.wrap(input);
 	}
 
+	protected abstract int classTerm(int term);
 	protected abstract int kindTerm(int term);
 	protected abstract String showTerm(int term);
 	protected abstract Traversal newTraversal(int[] tokens, int tokenEnd);
@@ -230,7 +231,14 @@ public abstract class Terms {
 	}
 
 	private static final int INDEX_STEP = 2;
-
+	/** Token marker for the end of file. */
 	public static final int EOF = -1;
+	/** Token marker for unmached/unexpected character sequences. */
 	public static final int UNEXPECTED = -2;
+	/** Synthetic or otherwise non-classified terms. */
+	public static final int CLASS_SYNTHETIC = 0;
+	/** signifies literal verbatim 'term' terms. */
+	public static final int CLASS_VERBATIM = 1;
+	/** signifies placeholders <term> terms */
+	public static final int CLASS_PLACEHOLDER = 2;
 }

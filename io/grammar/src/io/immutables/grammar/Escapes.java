@@ -74,6 +74,10 @@ public final class Escapes {
 	public static Escaper escaperRange() {
 		return ESCAPER_RANGE;
 	}
+	
+	public static String angleQuote(String string) {
+		return "<" + escaper().escape(string) + ">";
+	}
 
 	public static String singleQuote(String string) {
 		return "'" + escaper().escape(string) + "'";
@@ -87,10 +91,11 @@ public final class Escapes {
 		checkArgument(string.length() >= 2, "should be at least 2 chars wide for quotes");
 		char first = string.charAt(0);
 		char last = string.charAt(string.length() - 1);
-		checkArgument(first == '"'
+		checkArgument(((first == '"'
 				|| first == '\''
-				|| first == '`'
-				|| first == last,
+				|| first == '`')
+				&& first == last)
+				|| (first == '<' && last == '>'),
 				"First and last chars should both be single or double quotes or backticks");
 
 		return string.substring(1, string.length() - 1);

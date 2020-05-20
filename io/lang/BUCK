@@ -18,6 +18,7 @@ java_library(
 		'//io/grammar:processor',
 		'//io/common:immutables',
 	],
+	visibility = ['PUBLIC'],
 )
 
 java_library(

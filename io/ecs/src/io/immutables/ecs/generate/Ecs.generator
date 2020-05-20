@@ -1,0 +1,20 @@
+[template public generate]
+
+	[output.system]Hell Oworld![/output.system]
+
+[output.write 'here/lies/anthon/lost.his.head.txt']
+Lorep ipsum!
+[/output.write]
+
+[output.java 'here.lies.danaos' 'TimeoDanaosAtDonaFerentes']
+package here.lies.danaos;
+
+import java.io.IOException;
+
+public interface TimeoDanaosAtDonaFerentes {
+  java.lang.String value();
+  java.util.Set<java.lang.String> s();
+}
+[/output.java]
+
+[/template]

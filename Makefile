@@ -28,7 +28,7 @@ prereq_bin = git curl java python buck node
 prereq_check = $(foreach bin,$(prereq_bin),$(if $(shell which $(bin)),,\
 		$(error "No `$(bin)` found in PATH. see README.md")))
 
-highlands_link = https://github.com/immutables/highlands/archive/v0.13.tar.gz
+highlands_link = https://github.com/immutables/highlands/archive/v0.15.tar.gz
 
 # The default is just to fetch, build, test all targets
 default:
@@ -44,7 +44,7 @@ default:
 	mkdir -p $@
 	curl -L $(highlands_link) | tar xz -C $@ --strip-components=1
 
-# Upgrades lib lock file and regens libs and symlinks and IJ projects
+# Upgrades lib lock file and regens libs and symlinks, IDE projects
 up: .ext/highlands
 	$(prereq_check)
 	@printf "\e[00;33m[updating dependencies, regen all]\e[00m\n"

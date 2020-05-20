@@ -52,6 +52,7 @@ public final class [className] extends [grmp].Terms {
 	}
 	[showTerm]
 	[kindTerm]
+	[classTerm]
 }
 [/template]
 
@@ -93,6 +94,19 @@ protected String showTerm(int token) {
 	[/for]
 	case EOF: return "EOF";
 	default: return "?";
+	}
+}
+[/template]
+
+[template classTerm]
+
+@Override
+protected int classTerm(int token) {
+	switch (token) {
+	[for d in dispatch.terms]
+	case TERM_[asConstant d.name]: return CLASS_[if d.id.placeholder]PLACEHOLDER[else]VERBATIM[/if];
+	[/for]
+	default: return CLASS_SYNTHETIC;
 	}
 }
 [/template]

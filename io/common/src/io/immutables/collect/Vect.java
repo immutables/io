@@ -234,12 +234,12 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		if (this == EMPTY) return this;
 		return new Vect<>(Arrays.copyOfRange(elements, from, elements.length));
 	}
-	
+
 	public E first() {
 		if (isEmpty()) throw new NoSuchElementException("first()");
 		return (E) elements[0];
 	}
-	
+
 	public E last() {
 		if (isEmpty()) throw new NoSuchElementException("first()");
 		return (E) elements[elements.length - 1];
@@ -280,7 +280,15 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 
 	@Override
 	public String toString() {
-		return stream().map(Object::toString).collect(Collectors.joining(", ", "[", "]"));
+		return join(", ", "[", "]");
+	}
+
+	public String join(String separator) {
+		return join(separator, "", "");
+	}
+
+	public String join(String separator, String prefix, String suffix) {
+		return stream().map(Object::toString).collect(Collectors.joining(separator, prefix, suffix));
 	}
 
 	public Vect<E> concat(Vect<? extends E> v) {
@@ -289,26 +297,26 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 				.addAll(v)
 				.build();
 	}
-	
+
 	public Object[] toArray() {
 		return elements.clone();
 	}
 
 	public E[] toArray(E[] a) {
-		 if (a.length < elements.length) {
-       return (E[]) Arrays.copyOf(elements, elements.length, a.getClass());
-		 }
-   System.arraycopy(elements, 0, a, 0, elements.length);
-   // by the strange (useful?) convention, we set next extra
-   // element to null, but we don't null the rest if any.
-   if (a.length > elements.length) a[elements.length] = null;
-   return a;
+		if (a.length < elements.length) {
+			return (E[]) Arrays.copyOf(elements, elements.length, a.getClass());
+		}
+		System.arraycopy(elements, 0, a, 0, elements.length);
+		// by the strange (useful?) convention, we set next extra
+		// element to null, but we don't null the rest if any.
+		if (a.length > elements.length) a[elements.length] = null;
+		return a;
 	}
-	
+
 	public E[] toArray(IntFunction<E[]> factory) {
 		return toArray(factory.apply(elements.length)); // some microbenchmarks recomment 0?
 	}
-	
+
 	public static <E> Vect<E> of(E single) {
 		requireNonNull(single);
 		return new Vect<>(new Object[] {single});

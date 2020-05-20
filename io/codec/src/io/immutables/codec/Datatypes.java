@@ -1,5 +1,6 @@
 package io.immutables.codec;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import io.immutables.Nullable;
@@ -12,7 +13,6 @@ import org.immutables.data.Datatype;
 import org.immutables.data.Datatype.Builder;
 import org.immutables.data.Datatype.Feature;
 import org.immutables.data.Datatype.Violation;
-import org.immutables.value.Generated;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.util.Objects.requireNonNull;
@@ -32,7 +32,7 @@ public class Datatypes {
 		Class<?> definitionClass = getDefinitionClass(type.getRawType());
 		// don't torture classes which are not probable to be datatype definition
 		if (!Modifier.isAbstract(definitionClass.getModifiers())) return null;
-		
+
 		Class<?> topLevelDefiner = getTopLevel(definitionClass);
 		@Nullable Class<?> datatypeConstructor = loadFromTheSamePackage(
 				topLevelDefiner, DATATYPES_PREFIX + topLevelDefiner.getSimpleName());
@@ -46,17 +46,19 @@ public class Datatypes {
 				throwIfUnchecked(ex.getCause());
 				throw new RuntimeException(ex.getCause());
 			} catch (ReflectiveOperationException | SecurityException ex) {
-				throw new RuntimeException(ex.getCause());
+				throw new RuntimeException(ex);
 			}
 		}
 		return null;
 	}
 
 	private static Class<?> getDefinitionClass(Class<?> c) {
-		@Nullable Generated generated = c.getAnnotation(Generated.class);
-		if (generated != null) {
+		// generate is not a runtime annotation, do we need to use annotation injection? probably not
+		// @Nullable Generated generated = c.getAnnotation(Generated.class); if (generated != null)
+		String fullName = c.getCanonicalName();
+		if (fullName != null && fullName.contains(IMMUTABLE_PREFIX)) {
 			// also transform from canonical to binary name
-			String className = generated.from().replace('.', '$');
+			String className = fullName.replace(IMMUTABLE_PREFIX, ".");
 			Class<?> abstractType = loadFromTheSamePackage(c, className);
 			if (abstractType != null) return abstractType;
 		}
@@ -104,10 +106,15 @@ public class Datatypes {
 		}
 		ImmutableList<FieldFeature<T, ?>> features = builder.build();
 
-		return new Datatype<T>() {
+		return new Datatype<>() {
 			@Override
 			public Builder<T> builder() {
 				return new InstanceBuilder<>((Class<T>) raw);
+			}
+
+			@Override
+			public boolean isInstantiable() {
+				return true;
 			}
 
 			@Override
@@ -143,8 +150,11 @@ public class Datatypes {
 
 		InstanceBuilder(Class<T> type) {
 			try {
-				instance = type.newInstance();
-			} catch (InstantiationException | IllegalAccessException ex) {
+				instance = type.getConstructor().newInstance();
+			} catch (InvocationTargetException ex) {
+				Throwables.throwIfUnchecked(ex.getCause());
+				throw new RuntimeException(ex.getCause());
+			} catch (InstantiationException | IllegalAccessException | NoSuchMethodException | SecurityException ex) {
 				throw new RuntimeException(ex);
 			}
 		}
@@ -242,4 +252,5 @@ public class Datatypes {
 
 	private static final String CONSTRUCT_METHOD = "constuct"; // typo in generated code, to be fixed
 	private static final String DATATYPES_PREFIX = "Datatypes_";
+	private static final String IMMUTABLE_PREFIX = ".Immutable";
 }

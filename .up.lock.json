@@ -72,14 +72,14 @@
       "options": {},
       "jars": [
         {
-          "coords": "org.immutables:value:annotations:2.8.0-dt-experimental-2",
-          "sha1": "31ab5cda033db3e6b0f180b6c3d4b68d46015d1e"
+          "coords": "org.immutables:value:annotations:2.8.0-dt-experimental-5",
+          "sha1": "3c50e61246a43b3678c29910fb28abf8d27495a6"
         }
       ],
       "srcs": [
         {
-          "coords": "org.immutables:value:annotations:2.8.0-dt-experimental-2",
-          "sha1": "0e0d700855c62c8685e25306e6088cbfa5f9a764"
+          "coords": "org.immutables:value:annotations:2.8.0-dt-experimental-5",
+          "sha1": "0307bdcbb17e5f1e22a86fce38e2adc5cd0246ee"
         }
       ]
     },
@@ -90,8 +90,8 @@
       },
       "jars": [
         {
-          "coords": "org.immutables:value:2.8.0-dt-experimental-2",
-          "sha1": "454b57087aa5306665761d7d925ae8e7dcd9bb18"
+          "coords": "org.immutables:value:2.8.0-dt-experimental-5",
+          "sha1": "6fbd93b97e7b93f22f2ad4c30dd4c48d544c7fba"
         }
       ],
       "srcs": []
@@ -101,14 +101,14 @@
       "options": {},
       "jars": [
         {
-          "coords": "org.immutables:data:2.8.0-dt-experimental-2",
-          "sha1": "76694de3ecfb7d953a772f4e103f0bc2bdffb7d4"
+          "coords": "org.immutables:data:2.8.0-dt-experimental-5",
+          "sha1": "66db18331a2e59127c48370c1f1ad2efdea6638f"
         }
       ],
       "srcs": [
         {
-          "coords": "org.immutables:data:2.8.0-dt-experimental-2",
-          "sha1": "fdaccedef9db7139d0d6197375d9b24845b6be52"
+          "coords": "org.immutables:data:2.8.0-dt-experimental-5",
+          "sha1": "54ddd6aa864f238f389109007dd6f8ff7aa19bec"
         }
       ]
     },
@@ -196,14 +196,14 @@
       "options": {},
       "jars": [
         {
-          "coords": "org.immutables:trees:2.8.0-dt-experimental-2",
-          "sha1": "d0790a0282ba1e5d708d0bf9a361635f6a9d8a7b"
+          "coords": "org.immutables:trees:2.8.0-dt-experimental-5",
+          "sha1": "f3537f6d000c99002a64a52bea5c11cd08355fd0"
         }
       ],
       "srcs": [
         {
-          "coords": "org.immutables:trees:2.8.0-dt-experimental-2",
-          "sha1": "1c2654c696b55be6f8988ca13446f4c780afbb80"
+          "coords": "org.immutables:trees:2.8.0-dt-experimental-5",
+          "sha1": "f358b26c88eda19208dd98cde4d5779a3dc82ae0"
         }
       ]
     },
@@ -212,14 +212,14 @@
       "options": {},
       "jars": [
         {
-          "coords": "org.immutables:ordinal:2.8.0-dt-experimental-2",
-          "sha1": "0be2862a5741cfbf1254093a8eda31b77eb9e557"
+          "coords": "org.immutables:ordinal:2.8.0-dt-experimental-5",
+          "sha1": "c34c2ee85839ce250def051d3e00acd2d7656636"
         }
       ],
       "srcs": [
         {
-          "coords": "org.immutables:ordinal:2.8.0-dt-experimental-2",
-          "sha1": "77cb758cb4a759030c10fe5305ebffd8afe1b739"
+          "coords": "org.immutables:ordinal:2.8.0-dt-experimental-5",
+          "sha1": "df45840ae0397d31d95971f6e2e935196570e0de"
         }
       ]
     },
@@ -228,14 +228,14 @@
       "options": {},
       "jars": [
         {
-          "coords": "org.immutables:generator:2.8.0-dt-experimental-2",
-          "sha1": "03111a597641d086453fc4d67730342e8a8db7fb"
+          "coords": "org.immutables:generator:2.8.0-dt-experimental-5",
+          "sha1": "3a0a550a0ba6da1e03704711308810c50bbcbf81"
         }
       ],
       "srcs": [
         {
-          "coords": "org.immutables:generator:2.8.0-dt-experimental-2",
-          "sha1": "8234a67a1eef432187eaf5b3a344bcb4376c79ef"
+          "coords": "org.immutables:generator:2.8.0-dt-experimental-5",
+          "sha1": "573979b200e59f83dbe3729f1990b0324b97c74f"
         }
       ]
     },
@@ -249,8 +249,8 @@
       },
       "jars": [
         {
-          "coords": "org.immutables:generator-processor:luggage:2.8.0-dt-experimental-2",
-          "sha1": "12458487f9cea62ce994760a35ea70d0105d7aaa"
+          "coords": "org.immutables:generator-processor:luggage:2.8.0-dt-experimental-5",
+          "sha1": "1a5cd8116b571f0887291595957360ba35e66ecb"
         },
         {
           "coords": "org.ow2.asm:asm:8.0.1",
@@ -271,8 +271,8 @@
       ],
       "srcs": [
         {
-          "coords": "org.immutables:generator-processor:luggage:2.8.0-dt-experimental-2",
-          "sha1": "ed9d632b16c112997fdf02aa79ef1bbc6c6cb0d0"
+          "coords": "org.immutables:generator-processor:luggage:2.8.0-dt-experimental-5",
+          "sha1": "ad55fce670d251b085f9043c40debb6f084d359d"
         },
         {
           "coords": "org.ow2.asm:asm:8.0.1",
@@ -291,6 +291,17 @@
           "sha1": "1cc2f064eb65238dd3e9139784ad9321278e1b16"
         }
       ]
+    },
+    {
+      "target": "//lib/immutables/generator:templater",
+      "options": {
+        "processor": "org.immutables.generator.processor.Processor",
+        "deps": [
+          "//lib/immutables/generator:processor"
+        ]
+      },
+      "jars": [],
+      "srcs": []
     },
     {
       "target": "//lib/postresql:postresql",
@@ -331,6 +342,16 @@
           "sha1": "1dc37250fbc78e23a65a67fbbaf71d2e9cbc3c0b"
         }
       ]
+    },
+    {
+      "target": "//io/smp:pre",
+      "options": {
+        "internal": true,
+        "jar": "bin.jar",
+        "src": "gen.src.zip"
+      },
+      "jars": [],
+      "srcs": []
     }
   ]
 }

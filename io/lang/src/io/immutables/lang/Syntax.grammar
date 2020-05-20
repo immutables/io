@@ -1,5 +1,7 @@
 -- Keywords should not be followed by a word identifier without delimiter
 keyword:
+  'module' ~ 'module' ! [a-zA-Z0-9]
+  'import' ~ 'import' ! [a-zA-Z0-9]
   'type' ~ 'type' ! [a-zA-Z0-9]
   'concept' ~ 'concept' ! [a-zA-Z0-9]
   'impl' ~ 'impl' ! [a-zA-Z0-9]
@@ -18,12 +20,15 @@ keyword-values:
   'true' ~ 'true' ! [a-zA-Z0-9]
   'false' ~ 'false' ! [a-zA-Z0-9]
 
+identifier:
+  <name> ~ [a-z][a-zA-Z0-9]*
+  <typename> ~ [A-Z][a-zA-Z0-9]*
+
 other:
   <string> ~ ["][^"]*["]
   <decimal> ~ [0-9]+
   <hexadecimal> ~ [#][0-9a-fA-F]+
-  -- FIXME if there's no newline at the end of file
-  -- lexer breaks, need handle
+  -- FIXME if there's no newline at the end of file - lexer breaks with IOOBE
   <comment-newline> ~ [/][/][^\n]*[\n]
   <newline> ~ [\n]
 
@@ -68,20 +73,21 @@ delimiters:
   '|' ~ '|'
   '&' ~ '&'
 
-identifier:
-  <name> ~ [a-z][a-zA-Z0-9]*
-  <typename> ~ [A-Z][a-zA-Z0-9]*
-
 -- lists terms which are skipped by parser
 ignored:
   <spacing> ~ [\s\r\t]+
 
+--------------
+-- productions
+--------------
 
 unit
   elements:unit-element+
 
 unit-element
   | empty
+  | module-declaration
+  | import-declaration
   | type-declaration
   | concept-declaration
   | local-binding
@@ -90,9 +96,18 @@ unit-element
 empty
   nl
 
+-- TODO rework nl, comments are not distributed to the proper elements
 (nl)
   | comment:<comment-newline>
   | <newline>
+
+-- TODO multisegment path name?
+module-declaration
+  'module' name:<name> nl?
+
+-- TODO multisegment path name? import spread? by names import
+import-declaration
+  'import' name:<name> nl?
 
 type-declaration
   'type' name:<typename> type-parameters? constructor:constructor? type-constraints* features:features? nl?
@@ -122,7 +137,11 @@ parameter
 
 parameter-product
   | '(' nl* ')'
-  | '(' fields:named-parameters (field-separator fields:named-parameters)* field-separator? ')'
+  | '(' components:product-component (field-separator components:product-component)* field-separator? ')'
+
+product-component
+  | unnamed-parameter
+  | named-parameters
 
 parameter-record
   | '{' nl* '}'
@@ -131,6 +150,9 @@ parameter-record
 (field-separator)
   | ',' nl?
   | nl
+
+unnamed-parameter
+  nl* type:type-reference
 
 -- a, b Number
 named-parameters
@@ -179,7 +201,7 @@ type-reference-undecorated
   | type-reference-product
   | type-reference-record
   | type-reference-array
-  | type-reference-declared
+  | type-reference-named
 
 -- Elem...
 type-reference-sequence
@@ -193,7 +215,7 @@ type-reference-slot
 
 -- String
 -- Box<Nail>
-type-reference-declared
+type-reference-named
   name:<typename> type-arguments?
 
 -- <A, B, C>
@@ -214,7 +236,7 @@ type-constraint-equivalence
 
 -- Eq<A>
 type-constraint-conception
-  concept:type-reference-declared
+  concept:type-reference-named
 
 features
   | '{' nl* '}'

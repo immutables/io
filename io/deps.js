@@ -3,7 +3,7 @@ const ver = {
 	guice: '4.2.2',
 	gson: '2.8.6',
 	asm: '8.0.1',
-	immutables: '2.8.0-dt-experimental-2',
+	immutables: '2.8.0-dt-experimental-5',
 }
 
 module.exports = function(up) { up
@@ -18,7 +18,7 @@ module.exports = function(up) { up
 		srcs: [],
 	})
 	.lib('//lib/immutables/data', `org.immutables:data:${ver.immutables}`)
-	.lib('//lib/immutables/value:processor', [], {
+	.lib('//lib/immutables/value:processor', {
 		processor: 'org.immutables.processor.ProxyProcessor',
 		deps: ['//lib/immutables/value'],
 	})
@@ -40,9 +40,16 @@ module.exports = function(up) { up
 	], {
 		deps: ['//lib/google/common', '//lib/immutables/trees'],
 	})
+	.lib('//lib/immutables/generator:templater', {
+		processor: 'org.immutables.generator.processor.Processor',
+		deps: ['//lib/immutables/generator:processor'],
+	})
 	.lib('//lib/postresql', `org.postgresql:postgresql:42.2.12`)
 	.lib('//lib/junit', [
 		`junit:junit:4.12`,
 		`org.hamcrest:hamcrest-core:1.3`,
 	])
+	.lib('//io/smp:pre', {
+		internal: true, jar: 'bin.jar', src: 'gen.src.zip'
+	})
 }

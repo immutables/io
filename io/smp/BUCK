@@ -1,0 +1,38 @@
+
+genrule(
+  name = 'gen',
+  srcs = [],
+  cmd = '$(exe //io/ecs:gen) --out ${TMP} --zip ${OUT}',
+  out = 'gen.src.zip',
+)
+
+java_library(
+  name = 'smp',
+  srcs = [':gen'],
+  resources = [],
+  resources_root = 'src',
+)
+
+java_library(
+  name = 'snp',
+  srcs = glob(['src/**/*.java']),
+  deps = [':pre'],
+  resources = [],
+  resources_root = 'src',
+)
+
+# Create actual jar with resources excluding java sources,
+zip_file(
+  name = 'bin2',
+  out = 'bin2.jar',
+  srcs = [],
+  zip_srcs = [':smp', ':gen'],
+  entries_to_exclude = ['.*\.java$'],
+)
+
+prebuilt_jar(
+  name = 'pre',
+  binary_jar = ':bin2',
+  source_jar = ':gen',
+  visibility = ['PUBLIC'],
+)

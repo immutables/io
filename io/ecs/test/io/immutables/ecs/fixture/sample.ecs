@@ -1,37 +1,17 @@
 
-// Structs
-// Wrapper types
-// Enums / Variants
+module a
 
-// entity
+type Abra(Int, Double)
 
-// package system?
+// This is dabra
+// Cadabra
+type Dabra {
+	aaa String // abra
+	bbb Long // babra
+}
 
-
-
-
-data Container {}
-
-
-entity Container
-
-
-// top level module
-datatypes + concepts
-
-
-predefined datatypes and concepts for ECS
-
-
-* declare datatypes: tuplewrappers and structs
-
-* mark datatype as entity
-* mark datatype as component
-
-* define endpoints
-* 
-
-* define record <-- how component mapped to db
-* or derive record from entity component
-
-
+// Type 
+type Optional<T> {
+	Some(T)
+	None
+}

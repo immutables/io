@@ -96,7 +96,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 				.append(" +")
 				.append(Strings.padStart(Integer.toHexString(nextIncrement), 4, '0'))
 				.append("| ")
-				.append(Strings.padEnd((part >= 0 ? showPart(part) + ":" : "*:") + showKind(kind), 32, ' '))
+				.append(Strings.padEnd((part >= 0 ? showPart(part) + ":" : "*:") + showKind(kind), 40, ' '))
 				.append(" |")
 				.append(l1 < 0 ? "????" : terms.rangeInclusive(termBegin, termEnd).get(terms.source()));
 	}
@@ -476,9 +476,13 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 	private String buildMismatchMessage() {
 		Source.Range range = terms.range(mismatchAt);
+		CharSequence rangeText = range.get(terms.source());
+		String showMismatchTerm = terms.classTerm(mismatchTermActual) != Terms.CLASS_VERBATIM
+				? terms.showTerm(mismatchTermActual)
+				: ""; // don't show verbatim, they are literally the same.
 		return range.begin
-				+ " Stumbled on `" + range.get(terms.source()) + "`"
-				+ terms.showTerm(mismatchTermActual) + " while expecting " + terms.showTerm(mismatchTermExpected)
+				+ " Stumbled on `" + rangeText + "`"
+				+ showMismatchTerm + " while expecting " + terms.showTerm(mismatchTermExpected)
 				+ " term in/after " + showKind(mismatchProduction) + ""
 				+ "\n\t" + terms.highlight(range).toString().replace("\n", "\n\t")
 				+ "Cannot parse production because of mismatched term";

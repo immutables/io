@@ -8,14 +8,10 @@ import io.immutables.codec.Codec.Out;
 import java.io.IOException;
 
 class Pipe {
-	static void pipe(In in, Out out) throws IOException {
-		At t;
-		while ((t = in.peek()) != At.EOF) {
-			onValue(in, out, t);
-		}
-	}
+	private Pipe() {}
 
-	private static void onValue(In in, Out out, At t) throws IOException {
+	static void onValue(In in, Out out) throws IOException {
+		At t = in.peek();
 		switch (t) { // @formatter:off
 		case NULL: in.takeNull(); out.putNull(); break;
 		case INT: out.putInt(in.takeInt()); break;
@@ -32,23 +28,23 @@ class Pipe {
 		}	// @formatter:on
 	}
 
-	private static void onStruct(Out out, In in) throws IOException {
+	static void onStruct(Out out, In in) throws IOException {
 		FieldIndex mapper = Codec.arbitraryFields();
 		in.beginStruct(mapper);
 		out.beginStruct(mapper);
 		while (in.hasNext()) {
 			out.putField(in.takeField());
-			onValue(in, out, in.peek());
+			onValue(in, out);
 		}
 		out.endArray();
 		in.endArray();
 	}
 
-	private static void onArray(Out out, In in) throws IOException {
+	static void onArray(Out out, In in) throws IOException {
 		in.beginArray();
 		out.beginArray();
 		while (in.hasNext()) {
-			onValue(in, out, in.peek());
+			onValue(in, out);
 		}
 		out.endArray();
 		in.endArray();
