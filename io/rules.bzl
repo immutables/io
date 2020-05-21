@@ -15,6 +15,7 @@ _java_test_vm_args = [
   '-Dio.immutables.that.replace-error-message= ',
 ]
 
+
 def java_module(
     name,
     deps = [],
@@ -57,6 +58,17 @@ def _dedupe(seq):
 
 def java_test_vm_args():
   return _java_test_vm_args
+
+
+# for use in explicitly written kotlin_library
+def kotlinc_args():
+  return [
+    '-java-parameters',
+    '-nowarn',
+    '-no-stdlib',
+    '-no-reflect',
+    '-jvm-target', native.read_config('java', 'target_level', '1.8')
+  ]
 
 
 # java_resources uses java_library and special labels (processed by IDE project generation tool)

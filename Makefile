@@ -49,3 +49,22 @@ up: .ext/highlands
 	$(prereq_check)
 	@printf "\e[00;33m[updating dependencies, regen all]\e[00m\n"
 	node up --uplock --lib --intellij --eclipse --trace
+
+# Note: `cleanse` is a kind of "unsafe clean" - it would delete files which
+# should be stored in the source control, such as generated library definition,
+# dependency lock file, etc. It is expected that thouse will be regenerated
+# (for example by calling "make up") before committing any changes.
+# In addition, any tools/scripts downloaded by make targets and not stored
+# in source controld will be removed and expected to be recreated/re-downloaded.
+# Main purpose of this command is to try reset/redo all caches/generated project files
+# when project "is not feeling well"
+cleanse:
+	$(prereq_check)
+	@printf "\e[00;31m[cleansing, require regen before committing!]\e[00m\n"
+	buck kill
+	rm -fr buck-out
+	rm -fr .idea
+	rm -fr .ext
+	rm -fr lib
+	rm .up.lock.json
+	find . -type d -name '.out' -exec rm -fr {} +

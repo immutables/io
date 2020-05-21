@@ -1,4 +1,5 @@
 const ver = {
+  kotlin: '1.3.72',
 	guava: '28.2-jre',
 	guice: '4.2.2',
 	gson: '2.8.6',
@@ -22,12 +23,6 @@ module.exports = function(up) { up
 		processor: 'org.immutables.processor.ProxyProcessor',
 		deps: ['//lib/immutables/value'],
 	})
-	.lib('//lib/google/gson', `com.google.code.gson:gson:${ver.gson}`)
-	.lib('//lib/square/okio', `com.squareup.okio:okio:1.16.0`)
-	.lib('//lib/square/moshi', `com.squareup.moshi:moshi:1.9.2`, {
-		deps: ['//lib/square/okio']
-	})
-	.lib('//lib/square/javapoet', `com.squareup:javapoet:1.12.1`)
 	.lib('//lib/immutables/trees', `org.immutables:trees:${ver.immutables}`)
 	.lib('//lib/immutables/ordinal', `org.immutables:ordinal:${ver.immutables}`)
 	.lib('//lib/immutables/generator', `org.immutables:generator:${ver.immutables}`)
@@ -44,12 +39,24 @@ module.exports = function(up) { up
 		processor: 'org.immutables.generator.processor.Processor',
 		deps: ['//lib/immutables/generator:processor'],
 	})
+	.lib('//lib/kotlin/stdlib', [
+		`org.jetbrains.kotlin:kotlin-stdlib:${ver.kotlin}`,
+		`org.jetbrains.kotlin:kotlin-stdlib-jdk7:${ver.kotlin}`,
+		`org.jetbrains.kotlin:kotlin-stdlib-jdk8:${ver.kotlin}`,
+		`org.jetbrains.kotlin:kotlin-reflect:${ver.kotlin}`,
+	])
+	.lib('//lib/google/gson', `com.google.code.gson:gson:${ver.gson}`)
+	.lib('//lib/square/okio', `com.squareup.okio:okio:1.16.0`)
+	.lib('//lib/square/moshi', `com.squareup.moshi:moshi:1.9.2`, {
+		deps: ['//lib/square/okio']
+	})
+	.lib('//lib/square/javapoet', `com.squareup:javapoet:1.12.1`)
 	.lib('//lib/postresql', `org.postgresql:postgresql:42.2.12`)
 	.lib('//lib/junit', [
 		`junit:junit:4.12`,
 		`org.hamcrest:hamcrest-core:1.3`,
 	])
 	.lib('//io/smp:pre', {
-		internal: true, jar: 'bin.jar', src: 'gen.src.zip'
+		internal: true
 	})
 }

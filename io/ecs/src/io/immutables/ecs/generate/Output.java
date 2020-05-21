@@ -21,7 +21,6 @@ import java.util.zip.CheckedOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.annotation.Nullable;
-import org.immutables.generator.PostprocessingMachine;
 import org.immutables.generator.Templates;
 import org.immutables.generator.Templates.Invokable;
 import org.immutables.generator.Templates.Invokation;
@@ -134,8 +133,8 @@ public final class Output {
 			String packageName = parameters[0].toString();
 			String filenameNoExt = parameters[1].toString();
 			Invokable body = (Invokable) parameters[2];
-
-			String path = (!packageName.isEmpty() ? (packageName.replace('.', '/') + '/') : "") + filenameNoExt + ".java";
+			
+			String path = toFilePath(packageName, filenameNoExt, ".java");
 			writeToFile(path, body, this::rewriteImports, false);
 			return null;
 		}
@@ -145,7 +144,30 @@ public final class Output {
 			return content.startsWith(NO_REWRITE_IMPORTS) ? content : PostprocessingMachine.rewrite(content);
 		}
 	};
+	
+	public final Templates.Invokable kt = new Templates.Invokable() {
+		@Override
+		@Nullable
+		public Invokable invoke(Invokation invokation, Object... parameters) {
+			String packageName = parameters[0].toString();
+			String filenameNoExt = parameters[1].toString();
+			Invokable body = (Invokable) parameters[2];
 
+			String path = toFilePath(packageName, filenameNoExt, ".kt");
+			writeToFile(path, body, this::rewriteImports, false);
+			return null;
+		}
+
+		private CharSequence rewriteImports(CharSequence input) {
+			String content = input.toString();
+			return content.startsWith(NO_REWRITE_IMPORTS) ? content : PostprocessingMachine.rewrite(content, false);
+		}
+	};
+
+	private String toFilePath(String packageName, String filename, String extension) {
+		return (!packageName.isEmpty() ? (packageName.replace('.', '/') + '/') : "") + filename + extension;
+	}
+	
 	private void writeToFile(
 			String path,
 			Invokable body,

@@ -14,7 +14,26 @@ import java.io.IOException;
 public interface TimeoDanaosAtDonaFerentes {
   java.lang.String value();
   java.util.Set<java.lang.String> s();
+
+	static void main(java.lang.String... args) {
+		var x = "YXZ";
+		System.out.println(x);
+	}
 }
 [/output.java]
+
+[output.kt 'here.lies.anthon' 'Koolige']
+package here.lies.anthon
+
+
+class Koolige {
+	fun notFun() {
+		val x = java.util.Collections.emptySet<String>()
+		var y: java.util.Set<*>? = null
+		val g = "p"
+		println("Hewwo ${g}")
+	}
+}
+[/output.kt]
 
 [/template]

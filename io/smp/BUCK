@@ -1,18 +1,30 @@
+load('//io:rules.bzl', 'kotlinc_args')
 
 genrule(
-  name = 'gen',
+  name = 'pre.src.zip',
   srcs = [],
   cmd = '$(exe //io/ecs:gen) --out ${TMP} --zip ${OUT}',
-  out = 'gen.src.zip',
+  out = 'pre.src.zip', # must be `.zip` !
 )
 
-java_library(
+#java_library(
+#  name = 'smp__',
+#  srcs = [':pre.src.zip'],
+#  resources = [],
+#  resources_root = 'src',
+#)
+
+kotlin_library(
   name = 'smp',
-  srcs = [':gen'],
+  srcs = [':pre.src.zip'],
+	provided_deps = ['//lib/kotlin/stdlib:stdlib'],
+  extra_kotlinc_arguments = kotlinc_args(),
   resources = [],
   resources_root = 'src',
 )
 
+# This one just demonstrates referencing library from the same buck file
+# via internal library definition
 java_library(
   name = 'snp',
   srcs = glob(['src/**/*.java']),
@@ -21,18 +33,20 @@ java_library(
   resources_root = 'src',
 )
 
-# Create actual jar with resources excluding java sources,
+# Create actual jar with resources excluding sources,
+# taking compiled library jar, including sources to get all non-class resources,
+# then exclude java and kotlin actual sources
 zip_file(
-  name = 'bin2',
-  out = 'bin2.jar',
+  name = 'pre.jar',
+  out = 'pre.jar', # use name to match default for looking up //io/smp:pre internal library
   srcs = [],
-  zip_srcs = [':smp', ':gen'],
-  entries_to_exclude = ['.*\.java$'],
+  zip_srcs = [':smp', ':pre.src.zip'],
+  entries_to_exclude = ['.*\.java$', '.*\.kt$'],
 )
 
 prebuilt_jar(
   name = 'pre',
-  binary_jar = ':bin2',
-  source_jar = ':gen',
+  binary_jar = ':pre.jar',
+  source_jar = ':pre.src.zip',
   visibility = ['PUBLIC'],
 )
