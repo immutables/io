@@ -1,0 +1,10 @@
+module a
+
+import system
+import b
+
+type Z(a Int, bs Bs)
+
+type ItemRecord :: Component<X> {
+
+}

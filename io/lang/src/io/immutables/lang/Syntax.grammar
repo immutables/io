@@ -120,10 +120,10 @@ constructor-parameter
   input:parameter
 
 constructor-cases
-  '{' cases:constructor-case* nl* '}'
+  '{' nl* '|'? cases:constructor-case (nl* '|' cases:constructor-case)* nl* '}'
 
 constructor-case
-  nl* name:<typename> constructor:parameter? features:features?
+  name:<typename> constructor:parameter? features:features?
 
 concept-declaration
   'concept' name:<typename> type-parameters? type-constraints* features:features nl?
@@ -145,11 +145,15 @@ product-component
 
 parameter-record
   | '{' nl* '}'
-  | '{' fields:named-parameters-bind (field-separator fields:named-parameters-bind)* field-separator? '}'
+  | '{' record-parameters (field-separator record-parameters)* field-separator? '}'
 
 (field-separator)
   | ',' nl?
   | nl
+
+(record-parameters)
+  | nl* '*' inline:type-reference-named
+  | fields:named-parameters-bind
 
 unnamed-parameter
   nl* type:type-reference

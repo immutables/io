@@ -382,10 +382,10 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		public E next() {
 			return (E) elements[index++];
 		}
-		public boolean isLast() {
+		public boolean wasLast() {
 			return index == elements.length;
 		}
-		public boolean isFirst() {
+		public boolean wasFirst() {
 			return index == 1;
 		}
 		@Override
@@ -530,8 +530,8 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	public static <E> Collector<E, Vect.Builder<E>, Vect<E>> to() {
 		return Collector.of(
 				Vect::builder,
-				(Vect.Builder<E> b, E e) -> b.add(e),
-				(Vect.Builder<E> a, Vect.Builder<E> b) -> a.combine(b),
-				(Vect.Builder<E> b) -> b.build());
+				Builder::add,
+				Builder::combine,
+				Builder::build);
 	}
 }

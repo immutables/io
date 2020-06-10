@@ -77,6 +77,12 @@ public interface Source {
 		public CharSequence get(CharSequence source) {
 			return source.subSequence(begin.position, end.position);
 		}
+		
+		/** Either this range if within line or only starting position range. */
+		public Range withinLine() {
+			if (begin.line == end.line) return this;
+			return new Range(begin, begin);
+		}
 
 		public Range span(Range to) {
 			return Range.of(this.begin, to.end);
@@ -268,6 +274,7 @@ public interface Source {
 			this.message = message;
 			this.hint = hint;
 		}
+
 		@Override
 		public String toString() {
 			return filename + ":" + range.begin + " " + message + "\n\t"

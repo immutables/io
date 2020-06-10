@@ -78,16 +78,16 @@ public final class Output {
 	}
 
 	private void writeFiles(String outPath) {
-		File outDir = new File(outPath);
+		var outDir = new File(outPath);
 
-		for (Entry<String, Collection<String>> e : fileContent.asMap().entrySet()) {
-			File outFile = new File(outDir, e.getKey());
+		for (var e : fileContent.asMap().entrySet()) {
+			var outFile = new File(outDir, e.getKey());
 			try {
 				if (!outFile.getParentFile().exists()) {
 					outFile.getParentFile().mkdirs();
 					// if this will fail we will have exception thrown below anyway
 				}
-				CharSink sink = Files.asCharSink(outFile, StandardCharsets.UTF_8);
+				var sink = Files.asCharSink(outFile, StandardCharsets.UTF_8);
 				for (String s : e.getValue()) {
 					sink.write(s);
 				}

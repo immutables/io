@@ -2,8 +2,8 @@ load('//io:rules.bzl', 'kotlinc_args')
 
 genrule(
   name = 'pre.src.zip',
-  srcs = [],
-  cmd = '$(exe //io/ecs:gen) --out ${TMP} --zip ${OUT}',
+  srcs = glob(['src/**/*.ecs']),
+  cmd = '$(exe //io/ecs:gen) --out ${TMP} --zip ${OUT} ${SRCS}',
   out = 'pre.src.zip', # must be `.zip` !
 )
 

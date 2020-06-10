@@ -40,6 +40,10 @@ public abstract class Terms {
 	public final CharSequence source() {
 		return source;
 	}
+	
+	public final Source.Lines lines() {
+		return lines;
+	}
 
 	public StringBuilder highlight(Source.Range range) {
 		return Source.Excerpt.from(source, lines).get(range);
@@ -50,11 +54,11 @@ public abstract class Terms {
 		return tokenEnd >> 1;
 	}
 
-	private final int beforePosition(int index) {
+	private int beforePosition(int index) {
 		return index <= 0 ? 0 : tokens[index - 1];
 	}
 
-	private final int afterPosition(int index) {
+	private int afterPosition(int index) {
 		if (index + 1 >= tokens.length) {
 			return input.length;
 		}
