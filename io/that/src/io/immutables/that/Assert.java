@@ -97,8 +97,7 @@ public final class Assert {
 	 * @return that iterable
 	 */
 	@CheckReturnValue
-	@SafeVarargs
-	public static That.Iterable<Integer> that(int... actual) {
+	public static That.Iterable<Integer> that(int[] actual) {
 		class Tested extends That.What<Iterable<Integer>, That.Iterable<Integer>> implements That.Iterable<Integer> {}
 		return new Tested().set(Arrays.stream(actual).mapToObj(x -> x).collect(Collectors.toList()));
 	}
@@ -108,8 +107,7 @@ public final class Assert {
 	 * @return that iterable
 	 */
 	@CheckReturnValue
-	@SafeVarargs
-	public static That.Iterable<Long> that(long... actual) {
+	public static That.Iterable<Long> that(long[] actual) {
 		class Tested extends That.What<Iterable<Long>, That.Iterable<Long>> implements That.Iterable<Long> {}
 		return new Tested().set(Arrays.stream(actual).mapToObj(x -> x).collect(Collectors.toList()));
 	}
@@ -119,8 +117,7 @@ public final class Assert {
 	 * @return that iterable
 	 */
 	@CheckReturnValue
-	@SafeVarargs
-	public static That.Iterable<Double> that(double... actual) {
+	public static That.Iterable<Double> that(double[] actual) {
 		class Tested extends That.What<Iterable<Double>, That.Iterable<Double>> implements That.Iterable<Double> {}
 		return new Tested().set(Arrays.stream(actual).mapToObj(x -> x).collect(Collectors.toList()));
 	}

@@ -27,7 +27,7 @@ import static com.google.common.base.Preconditions.checkPositionIndexes;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Minimalistic wrapper around array. We use it over ImmutableList because we want monomorphic call
+ * Minimalistic wrapper around immutable array. We use it over ImmutableList because we want monomorphic call
  * sites, no unsupported mutation methods, minimum memory overhead, no views, have simplistic
  * pattern matching capability and short classname.
  * @param <E> element type

@@ -66,5 +66,5 @@ cleanse:
 	rm -fr .idea
 	rm -fr .ext
 	rm -fr lib
-	rm .up.lock.json
+	rm -fr .up.lock.json
 	find . -type d -name '.out' -exec rm -fr {} +

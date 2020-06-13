@@ -188,6 +188,9 @@ type-reference-record
 type-reference-array
   '[' component:type-reference ']'
 
+type-reference-setn
+  '{' component:type-reference '}'
+
 -- a~
 -- a?
 -- Aridna...
@@ -204,6 +207,7 @@ type-reference-invariant
 type-reference-undecorated
   | type-reference-product
   | type-reference-record
+  | type-reference-setn
   | type-reference-array
   | type-reference-named
 
