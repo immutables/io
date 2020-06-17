@@ -55,10 +55,9 @@ public class Datatypes {
 	private static Class<?> getDefinitionClass(Class<?> c) {
 		// generate is not a runtime annotation, do we need to use annotation injection? probably not
 		// @Nullable Generated generated = c.getAnnotation(Generated.class); if (generated != null)
-		String fullName = c.getCanonicalName();
-		if (fullName != null && fullName.contains(IMMUTABLE_PREFIX)) {
+		if (c.getCanonicalName() != null && c.getName().contains(IMMUTABLE_PREFIX)) {
 			// also transform from canonical to binary name
-			String className = fullName.replace(IMMUTABLE_PREFIX, ".");
+			String className = c.getName().substring(c.getName().lastIndexOf(IMMUTABLE_PREFIX) + IMMUTABLE_PREFIX.length());
 			Class<?> abstractType = loadFromTheSamePackage(c, className);
 			if (abstractType != null) return abstractType;
 		}

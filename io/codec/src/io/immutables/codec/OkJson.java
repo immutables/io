@@ -12,12 +12,159 @@ import io.immutables.codec.Codec.Field;
 import io.immutables.codec.Codec.FieldIndex;
 import io.immutables.codec.Codec.NullAware;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.lang.annotation.Annotation;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
-import okio.Buffer;
+import okio.*;
+import javax.annotation.Nullable;
 
-public final class OkJson {
-	private OkJson() {}
+public final class OkJson implements Resolver {
+	private final Resolver resolver;
+	public final String indent;
+	public final boolean serializeNulls;
+	public final boolean lenient;
+
+	private OkJson(Resolver resolver, String indent, boolean lenient, boolean serializeNulls) {
+		this.resolver = resolver;
+		this.lenient = lenient;
+		this.indent = indent;
+		this.serializeNulls = serializeNulls;
+	}
+
+	public OkJson(Resolver resolver) {
+		this(resolver, "", false, false);
+	}
+
+	public OkJson() {
+		this(Codecs.builtin().toResolver(), "", false, false);
+	}
+
+	public interface Setup {
+		Setup serializeNulls(boolean serializeNulls);
+		Setup lenient(boolean lenient);
+		Setup indent(String indent);
+		Setup add(Codec.Factory factory);
+		Setup add(Codec.Factory factory, @Nullable Annotation qualifier, int priority);
+	}
+
+	public static OkJson configure(Consumer<Setup> c) {
+		var configurer = new Setup() {
+			String indent = "";
+			Resolver.Compound compound = Codecs.builtin();
+			boolean serializeNulls;
+			boolean lenient;
+
+			@Override public Setup serializeNulls(boolean serializeNulls) {
+				this.serializeNulls = serializeNulls;
+				return this;
+			}
+
+			@Override
+			public Setup lenient(boolean lenient) {
+				this.lenient = lenient;
+				return this;
+			}
+
+			@Override
+			public Setup indent(String indent) {
+				this.indent = indent;
+				return this;
+			}
+
+			@Override
+			public Setup add(Codec.Factory factory) {
+				compound.add(factory);
+				return this;
+			}
+
+			@Override
+			public Setup add(Codec.Factory factory, @Nullable Annotation qualifier, int priority) {
+				compound.add(factory, qualifier, priority);
+				return this;
+			}
+		};
+
+		c.accept(configurer);
+
+		return new OkJson(
+				configurer.compound.toResolver(),
+				configurer.indent,
+				configurer.lenient,
+				configurer.serializeNulls);
+	}
+
+	@Override
+	public <T> Codec<T> get(TypeToken<T> type, Annotation qualifier) {
+		return resolver.get(type, qualifier);
+	}
+
+	public <T> T fromJson(String json, Class<T> type) {
+		return fromJson(new Buffer().writeUtf8(json), get(type));
+	}
+
+	public <T> T fromJson(String json, TypeToken<T> type) {
+		return fromJson(new Buffer().writeUtf8(json), get(type));
+	}
+
+	public <T> T fromJson(String json, Codec<T> codec) {
+		return fromJson(new Buffer().writeUtf8(json), codec);
+	}
+
+	public String toJson(Object instance) {
+		Buffer buffer = new Buffer();
+		toJson(instance, buffer, get(instance.getClass()));
+		return buffer.readUtf8();
+	}
+
+	public <T> String toJson(T instance, TypeToken<T> type) {
+		Buffer buffer = new Buffer();
+		toJson(instance, buffer, get(type));
+		return buffer.readUtf8();
+	}
+
+	public <T> String toJson(T instance, Class<T> type) {
+		Buffer buffer = new Buffer();
+		toJson(instance, buffer, get(type));
+		return buffer.readUtf8();
+	}
+
+	public <T> String toJson(T instance, Codec<T> codec) {
+		Buffer buffer = new Buffer();
+		toJson(instance, buffer, codec);
+		return buffer.readUtf8();
+	}
+
+	public <T> void toJson(T instance, BufferedSink sink, Codec<T> codec) {
+		try {
+			JsonWriter writer = JsonWriter.of(sink);
+			init(writer);
+			codec.encode(out(writer), instance);
+		} catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		}
+	}
+
+	public <T> T fromJson(BufferedSource source, Codec<T> codec) {
+		try {
+			JsonReader reader = JsonReader.of(source);
+			init(reader);
+			return codec.decode(in(reader));
+		} catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		}
+	}
+
+	void init(JsonReader reader) {
+		reader.setLenient(lenient);
+	}
+
+	void init(JsonWriter writer) {
+		writer.setIndent(indent);
+		writer.setLenient(lenient);
+		writer.setSerializeNulls(serializeNulls);
+	}
 
 	public static Codec.In in(JsonReader reader) {
 		return new FromJsonReader(reader);
@@ -140,7 +287,7 @@ public final class OkJson {
 		public void beginStruct(FieldIndex mapper) throws IOException {
 			reader.beginObject();
 			pushMapper(Objects.requireNonNull(mapper));
-			
+
 			options = null; // clear paranoia
 			if (!mapper.isDynamic()) {
 				Object cached = mapper.get();
@@ -265,12 +412,15 @@ public final class OkJson {
 
 	public final static class JsonStringFactory implements Codec.Factory {
 		private final String indent;
+
 		public JsonStringFactory() {
 			this("");
 		}
+
 		public JsonStringFactory(String indent) {
 			this.indent = indent;
 		}
+
 		// ! this factory should only be used in qualified form
 		@Override
 		public <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {

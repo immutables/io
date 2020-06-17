@@ -8,6 +8,7 @@ import com.squareup.moshi.JsonWriter;
 import io.immutables.codec.Dutu.Bubu;
 import io.immutables.codec.Dutu.Opts;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
@@ -188,7 +189,7 @@ public class TestCodec {
 
 	@Test
 	public void caseList() throws IOException {
-		Codec<List<Cases>> codec = l.get(new TypeToken<List<Cases>>() {});
+		Codec<List<Cases>> codec = l.get(new TypeToken<>() {});
 
 		Cases.D v1 = Cases.D.of();
 		Cases.C v2 = Cases.C.of("Z");
@@ -197,6 +198,22 @@ public class TestCodec {
 		String json = toJson(codec, ImmutableList.of(v1, v2, v3));
 
 		that(codec.decode(in(json))).isOf(v1, v2, v3);
+	}
+
+	@Test
+	public void okToJson() {
+		OkJson ok = new OkJson();
+
+		that(ok.toJson(Map.of("a", 1), new TypeToken<Map<String, Integer>>() {})).is("{\"a\":1}");
+		that(ok.toJson("abc")).is("\"abc\"");
+	}
+
+	@Test
+	public void okFromJson() {
+		OkJson ok = new OkJson();
+
+		that(ok.fromJson("12", Integer.class)).is(12);
+		that(ok.fromJson("[1,2,3]", new TypeToken<List<Long>>() {})).isOf(1L, 2L, 3L);
 	}
 
 	public static Codec.In in(CharSequence chars) {

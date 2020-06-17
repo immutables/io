@@ -34,11 +34,11 @@ public interface Resolver {
 		return get((TypeToken<T>) TypeToken.of(type), null);
 	}
 
-	// The opposite of order, the bigger - the higher priority.
-	@Target(TYPE_USE)
-	public @interface Priority {}
-
 	class Compound {
+		// The opposite of order, the bigger - the higher priority.
+		@Target(TYPE_USE)
+		@interface Priority {}
+
 		static final @Priority int DEFAULT_PRIORITY = 0;
 		static final @Priority int LOWEST_PRIORITY = Integer.MIN_VALUE;
 		private final List<FactoryEntry> factories = new ArrayList<>();

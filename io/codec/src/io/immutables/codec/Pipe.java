@@ -7,10 +7,10 @@ import io.immutables.codec.Codec.In;
 import io.immutables.codec.Codec.Out;
 import java.io.IOException;
 
-class Pipe {
+public class Pipe {
 	private Pipe() {}
 
-	static void onValue(In in, Out out) throws IOException {
+	public static void onValue(In in, Out out) throws IOException {
 		At t = in.peek();
 		switch (t) { // @formatter:off
 		case NULL: in.takeNull(); out.putNull(); break;
@@ -28,7 +28,7 @@ class Pipe {
 		}	// @formatter:on
 	}
 
-	static void onStruct(Out out, In in) throws IOException {
+	public static void onStruct(Out out, In in) throws IOException {
 		FieldIndex mapper = Codec.arbitraryFields();
 		in.beginStruct(mapper);
 		out.beginStruct(mapper);
@@ -40,7 +40,7 @@ class Pipe {
 		in.endArray();
 	}
 
-	static void onArray(Out out, In in) throws IOException {
+	public static void onArray(Out out, In in) throws IOException {
 		in.beginArray();
 		out.beginArray();
 		while (in.hasNext()) {

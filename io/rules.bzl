@@ -5,7 +5,6 @@ _java_library_deps_default = [
 
 _java_test_deps_default = [
   '//lib/junit:junit',
-#  '//io/that:that',
 ]
 
 _java_test_vm_args = [
@@ -13,15 +12,6 @@ _java_test_vm_args = [
   '-XX:+UseEpsilonGC',
   '-ea',
   '-Dio.immutables.that.replace-error-message= ',
-]
-
-_kotlin_library_deps_default = [
-  '//lib/kotlin/stdlib:stdlib',
-]
-
-_kotlin_test_deps_default = [
-  '//lib/junit:junit',
-  '//io/that:that',
 ]
 
 def java_module(
@@ -69,19 +59,6 @@ def _dedupe(seq):
 def java_test_vm_args():
   return _java_test_vm_args
 
-
-# for use in explicitly written kotlin_library
-def kotlinc_args():
-  return [
-    '-java-parameters',
-    '-nowarn',
-    '-no-stdlib',
-    '-no-reflect',
-    '-jvm-target', native.read_config('java', 'target_level', '1.8')
-  ]
-
-def kotlin_library_deps_default():
-  return _kotlin_library_deps_default
 
 # java_resources uses java_library and special labels (processed by IDE project generation tool)
 # to create library of resources for the module, by default, if not set,
@@ -133,45 +110,3 @@ def publish_ver():
 
 def publish_group():
   return native.read_config('maven', 'publish_group', 'group')
-
-
-def kotlin_module(
-    name,
-    srcs = None,
-    name_test = None,
-    deps = [],
-    test_deps = [],
-    provided_deps = [],
-    exported_deps = [],
-    exported_provided_deps = [],
-    plugins = [],
-    visibility = None,
-    artifact = None,
-    maven_coords = None,
-    servicelet = None
-):
-  native.kotlin_library(
-    name = name,
-    srcs = native.glob(['src/**/*.kt']) if not srcs else srcs,
-    resources = native.glob(['src/**'], exclude = ['**/*.kt']),
-    resources_root = 'src',
-    deps = _dedupe(_kotlin_library_deps_default + deps),
-    provided_deps = provided_deps,
-    exported_deps = exported_deps,
-    exported_provided_deps = exported_provided_deps,
-    plugins = plugins,
-    visibility = ['PUBLIC'] if not visibility else visibility,
-    extra_kotlinc_arguments = kotlinc_args(),
-    maven_coords = _publish_coords(name, artifact, maven_coords)
-  )
-
-  native.kotlin_test(
-    name = name_test if name_test else 'test',
-    srcs = native.glob(['test/**/*.kt']),
-    resources = native.glob(['test/**']),
-    resources_root = 'test',
-    deps = _dedupe([':' + name] + _kotlin_test_deps_default + deps + test_deps),
-    plugins = plugins,
-    vm_args = _java_test_vm_args,
-    extra_kotlinc_arguments = kotlinc_args(),
-  )

@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
+import java.net.URI;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +41,12 @@ public final class Codecs {
 	private Codecs() {}
 
 	public static @Nullable Annotation findQualifier(AnnotatedElement element) {
+		return findQualifier(element.getAnnotations(), element);
+	}
+
+	public static @Nullable Annotation findQualifier(Annotation[] annotations, Object element) {
 		@Nullable Annotation found = null;
-		for (Annotation a : element.getAnnotations()) {
+		for (Annotation a : annotations) {
 			if (a.annotationType().isAnnotationPresent(CodecQualifier.class)) {
 				if (found != null) {
 					throw new IllegalArgumentException(
@@ -54,6 +60,8 @@ public final class Codecs {
 
 	public static Resolver.Compound builtin() {
 		return new Resolver.Compound()
+				.add(TEMPORAL, null, Resolver.Compound.LOWEST_PRIORITY + 2)
+				.add(MISCELLANEOUS, null, Resolver.Compound.LOWEST_PRIORITY + 2)
 				.add(SCALARS, null, Resolver.Compound.LOWEST_PRIORITY + 1)
 				.add(ENUMS, null, Resolver.Compound.LOWEST_PRIORITY + 1)
 				.add(COLLECTIONS, null, Resolver.Compound.LOWEST_PRIORITY + 1)
@@ -61,8 +69,7 @@ public final class Codecs {
 				.add(DATATYPES, null, Resolver.Compound.LOWEST_PRIORITY);
 	}
 
-	private static Codec.Factory DATATYPES = new Codec.Factory() {
-		@SuppressWarnings("unchecked")
+	private static final Codec.Factory DATATYPES = new Codec.Factory() {
 		@Override
 		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
 			@Nullable Datatype<T> t = null;
@@ -72,19 +79,19 @@ public final class Codecs {
 				cannotConstructDatatype.printStackTrace();
 				return null;
 			}
-			if (t == null) return null;
 			if (!t.cases().isEmpty()) {
 				return new DatatypeCaseCodec<>(t, lookup);
 			}
 			return new DatatypeCodec<>(t, lookup, false);
 		}
+
 		@Override
 		public String toString() {
 			return "Codec.Factory for Datatypes";
 		}
 	};
 
-	private static Codec.Factory ENUMS = new Codec.Factory() {
+	private static final Codec.Factory ENUMS = new Codec.Factory() {
 		@SuppressWarnings("unchecked")
 		@Override
 		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
@@ -94,13 +101,13 @@ public final class Codecs {
 			}
 			return null;
 		}
+
 		@Override
 		public String toString() {
 			return "Codec.Factory for enums";
 		}
 	};
 
-	@SuppressWarnings("unchecked") // unsupported for any type
 	public static <T> Codec<T> unsupported(TypeToken<T> type, @Nullable Annotation qualifier) {
 		return new Codec<>() {
 			@Override
@@ -108,11 +115,13 @@ public final class Codecs {
 				// TODO better reporting / message
 				throw new UnsupportedOperationException();
 			}
+
 			@Override
 			public void encode(Codec.Out out, T instance) {
 				// TODO better reporting / message
 				throw new UnsupportedOperationException();
 			}
+
 			@Override
 			public String toString() {
 				return "Codec.unsupported(" + type + (qualifier != null ? " @" + qualifier : "") + ")";
@@ -125,7 +134,7 @@ public final class Codecs {
 		<E, C> C construct(Iterable<E> elements);
 	}
 
-	private static Codec.Factory COLLECTIONS = new Codec.Factory() {
+	private static final Codec.Factory COLLECTIONS = new Codec.Factory() {
 		private final Type listTypeParameter = List.class.getTypeParameters()[0];
 		private final Type setTypeParameter = Set.class.getTypeParameters()[0];
 		private final Type vectTypeParameter = Vect.class.getTypeParameters()[0];
@@ -189,7 +198,7 @@ public final class Codecs {
 		}
 	};
 
-	public static class MapCodec<K, V, M extends Map<K, V>> extends Codec<M> {
+	public static final class MapCodec<K, V, M extends Map<K, V>> extends Codec<M> {
 		private final Codec<K> forKey;
 		private final Codec<V> forValue;
 		private final Supplier<MapBuilder<K, V, M>> builderSupplier;
@@ -235,10 +244,12 @@ public final class Codecs {
 		public static <K, V> Supplier<MapBuilder<K, V, ImmutableMap<K, V>>> immutableMapSupplier() {
 			return () -> new MapCodec.MapBuilder<>() {
 				final ImmutableMap.Builder<K, V> b = ImmutableMap.builder();
+
 				@Override
 				public void put(K k, V v) {
 					b.put(k, v);
 				}
+
 				@Override
 				public ImmutableMap<K, V> build() {
 					return b.build();
@@ -292,7 +303,7 @@ public final class Codecs {
 		private final ImmutableBiMap<String, E> constants;
 		private final boolean supportsNull;
 		private EnumCodec<E> nullableCounterpart;
-		private Class<E> type;
+		private final Class<E> type;
 
 		public EnumCodec(Class<E> type, Function<E, String> naming, boolean supportsNull) {
 			this(type, indexConstants(type, naming), supportsNull);
@@ -327,7 +338,7 @@ public final class Codecs {
 
 		@Override
 		public E decode(In in) throws IOException {
-			CharSequence name = in.takeString();
+			String name = in.takeString().toString();
 			E e = constants.get(name);
 			if (e == null) in.unexpected(
 					"Cannot read " + type + ". Was " + name + " while supported only " + constants.keySet());
@@ -342,7 +353,51 @@ public final class Codecs {
 		}
 	}
 
-	private static Codec.Factory SCALARS = new Codec.Factory() {
+	@SuppressWarnings({"unchecked", "raw"})
+	private static final Codec.Factory TEMPORAL = new Codec.Factory() {
+		private final ImmutableMap<Class<?>, Codec<?>> codes = ImmutableMap.<Class<?>, Codec<?>>builder()
+				.put(Instant.class, parseStringifyCodec(Instant::parse, Instant::toString))
+				.put(OffsetDateTime.class, parseStringifyCodec(OffsetDateTime::parse, OffsetDateTime::toString))
+				.put(LocalDateTime.class, parseStringifyCodec(LocalDateTime::parse, LocalDateTime::toString))
+				.put(LocalDate.class, parseStringifyCodec(LocalDate::parse, LocalDate::toString))
+				.put(LocalTime.class, parseStringifyCodec(LocalTime::parse, LocalTime::toString))
+				.put(Duration.class, parseStringifyCodec(Duration::parse, Duration::toString))
+				.put(Period.class, parseStringifyCodec(Period::parse, Period::toString))
+				.build();
+
+		@Override public <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
+			return (Codec<T>) codes.get(type.getRawType());
+		}
+	};
+
+	@SuppressWarnings({"unchecked", "raw"})
+	private static final Codec.Factory MISCELLANEOUS = new Codec.Factory() {
+		private final ImmutableMap<Class<?>, Codec<?>> codes = ImmutableMap.<Class<?>, Codec<?>>builder()
+				.put(URI.class, parseStringifyCodec(URI::create, URI::toString))
+				.build();
+
+		@Override public <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
+			return (Codec<T>) codes.get(type.getRawType());
+		}
+	};
+
+	private static <T> Codec<T> parseStringifyCodec(
+			java.util.function.Function<String, T> parse,
+			java.util.function.Function<T, String> stringify) {
+		return new Codec<T>() {
+			@Override
+			public T decode(In in) throws IOException {
+				return parse.apply(in.takeString().toString());
+			}
+
+			@Override
+			public void encode(Out out, T instance) throws IOException {
+				out.putString(stringify.apply(instance));
+			}
+		};
+	}
+
+	private static final Codec.Factory SCALARS = new Codec.Factory() {
 		private final ScalarCodec<Integer> forInt = new ScalarCodec<>(ScalarCodec.INT, false);
 		private final ScalarCodec<Long> forLong = new ScalarCodec<>(ScalarCodec.LONG, false);
 		private final ScalarCodec<Double> forDouble = new ScalarCodec<>(ScalarCodec.DOUBLE, false);
@@ -350,12 +405,12 @@ public final class Codecs {
 		private final ScalarCodec<String> forString = new ScalarCodec<>(ScalarCodec.STRING, false);
 
 		private final ImmutableMap<Class<?>, Codec<?>> codecs = ImmutableMap.<Class<?>, Codec<?>>builder() // @formatter:off
-						.put(int.class, forInt).put(Integer.class, forInt)
-						.put(long.class, forLong).put(Long.class, forLong)
-						.put(double.class, forDouble).put(Double.class, forDouble)
-						.put(boolean.class, forBoolean).put(Boolean.class, forBoolean)
-						.put(String.class, forString)
-						.build(); // @formatter:on
+				.put(int.class, forInt).put(Integer.class, forInt)
+				.put(long.class, forLong).put(Long.class, forLong)
+				.put(double.class, forDouble).put(Double.class, forDouble)
+				.put(boolean.class, forBoolean).put(Boolean.class, forBoolean)
+				.put(String.class, forString)
+				.build(); // @formatter:on
 
 		@SuppressWarnings("unchecked")
 		@Override
@@ -443,6 +498,7 @@ public final class Codecs {
 
 	private static Codec.Factory OPTIONALS = new Codec.Factory() {
 		private final Type optionalTypeParameter = Optional.class.getTypeParameters()[0];
+
 		@SuppressWarnings("unchecked") // runtime token + checks
 		@Override
 		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
@@ -473,10 +529,13 @@ public final class Codecs {
 		enum Variant {
 			INT, LONG, DOUBLE
 		}
+
 		private final Variant type;
+
 		public OptionalPrimitive(Variant type) {
 			this.type = type;
 		}
+
 		@Override
 		public Object decode(In in) throws IOException {
 			if (in.peek() == At.NULL) {
@@ -495,6 +554,7 @@ public final class Codecs {
 			default: throw Unreachable.exhaustive();
 			} // @formatter:on
 		}
+
 		@Override
 		public void encode(Out out, Object instance) throws IOException {
 			if (instance != null) {
@@ -530,6 +590,7 @@ public final class Codecs {
 		public boolean supportsNull() {
 			return true;
 		}
+
 		@Override
 		public String toString() {
 			switch (type) { // @formatter:off
@@ -543,9 +604,11 @@ public final class Codecs {
 
 	public static class OptionalCodec<E> extends ContainerCodec<E, Optional<E>> implements NullAware {
 		private final Codec<E> elementCodec;
+
 		public OptionalCodec(Codec<E> elementCodec) {
 			this.elementCodec = elementCodec;
 		}
+
 		@Override
 		public Optional<E> decode(In in) throws IOException {
 			if (in.peek() == At.NULL) {
@@ -554,10 +617,12 @@ public final class Codecs {
 			}
 			return Optional.ofNullable(elementCodec.decode(in)); // Optional.of ?
 		}
+
 		@Override
 		public boolean supportsNull() {
 			return true;
 		}
+
 		@Override
 		public void encode(Out out, Optional<E> instance) throws IOException {
 			if (instance != null && instance.isPresent()) {
@@ -566,14 +631,17 @@ public final class Codecs {
 				out.putNull();
 			}
 		}
+
 		@Override
 		public String toString() {
 			return "Codec<Optional<E>> for " + elementCodec;
 		}
+
 		@Override
 		public Codec<E> element() {
 			return elementCodec;
 		}
+
 		@SuppressWarnings("unchecked")
 		@Override
 		public <R, K> ContainerCodec<R, K> withElement(Codec<R> newElement) {
@@ -760,8 +828,7 @@ public final class Codecs {
 			delegate().unexpected(message);
 		}
 
-		@Override
-		final public Object adapts() {
+		@Override final public Object adapts() {
 			Err d = delegate();
 			return d instanceof Adapter ? ((Adapter) d).adapts() : d;
 		}

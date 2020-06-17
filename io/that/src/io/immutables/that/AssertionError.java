@@ -83,7 +83,7 @@ final class AssertionError extends java.lang.AssertionError {
 		String className = s.getClassName();
 		return className.startsWith("java.lang.reflect.")
 				|| className.startsWith("sun.reflect.")
-				|| className.startsWith("java.base/jdk.internal.reflect.");
+				|| className.startsWith("jdk.internal.reflect.");
 	}
 
 	private static boolean isThatPackageFrame(StackTraceElement s) {

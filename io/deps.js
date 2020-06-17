@@ -10,10 +10,17 @@ module.exports = function(up) { up
     `org.hamcrest:hamcrest-core:1.3`,
   ])
   .lib('//lib/javax/annotation', `com.google.code.findbugs:jsr305:3.0.1`)
-	.lib('//lib/google/common', `com.google.guava:guava:${ver.guava}`)
+	.lib('//lib/javax/jaxrs', [
+		`jakarta.ws.rs:jakarta.ws.rs-api:2.1.5`,
+		`jakarta.annotation:jakarta.annotation-api:1.3.4`,
+	])
+	.lib('//lib/google/common:failureaccess', `com.google.guava:failureaccess:1.0`)
+	.lib('//lib/google/common', `com.google.guava:guava:${ver.guava}`, {
+		deps: ['//lib/google/common:failureaccess'],
+	})
   .lib('//lib/square/okio', `com.squareup.okio:okio:1.16.0`)
 	.lib('//lib/square/moshi', `com.squareup.moshi:moshi:1.9.2`, {
-		deps: ['//lib/square/okio']
+		deps: ['//lib/square/okio'],
 	})
 	.lib('//lib/square/javapoet', `com.squareup:javapoet:1.12.1`)
 	.lib('//lib/immutables/value:annotations', `org.immutables:value:annotations:${ver.immutables}`)
