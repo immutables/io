@@ -58,6 +58,7 @@ target/
 *.iml
 
 # Eclipse project and module definitions
+.ecj/
 .classes/
 .test-classes/
 .settings/

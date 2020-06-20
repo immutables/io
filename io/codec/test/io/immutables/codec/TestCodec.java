@@ -8,7 +8,6 @@ import com.squareup.moshi.JsonWriter;
 import io.immutables.codec.Dutu.Bubu;
 import io.immutables.codec.Dutu.Opts;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;

@@ -384,7 +384,7 @@ public final class Codecs {
 	private static <T> Codec<T> parseStringifyCodec(
 			java.util.function.Function<String, T> parse,
 			java.util.function.Function<T, String> stringify) {
-		return new Codec<T>() {
+		return new Codec<>() {
 			@Override
 			public T decode(In in) throws IOException {
 				return parse.apply(in.takeString().toString());

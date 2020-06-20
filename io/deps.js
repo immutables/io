@@ -1,7 +1,7 @@
 const ver = {
-	guava: '28.2-jre',
+	guava: '29.0-jre',
 	asm: '8.0.1',
-	immutables: '2.8.0-dt-experimental-5',
+	immutables: '2.8.0-dt-experimental-7',
 }
 
 module.exports = function(up) { up

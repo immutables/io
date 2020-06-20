@@ -131,6 +131,11 @@ public class Datatypes {
 				return type;
 			}
 
+			@Override
+			public boolean isInline() {
+				return false;
+			}
+
 			@SuppressWarnings("unchecked") // covariant immutable list cast
 			@Override
 			public List<Feature<T, ?>> features() {
