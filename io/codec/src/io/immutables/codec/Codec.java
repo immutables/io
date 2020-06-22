@@ -176,6 +176,9 @@ public abstract class Codec<T> {
 
 			@Override
 			public @Field int nameToIndex(CharSequence name) {
+				// FIXME is auto-grow is a correct way to handle unknown fields
+				// and pass them over while piping etc
+				// maybe create incrementing negative indeces?
 				return order.computeIfAbsent(name.toString(), s -> order.size());
 			}
 

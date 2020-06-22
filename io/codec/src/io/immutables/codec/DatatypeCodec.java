@@ -5,6 +5,8 @@ import com.squareup.moshi.JsonReader;
 import com.squareup.moshi.JsonWriter;
 import io.immutables.Nullable;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,7 +90,7 @@ final class DatatypeCodec<T> extends Codec<T> {
 		this.meta = meta;
 		this.asCase = asCase;
 		features = collectFeatures(meta);
-		codecs = collectCodecs(lookup, features);
+		codecs = collectCodecs(lookup, meta, features);
 		mapper = indexFields(features, asCase);
 	}
 
@@ -103,18 +105,29 @@ final class DatatypeCodec<T> extends Codec<T> {
 		return features;
 	}
 
-	private Codec<Object>[] collectCodecs(Resolver lookup, Feature<T, ?>[] features) {
+	private Codec<Object>[] collectCodecs(Resolver lookup, Datatype<T> meta, Feature<T, ?>[] features) {
+		Class<? super T> rawType = meta.type().getRawType();
 		Codec<Object>[] codecs = new Codec[features.length];
 		for (int i = 0; i < features.length; i++) {
 			Feature<T, ?> f = features[i];
 			// TODO how to extract qualifier, should be part of Feature API?
-			Codec<Object> c = (Codec<Object>) lookup.get(f.type());
+			@Nullable Annotation qualifier = findQualifier(rawType, f);
+			Codec<Object> c = (Codec<Object>) lookup.get(f.type(), qualifier);
 			if (f.nullable()) {
 				c = c.toNullable();
 			}
 			codecs[i] = c;
 		}
 		return codecs;
+	}
+
+	private @Nullable Annotation findQualifier(Class<? super T> rawType, Feature<T, ?> f) {
+		for (Method method : rawType.getDeclaredMethods()) {
+			if (method.getParameterCount() == 0 && method.getName().equals(f.name())) {
+				return Codecs.findQualifier(method);
+			}
+		}
+		return null;
 	}
 
 	private FieldIndex indexFields(Feature<T, ?>[] features, boolean asCase) {
@@ -135,8 +148,9 @@ final class DatatypeCodec<T> extends Codec<T> {
 		while (in.hasNext()) {
 			@Field int i = in.takeField();
 			if (i >= 0) {
-				if (i == features.length) {
-					assert asCase;
+				if (i >= features.length) {
+					// FIXME unknown field (auto-created by field index)
+					// also for @case discriminator etc
 					in.skip();
 				} else {
 					Feature<T, Object> f = features[i];

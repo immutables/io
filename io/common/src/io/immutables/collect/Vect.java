@@ -410,7 +410,6 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 			return this;
 		}
 
-		@CheckReturnValue
 		public Builder<E> add(E element) {
 			requireNonNull(element);
 			ensureCapacityFor(1);
@@ -418,7 +417,6 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 			return this;
 		}
 
-		@CheckReturnValue
 		public Builder<E> addAll(E[] elements) {
 			ensureCapacityFor(elements.length);
 			for (Object e : elements) {
@@ -429,7 +427,6 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 			return this;
 		}
 
-		@CheckReturnValue
 		public Builder<E> addAll(Iterable<? extends E> iterable) {
 			requireNonNull(iterable);
 			if (iterable instanceof Collection<?>) {
@@ -504,7 +501,6 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 			return this;
 		}
 
-		@CheckReturnValue
 		public R otherwise(Function<Vect<E>, R> onElse) {
 			if (result == null) {
 				result = requireNonNull(onElse.apply(Vect.this));
@@ -512,7 +508,6 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 			return result;
 		}
 
-		@CheckReturnValue
 		public R otherwise(R r) {
 			if (result == null) {
 				result = requireNonNull(r);
