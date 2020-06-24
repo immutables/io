@@ -69,6 +69,37 @@ public final class Codecs {
 				.add(DATATYPES, null, Resolver.Compound.LOWEST_PRIORITY);
 	}
 
+	public static boolean isUnsupported(Codec<?> codec) {
+		return codec instanceof UnsupportedCodec;
+	}
+
+	private static final class UnsupportedCodec<T> extends Codec<T> {
+		private final TypeToken<T> type;
+		private final Annotation qualifier;
+
+		public UnsupportedCodec(TypeToken<T> type, Annotation qualifier) {
+			this.type = type;
+			this.qualifier = qualifier;
+		}
+
+		@Override
+		public T decode(In in) {
+			// TODO better reporting / message
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void encode(Out out, T instance) {
+			// TODO better reporting / message
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public String toString() {
+			return "Codec.unsupported(" + type + (qualifier != null ? " @" + qualifier : "") + ")";
+		}
+	}
+
 	private static final Codec.Factory DATATYPES = new Codec.Factory() {
 		@Override
 		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
@@ -109,24 +140,7 @@ public final class Codecs {
 	};
 
 	public static <T> Codec<T> unsupported(TypeToken<T> type, @Nullable Annotation qualifier) {
-		return new Codec<>() {
-			@Override
-			public T decode(Codec.In in) {
-				// TODO better reporting / message
-				throw new UnsupportedOperationException();
-			}
-
-			@Override
-			public void encode(Codec.Out out, T instance) {
-				// TODO better reporting / message
-				throw new UnsupportedOperationException();
-			}
-
-			@Override
-			public String toString() {
-				return "Codec.unsupported(" + type + (qualifier != null ? " @" + qualifier : "") + ")";
-			}
-		};
+		return new UnsupportedCodec<T>(type, qualifier);
 	}
 
 	@FunctionalInterface
@@ -647,6 +661,11 @@ public final class Codecs {
 		public <R, K> ContainerCodec<R, K> withElement(Codec<R> newElement) {
 			return (ContainerCodec<R, K>) new OptionalCodec<>(newElement);
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T extends Object & In & Out> T stringIo() {
+		return (T) new StringValueIo();
 	}
 
 	private static class StringValueIo implements In, Out {

@@ -10,8 +10,10 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import io.immutables.collect.Vect;
 import okio.Buffer;
 import org.immutables.data.Datatype;
 import org.immutables.data.Datatype.Builder;
@@ -80,11 +82,13 @@ final class DatatypeCaseCodec<T> extends Codec<T> {
 @SuppressWarnings("unchecked")
 final class DatatypeCodec<T> extends Codec<T> {
 	static final String CASE_DISCRIMINATOR = "@case";
+	static final String CASE_INLINE_VALUE = "@value";
 	final Datatype<T> meta;
 	private final Feature<T, Object>[] features;
 	private final Codec<Object>[] codecs;
 	private final FieldIndex mapper;
 	private final boolean asCase;
+	private final @Nullable Feature<T, Object> inlineFeature;
 
 	DatatypeCodec(Datatype<T> meta, Resolver lookup, boolean asCase) {
 		this.meta = meta;
@@ -92,6 +96,25 @@ final class DatatypeCodec<T> extends Codec<T> {
 		features = collectFeatures(meta);
 		codecs = collectCodecs(lookup, meta, features);
 		mapper = indexFields(features, asCase);
+		this.inlineFeature = findInlineFeature(meta);
+	}
+
+	boolean isInline() {
+		return inlineFeature != null;
+	}
+
+	@Nullable
+	static <T> Feature<T, Object> findInlineFeature(Datatype<T> meta) {
+		if (meta.isInline()) {
+			// Current support for a single inline field
+			// no qualifier and only if everything else matches
+			var in = Vect.from(meta.features()).filter(f -> f.supportsInput() && !f.omittableOnInput());
+			var out = Vect.from(meta.features()).filter(f -> f.supportsOutput() && !f.ignorableOnOutput());
+			if (in.size() == 1 && out.size() == 1 && in.first() == out.first()) {
+				return (Feature<T, Object>) in.first();
+			}
+		}
+		return null;
 	}
 
 	private Feature<T, Object>[] collectFeatures(Datatype<T> meta) {
@@ -131,18 +154,26 @@ final class DatatypeCodec<T> extends Codec<T> {
 	}
 
 	private FieldIndex indexFields(Feature<T, ?>[] features, boolean asCase) {
-		String[] knownNames = new String[features.length + (asCase ? 1 : 0)];
+		String[] knownNames = new String[features.length + (asCase ? 2 : 0)];
 		for (int i = 0; i < features.length; i++) {
 			knownNames[i] = features[i].name();
 		}
 		if (asCase) {
 			knownNames[features.length] = CASE_DISCRIMINATOR;
+			knownNames[features.length + 1] = CASE_INLINE_VALUE;
 		}
 		return knownFields(knownNames);
 	}
 
 	@Override
 	public T decode(In in) throws IOException {
+		if (isInline() && in.peek() != At.STRUCT) {
+			Object value = codecs[inlineFeature.index()].decode(in);
+			Builder<T> builder = meta.builder();
+			builder.set(inlineFeature, value);
+			return buildVerified(in, builder);
+		}
+
 		in.beginStruct(mapper);
 		Builder<T> builder = meta.builder();
 		while (in.hasNext()) {
@@ -164,12 +195,15 @@ final class DatatypeCodec<T> extends Codec<T> {
 				}
 			} else {
 				in.unexpected("Unknown field: " + mapper.indexToName(i));
-				in.skip(); // TODO being strict or non strict about unknown fields
+				in.skip(); // FIXME being strict or non strict about unknown fields
 			}
 		}
 		in.endStruct();
-		List<Violation> violations = builder.verify();
+		return buildVerified(in, builder);
+	}
 
+	public T buildVerified(In in, Builder<T> builder) throws IOException {
+		List<Violation> violations = builder.verify();
 		if (!violations.isEmpty()) {
 			// TODO Think this through
 			for (Violation v : violations) {
@@ -181,11 +215,32 @@ final class DatatypeCodec<T> extends Codec<T> {
 
 	@Override
 	public void encode(Out out, T instance) throws IOException {
-		out.beginStruct(mapper);
 		if (asCase) {
+			out.beginStruct(mapper);
 			out.putField(features.length);
 			out.putString(meta.name());
+			if (isInline()) {
+				out.putField(features.length + 1);
+				encodeInline(out, instance);
+			} else {
+				encodeFields(out, instance);
+			}
+			out.endStruct();
+		} else if (isInline()) {
+			encodeInline(out, instance);
+		} else {
+			out.beginStruct(mapper);
+			encodeFields(out, instance);
+			out.endStruct();
 		}
+	}
+
+	public void encodeInline(Out out, T instance) throws IOException {
+		Object value = meta.get(inlineFeature, instance);
+		codecs[inlineFeature.index()].encode(out, value);
+	}
+
+	public void encodeFields(Out out, T instance) throws IOException {
 		for (int i = 0; i < features.length; i++) {
 			Feature<T, Object> f = features[i];
 			if (f.supportsOutput() && !f.ignorableOnOutput()) {
@@ -193,6 +248,5 @@ final class DatatypeCodec<T> extends Codec<T> {
 				codecs[i].encode(out, meta.get(f, instance));
 			}
 		}
-		out.endStruct();
 	}
 }

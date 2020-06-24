@@ -141,6 +141,7 @@ public final class OkJson implements Resolver {
 			JsonWriter writer = JsonWriter.of(sink);
 			init(writer);
 			codec.encode(out(writer), instance);
+			writer.flush();
 		} catch (IOException ex) {
 			throw new UncheckedIOException(ex);
 		}
@@ -243,9 +244,15 @@ public final class OkJson implements Resolver {
 		@Override
 		public @Field int takeField() throws IOException {
 			if (options != null) {
-				return reader.selectName(options);
+				int knownField = reader.selectName(this.options);
+				if (knownField >= 0) return knownField;
 			}
-			return topMapper().nameToIndex(reader.nextName());
+			String name = reader.nextName();
+			int inx = topMapper().nameToIndex(name);
+			if (inx == -1) {
+				System.err.println("GRrrr!! " + inx);
+			}
+			return inx;
 		}
 
 		@Override

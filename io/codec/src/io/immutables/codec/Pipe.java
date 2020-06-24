@@ -36,8 +36,8 @@ public class Pipe {
 			out.putField(in.takeField());
 			onValue(in, out);
 		}
-		out.endArray();
-		in.endArray();
+		out.endStruct();
+		in.endStruct();
 	}
 
 	public static void onArray(Out out, In in) throws IOException {
