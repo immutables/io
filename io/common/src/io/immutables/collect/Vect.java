@@ -27,20 +27,29 @@ import static com.google.common.base.Preconditions.checkPositionIndexes;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Minimalistic wrapper around immutable array. We use it over ImmutableList because we want monomorphic call
- * sites, no unsupported mutation methods, minimum memory overhead, no views, have simplistic
- * pattern matching capability and short classname.
+ * Minimalistic wrapper around immutable array. We use it over ImmutableList because we want monomorphic call sites, no
+ * unsupported mutation methods, minimum memory overhead, no views, have simplistic pattern matching capability and
+ * short classname.
  * @param <E> element type
  */
 @Immutable
 @SuppressWarnings("unchecked")
 public final class Vect<E> implements Iterable<E>, Foldable<E> {
-	private static final Object[] EMPTY_ARRAY = new Object[] {};
+	private static final Object[] EMPTY_ARRAY = new Object[]{};
 	private static final Vect<?> EMPTY = new Vect<>(EMPTY_ARRAY);
 
 	final Object[] elements;
 
 	Vect(Object[] elements) {
+		this.elements = elements;
+	}
+
+	Vect(byte checkNullDispatch, Object[] elements) {
+		for (int i = 0; i < elements.length; i++) {
+			if (elements[i] == null) {
+				throw new NullPointerException("Vect element[" + i + "] is null");
+			}
+		}
 		this.elements = elements;
 	}
 
@@ -266,7 +275,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	public boolean equals(Object obj) {
 		return obj == this
 				|| (obj instanceof Vect<?>
-						&& Arrays.equals(elements, ((Vect<?>) obj).elements));
+				&& Arrays.equals(elements, ((Vect<?>) obj).elements));
 	}
 
 	@Override
@@ -318,12 +327,23 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	public static <E> Vect<E> of(E single) {
-		requireNonNull(single);
-		return new Vect<>(new Object[] {single});
+		return new Vect<>((byte)0, new Object[]{single});
 	}
 
 	public static <E> Vect<E> of(E first, E second) {
-		return new Vect<>(new Object[] {requireNonNull(first), requireNonNull(second)});
+		return new Vect<>((byte)0, new Object[]{first, second});
+	}
+
+	public static <E> Vect<E> of(E first, E second, E third) {
+		return new Vect<>((byte)0, new Object[]{first, second, third});
+	}
+
+	public static <E> Vect<E> of(E first, E second, E third, E fourth) {
+		return new Vect<>((byte)0, new Object[]{first, second, third, fourth});
+	}
+
+	public static <E> Vect<E> of(E first, E second, E third, E fourth, E fifth) {
+		return new Vect<>((byte)0, new Object[]{first, second, third, fourth, fifth});
 	}
 
 	@SafeVarargs
@@ -332,13 +352,8 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 			return of();
 		}
 		E[] array = elements.clone();
-		if (array.length == 0) {
-			return of();
-		}
-		for (E e : array) {
-			requireNonNull(e);
-		}
-		return new Vect<>(array);
+		if (array.length == 0) return of();
+		return new Vect<>((byte) 0, array);
 	}
 
 	public static <E> Vect<E> of() {
@@ -356,10 +371,8 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		}
 		if (iterable instanceof Collection<?>) {
 			Object[] array = ((Collection<?>) iterable).toArray();
-			if (array.length == 0) {
-				return of();
-			}
-			return new Vect<>(array);
+			if (array.length == 0) return of();
+			return new Vect<>((byte) 0, array);
 		}
 		return Vect.<E>builder().addAll(iterable).build();
 	}
@@ -374,20 +387,25 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 
 	public final class Iterator implements java.util.Iterator<E> {
 		int index = 0;
+
 		@Override
 		public boolean hasNext() {
 			return index < elements.length;
 		}
+
 		@Override
 		public E next() {
 			return (E) elements[index++];
 		}
+
 		public boolean wasLast() {
 			return index == elements.length;
 		}
+
 		public boolean wasFirst() {
 			return index == 1;
 		}
+
 		@Override
 		public String toString() {
 			return Vect.class.getSimpleName() + ".Iterator(at " + index + ")";
