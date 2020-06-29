@@ -221,14 +221,12 @@ public abstract class Codec<T> {
 
 			@Override
 			public @Field int nameToIndex(CharSequence name) {
-				Integer nn = order.computeIfAbsent(name.toString(), s -> order.size());
-				return nn;
+				return order.computeIfAbsent(name.toString(), s -> order.size());
 			}
 
 			@Override
 			public CharSequence indexToName(@Field int field) {
-				String nn = order.inverse().getOrDefault(field, "#" + field);
-				return nn;
+				return order.inverse().getOrDefault(field, "#" + field);
 			}
 
 			@Override

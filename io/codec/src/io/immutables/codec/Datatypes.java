@@ -21,13 +21,13 @@ public class Datatypes {
 	private Datatypes() {}
 
 	public static <T> Datatype<T> construct(TypeToken<T> type) {
-		@Nullable Datatype<T> datatype = lookupDatatype(type);
+		@Nullable Datatype<T> datatype = findDatatype(type);
 		if (datatype != null) return datatype;
 		return forStruct(type);
 	}
 
 	@SuppressWarnings("unchecked") // based on type token runtime check and convention
-	private static @Nullable <T> Datatype<T> lookupDatatype(TypeToken<T> type) {
+	public static @Nullable <T> Datatype<T> findDatatype(TypeToken<T> type) {
 		// these transitions are based on current datatype generation conventions
 		Class<?> definitionClass = getDefinitionClass(type.getRawType());
 		// don't torture classes which are not probable to be datatype definition
