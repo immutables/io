@@ -1,6 +1,6 @@
 package io.immutables.codec;
 
-import com.google.common.base.Function;
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -25,15 +25,9 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.time.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
-import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.immutables.data.Datatype;
 
@@ -124,12 +118,16 @@ public final class Codecs {
 	};
 
 	private static final Codec.Factory ENUMS = new Codec.Factory() {
+		final Function<Enum<?>, String> format =
+				e -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, e.name());
+
 		@SuppressWarnings("unchecked")
 		@Override
+
 		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
 			Class<?> c = type.getRawType();
 			if (c.isEnum()) {
-				return new EnumCodec<>((Class<T>) c, o -> ((Enum<?>) o).name(), false);
+				return (Codec<T>) new EnumCodec<>((Class<Enum<?>>) c, format, false);
 			}
 			return null;
 		}
@@ -151,6 +149,7 @@ public final class Codecs {
 
 	private static final Codec.Factory COLLECTIONS = new Codec.Factory() {
 		private final Type listTypeParameter = List.class.getTypeParameters()[0];
+		private final Type collTypeParameter = Collection.class.getTypeParameters()[0];
 		private final Type setTypeParameter = Set.class.getTypeParameters()[0];
 		private final Type vectTypeParameter = Vect.class.getTypeParameters()[0];
 		private final Type mapKeyTypeParameter = Map.class.getTypeParameters()[0];
@@ -186,6 +185,10 @@ public final class Codecs {
 			Class<?> rawType = type.getRawType();
 			if (rawType == List.class || rawType == ImmutableList.class) {
 				Codec<?> codec = lookup.get(type.resolveType(listTypeParameter));
+				return (Codec<T>) new ArrayCodec<>((Codec<Object>) codec, listConstructor);
+			}
+			if (rawType == Collection.class) {
+				Codec<?> codec = lookup.get(type.resolveType(collTypeParameter));
 				return (Codec<T>) new ArrayCodec<>((Codec<Object>) codec, listConstructor);
 			}
 			if (rawType == Set.class || rawType == ImmutableSet.class) {

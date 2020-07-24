@@ -28,27 +28,27 @@ remote_file(
 
 java_library(
   name = 'common',
-  exported_deps = [':com_google_guava_guava_28_2_jre', '//lib/google/common:failureaccess'],
+  exported_deps = [':com_google_guava_guava_29_0_jre', '//lib/google/common:failureaccess'],
   visibility = ['PUBLIC'],
 )
 
 prebuilt_jar(
-  name = 'com_google_guava_guava_28_2_jre',
-  binary_jar = ':remote_com_google_guava_guava_28_2_jre_jar',
-  source_jar = ':remote_com_google_guava_guava_28_2_jre_src',
-  maven_coords = 'com.google.guava:guava:28.2-jre',
+  name = 'com_google_guava_guava_29_0_jre',
+  binary_jar = ':remote_com_google_guava_guava_29_0_jre_jar',
+  source_jar = ':remote_com_google_guava_guava_29_0_jre_src',
+  maven_coords = 'com.google.guava:guava:29.0-jre',
 )
 
 remote_file(
-  name = 'remote_com_google_guava_guava_28_2_jre_jar',
-  out = 'guava-28.2-jre.jar',
-  url = 'https://repo1.maven.org/maven2/com/google/guava/guava/28.2-jre/guava-28.2-jre.jar',
-  sha1 = '8ec9ed76528425762174f0011ce8f74ad845b756',
+  name = 'remote_com_google_guava_guava_29_0_jre_jar',
+  out = 'guava-29.0-jre.jar',
+  url = 'https://repo1.maven.org/maven2/com/google/guava/guava/29.0-jre/guava-29.0-jre.jar',
+  sha1 = '801142b4c3d0f0770dd29abea50906cacfddd447',
 )
 
 remote_file(
-  name = 'remote_com_google_guava_guava_28_2_jre_src',
-  out = 'guava-28.2-jre-sources.jar',
-  url = 'https://repo1.maven.org/maven2/com/google/guava/guava/28.2-jre/guava-28.2-jre-sources.jar',
-  sha1 = '79474f7d08b9a8d03f827161825711d9d62ef09a',
+  name = 'remote_com_google_guava_guava_29_0_jre_src',
+  out = 'guava-29.0-jre-sources.jar',
+  url = 'https://repo1.maven.org/maven2/com/google/guava/guava/29.0-jre/guava-29.0-jre-sources.jar',
+  sha1 = '33e6868bc0fcb9b4b493123eeec78d1352934e87',
 )
