@@ -1,0 +1,11 @@
+load('//io:rules.bzl', 'java_module')
+
+java_module(
+	name = 'stream',
+  provided_deps = [
+		'//lib/immutables/value:annotations',
+  ],
+  plugins = [
+    '//io/common:immutables',
+  ],
+)

@@ -5,9 +5,6 @@ java_module(
 	exported_deps = [
 		'//lib/google/common:common',
 	],
-	test_deps = [
-		'//io/that:that',
-	],
 	provided_deps = [
 		'//lib/javax/annotation:annotation',
 	],

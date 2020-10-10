@@ -5,6 +5,7 @@ _java_library_deps_default = [
 
 _java_test_deps_default = [
   '//lib/junit:junit',
+  '//io/that:that',
 ]
 
 _java_test_vm_args = [
@@ -25,14 +26,15 @@ def java_module(
     visibility = None,
     artifact = None,
     maven_coords = None,
-    resources_add = []
+    resources_add = [],
+    use_default_deps = True,
 ):
   native.java_library(
     name = name,
     srcs = native.glob(['src/**/*.java']),
     resources = native.glob(['src/**'], exclude = ['*.java']) + resources_add,
     resources_root = 'src',
-    deps = _dedupe(_java_library_deps_default + deps),
+    deps = _dedupe((_java_library_deps_default if use_default_deps else []) + deps),
     provided_deps = provided_deps,
     exported_deps = exported_deps,
     exported_provided_deps = exported_provided_deps,
@@ -45,7 +47,7 @@ def java_module(
     srcs = native.glob(['test/**/*.java']),
     resources = native.glob(['test/**']),
     resources_root = 'test',
-    deps = _dedupe([':' + name] + _java_test_deps_default + deps + test_deps),
+    deps = _dedupe([':' + name] + (_java_test_deps_default if use_default_deps else []) + deps + test_deps),
     plugins = plugins,
     vm_args = _java_test_vm_args,
   )

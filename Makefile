@@ -28,7 +28,7 @@ prereq_bin = git curl java python buck node
 prereq_check = $(foreach bin,$(prereq_bin),$(if $(shell which $(bin)),,\
 		$(error "No `$(bin)` found in PATH. see README.md")))
 
-highlands_link = https://github.com/immutables/highlands/archive/v0.15.tar.gz
+highlands_link = https://github.com/immutables/highlands/archive/v0.15.1.tar.gz
 
 # The default is just to fetch, build, test all targets
 default:

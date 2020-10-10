@@ -12,9 +12,6 @@ java_module(
   exported_deps = [
     '//lib/immutables/data:data',
   ],
-  test_deps = [
-  	'//io/that:that',
-  ],
   plugins = [
 		'//io/common:immutables',
   ],

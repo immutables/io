@@ -1,0 +1,20 @@
+load('//io:rules.bzl', 'java_module')
+
+java_module(
+  name = 'regres',
+  deps = [
+    '//lib/immutables/value:annotations',
+		'//lib/javax/annotation:annotation',
+  ],
+  exported_deps = [
+    '//lib/postresql:postresql',
+    '//lib/square/moshi:moshi',
+    '//lib/square/okio:okio',
+    '//io/common:common',
+    '//io/codec:codec',
+  ],
+  artifact = True,
+  plugins = [
+    '//io/common:immutables',
+  ]
+)

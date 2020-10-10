@@ -53,7 +53,6 @@ public interface That<T, S extends That<T, S>> {
 	 * always call {@code just()} to re-wrap actual value into a plain object matcher.
 	 * Primitive types are considered auto-wrapped in corresponding boxed types.
 	 */
-	@SuppressWarnings("unchecked") // safe cast based on logical judgement
 	default Object<java.lang.Object> just() {
 		@Nullable T nullable = What.getNullable(this);
 		return this instanceof Object<?>
@@ -91,7 +90,7 @@ public interface That<T, S extends That<T, S>> {
 		 * } catch (Exception ex) {
 		 * </pre>
 		 * 
-		 * @see Assert#that(java.lang.Runnable)
+		 * @see Assert#that(CanThrow)
 		 */
 		default void unreachable() {
 			unreachable("and yet we are here");
@@ -109,7 +108,7 @@ public interface That<T, S extends That<T, S>> {
 	/**
 	 * That runnable or lambda/block.
 	 */
-	public interface Block extends That<CanThrow, Block> {
+	interface Block extends That<CanThrow, Block> {
 		/**
 		 * Fails if that runnable doesn't throw exception of expected type (or subtype of
 		 * expected type) when called.

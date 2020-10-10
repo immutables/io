@@ -5,11 +5,7 @@ const ver = {
 }
 
 module.exports = function(up) { up
-  .lib('//lib/junit', [
-    `junit:junit:4.12`,
-    `org.hamcrest:hamcrest-core:1.3`,
-  ])
-  .lib('//lib/javax/annotation', `com.google.code.findbugs:jsr305:3.0.1`)
+	.lib('//lib/javax/annotation', `com.google.code.findbugs:jsr305:3.0.1`)
 	.lib('//lib/javax/jaxrs', [
 		`jakarta.ws.rs:jakarta.ws.rs-api:2.1.5`,
 		`jakarta.annotation:jakarta.annotation-api:1.3.4`,
@@ -18,7 +14,7 @@ module.exports = function(up) { up
 	.lib('//lib/google/common', `com.google.guava:guava:${ver.guava}`, {
 		deps: ['//lib/google/common:failureaccess'],
 	})
-  .lib('//lib/square/okio', `com.squareup.okio:okio:1.16.0`)
+	.lib('//lib/square/okio', `com.squareup.okio:okio:1.16.0`)
 	.lib('//lib/square/moshi', `com.squareup.moshi:moshi:1.9.2`, {
 		deps: ['//lib/square/okio'],
 	})
@@ -32,7 +28,7 @@ module.exports = function(up) { up
 		processor: 'org.immutables.processor.ProxyProcessor',
 		deps: ['//lib/immutables/value'],
 	})
-  .lib('//lib/immutables/gson', `org.immutables:gson:${ver.immutables}`)
+	.lib('//lib/immutables/gson', `org.immutables:gson:${ver.immutables}`)
 	.lib('//lib/immutables/trees', `org.immutables:trees:${ver.immutables}`)
 	.lib('//lib/immutables/ordinal', `org.immutables:ordinal:${ver.immutables}`)
 	.lib('//lib/immutables/generator', `org.immutables:generator:${ver.immutables}`)
@@ -49,4 +45,9 @@ module.exports = function(up) { up
 		processor: 'org.immutables.generator.processor.Processor',
 		deps: ['//lib/immutables/generator:processor'],
 	})
+	.lib('//lib/postresql', `org.postgresql:postgresql:42.2.12`)
+	.lib('//lib/junit', [
+		`junit:junit:4.12`,
+		`org.hamcrest:hamcrest-core:1.3`,
+	])
 }

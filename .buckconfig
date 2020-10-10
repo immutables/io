@@ -42,3 +42,9 @@
 	jar_spool_mode = direct_to_jar
 	# compile against public declaration
 	compile_against_abis = true
+
+[maven]
+  # version to be
+  # this is custom macro-only config property
+  publish_ver = 0.0.1
+  publish_group = io.immutables
