@@ -47,7 +47,7 @@ module.exports = function(up) { up
 	})
 	.lib('//lib/postresql', `org.postgresql:postgresql:42.2.12`)
 	.lib('//lib/junit', [
-		`junit:junit:4.12`,
+		`junit:junit:4.13.1`,
 		`org.hamcrest:hamcrest-core:1.3`,
 	])
 }
