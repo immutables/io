@@ -8,6 +8,7 @@ import io.immutables.codec.Resolver;
 import okio.Buffer;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.nio.charset.Charset;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -439,13 +440,8 @@ final class Coding {
 		}
 
 		private static In nullIn() throws IOException {
-			// is there simpler way? implement own TokenBuffer?
-			Buffer buffer = new Buffer();
-			JsonWriter writer = JsonWriter.of(buffer);
-			OkJson.out(writer).putNull();
-			writer.close();
-
-			return OkJson.in(JsonReader.of(buffer));
+			// is there more efficient way? implement own TokenBuffer?
+			return OkJson.in(JsonReader.of(new Buffer().writeUtf8("null")));
 		}
 	}
 
