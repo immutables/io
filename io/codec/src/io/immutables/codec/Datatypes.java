@@ -17,7 +17,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.util.Objects.requireNonNull;
 
-public class Datatypes {
+public final class Datatypes {
 	private Datatypes() {}
 
 	public static <T> Datatype<T> construct(TypeToken<T> type) {

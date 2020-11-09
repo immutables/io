@@ -210,7 +210,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 	}
 
 	public Vect<E> reverse() {
-		if (this == EMPTY) return this;
+		if (elements.length <= 1) return this;
 		Object[] reversed = elements.clone();
 		for (int i = 0, j = reversed.length - 1, mid = reversed.length / 2; i < mid; i++, j--) {
 			Object t = reversed[i];

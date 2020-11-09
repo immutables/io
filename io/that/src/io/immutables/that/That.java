@@ -53,6 +53,7 @@ public interface That<T, S extends That<T, S>> {
 	 * always call {@code just()} to re-wrap actual value into a plain object matcher.
 	 * Primitive types are considered auto-wrapped in corresponding boxed types.
 	 */
+	@SuppressWarnings("unchecked")
 	default Object<java.lang.Object> just() {
 		@Nullable T nullable = What.getNullable(this);
 		return this instanceof Object<?>
