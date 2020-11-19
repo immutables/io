@@ -1,0 +1,43 @@
+module a
+
+import system
+import ecs
+
+type Abra(Int, Double)
+
+type Xx(s Abra)
+
+type Ui<H> {
+	h H
+	j Int
+}
+
+type Xy<Z>
+
+// This is dabra Cadabra
+type Dabra<T> {
+	*Ui<T>
+	a String?
+	b Long
+	c [Int]
+	f {Double}
+	z (Int, Int, String)
+	k ()
+	o Int
+} : Xy<T>, Xy<Dabra<T>>
+
+// Optional
+type Optional<T> {
+	|	Some(T)
+	| None
+}
+
+type Coord {x, y, z Double}
+
+type Obj(name String) : Inline
+
+type CoordRecord {  // <-- defines table name
+  entity Obj : Entity   // <-- entity field
+  key String : Slug
+  coord Coord   // <-- defines name for component slice
+} : Component

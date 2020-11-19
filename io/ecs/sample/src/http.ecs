@@ -1,0 +1,12 @@
+module http
+
+concept GET
+
+concept POST
+
+concept PUT
+
+concept DELETE
+
+concept HEAD
+

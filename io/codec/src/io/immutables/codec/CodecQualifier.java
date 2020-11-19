@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * As we support matching only a single qualifier annotation, we use this metaannotation as a marker
+ * As we support matching only a single qualifier annotation, we use this meta-annotation as a marker
  * of which one annotation to use to qualify codec.
  */
 @Documented

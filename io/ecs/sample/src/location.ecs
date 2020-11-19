@@ -1,0 +1,48 @@
+module location
+
+import system
+import ecs
+import http
+
+type Location(name String) :: Inline
+
+type Coords{x, y, z Double}
+
+type Go {
+  from Coords
+  to Coords?
+}
+
+type Coordinate {
+  location Location :: Entity
+  key String :: Slug
+  coords Coords
+} :: Component
+
+type Sorrows {
+  location Location :: Entity
+  somethingElse Go
+} :: Component
+
+// Buga Ga Ga Ga
+type Bugaga {
+  | One
+  | Whe(huna String, jordo i32, urpo f64)
+  | Two {
+      a i32
+      b String
+  }
+  | Three{c Int?}
+}
+
+interface Kaligula {
+  gosu Int
+  bosu(a, b i32) Bool
+  buint
+}
+
+interface Two {
+  ui() :: GET, path("/ui")
+  arr(a, x Bool) Int :: POST, query(a, x)
+  boor(h String?) Bool
+}

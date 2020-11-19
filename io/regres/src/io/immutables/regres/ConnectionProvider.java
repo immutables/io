@@ -56,9 +56,9 @@ public interface ConnectionProvider {
       if (existing != null) {
         return new Handle(provider, existing, false);
       }
-      Connection newone = provider.get();
-      openedConnection.set(newone);
-      return new Handle(provider, newone, true);
+      Connection newOne = provider.get();
+      openedConnection.set(newOne);
+      return new Handle(provider, newOne, true);
     }
   }
 }

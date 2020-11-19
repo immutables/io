@@ -1,0 +1,26 @@
+module system
+
+concept Inline
+
+type Int :: Inline
+
+type Long :: Inline
+
+type String :: Inline
+
+type Double :: Inline
+
+type Float :: Inline
+
+type Bool :: Inline
+
+type SYSTEMKEYWORDi32 :: Inline
+type SYSTEMKEYWORDu32 :: Inline
+type SYSTEMKEYWORDi8 :: Inline
+type SYSTEMKEYWORDu8 :: Inline
+type SYSTEMKEYWORDi64 :: Inline
+type SYSTEMKEYWORDu64 :: Inline
+type SYSTEMKEYWORDf32 :: Inline
+type SYSTEMKEYWORDf64 :: Inline
+
+

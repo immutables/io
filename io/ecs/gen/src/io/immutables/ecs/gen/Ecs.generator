@@ -1,0 +1,496 @@
+[template public generate]
+
+	[output.system]Hello World![/output.system]
+
+	[for dt in model.dataTypes]
+		[generateType dt]
+	[/for]
+
+	[for cmp in model.components]
+		[generateComponent cmp]
+	[/for]
+
+	[for iface in model.interfaces]
+    [generateInterface iface]
+  [/for]
+
+[/template]
+
+[template generateInterface InterfaceModel im]
+[for m = im.module, t = im.definition]
+[output.system]
+public interface [m.name].[t.name] {
+  [for f in t.features]
+  [f]
+  [/for]
+}
+[/output.system]
+[/for]
+[/template]
+
+[template generateType DataTypeModel dt]
+	[for m = dt.module, t = dt.definition]
+
+[output.append 'META-INF/ecs/datatypes']
+[m.name].[t.name]
+[/output.append]
+
+[output.java m.name t.name]
+	[if t.isEnum]
+[generateEnumType m t]
+	[else if t.hasCases]
+[generateCaseType m t]
+	[else]
+[generateDataType m t]
+	[/if]
+[/output.java]
+
+	[/for]
+[/template]
+
+[template generateComponent Component cmp]
+[let folder][cmp.module.name]/ecs/[/let]
+[let pack][cmp.module.name].ecs[/let]
+[let packapi][cmp.module.name][/let]
+[let cname][cmp.definition.name][/let]
+
+[output.java pack (cname 'Record')]
+package [pack];
+
+@io.immutables.ecs.Ecs.Style
+@org.immutables.data.Data
+@org.immutables.value.Value.Immutable
+@io.immutables.ecs.Ecs.Contract([packapi].[cname].class)
+public abstract class [cname]Record {
+	@io.immutables.ecs.Ecs.Entity
+	@org.immutables.value.Value.Parameter
+	public abstract [typef cmp.entity.type] [cmp.entity.name]();
+	[if cmp.slug.present]
+	@io.immutables.ecs.Ecs.Slug
+	@org.immutables.value.Value.Parameter
+	public abstract [typef cmp.slug.get.type] [cmp.slug.get.name]();
+	[/if]
+	@io.immutables.ecs.Ecs.Component
+	@org.immutables.value.Value.Parameter
+	public abstract @io.immutables.regres.Jsonb [typef cmp.component.type] [cmp.component.name]();
+
+	static [cname]Record of(
+			[typef cmp.entity.type] [cmp.entity.name][if cmp.slug.present],
+			[typef cmp.slug.get.type] [cmp.slug.get.name][/if],
+			[typef cmp.component.type] [cmp.component.name]) {
+		return Immutable[cname]Record.of([cmp.entity.name][if cmp.slug.present], [cmp.slug.get.name][/if], [cmp.component.name]);
+	}
+}
+[/output.java]
+
+[output.write (folder cname 'Record.ddl.sql')]
+
+create table if not exists [cname] (
+	_id serial primary key,
+	[cmp.entity.name] text not null,
+[for slug in cmp.slugOpt]
+	[slug.name] text not null,
+[/for]
+	[cmp.component.name] jsonb not null,
+	_created timestamp,
+	_invalidated timestamp
+);
+
+create unique index if not exists [cname]_idx_[cmp.entity.name]
+	on [cname]([cmp.entity.name][for slug in cmp.slugOpt], [slug.name][/for])
+	where _invalidated is null;
+
+[/output.write]
+
+[output.java pack (cname 'Access')]
+package [pack];
+
+public interface [cname]Access extends io.immutables.regres.SqlAccessor {
+
+	@UpdateCount int store(
+			@Spread [cname]Record [toLower cname],
+			@Named("created") java.time.Instant created) throws java.sql.SQLException;
+
+	@Single(optional = true)
+	java.util.Optional<[cname]Record> load(
+			@Named("[cmp.entity.name]") [typef cmp.entity.type] [cmp.entity.name][for slug in cmp.slugOpt],
+			@Named("[slug.name]") [typef slug.type] [slug.name][/for]) throws java.sql.SQLException;
+
+	@Single [cname]Record get(@Named("id") int id) throws java.sql.SQLException;
+
+	java.util.List<[cname]Record> all() throws java.sql.SQLException;
+}
+[/output.java]
+
+[output.write (folder cname 'Access.sql')]
+--.store
+update [cname] set _invalidated = :created
+where [cmp.entity.name] = :[cmp.entity.name]
+	[for slug in cmp.slugOpt]and [slug.name] = :[slug.name][/for]
+	and _invalidated is null;
+
+insert into [cname](
+	[cmp.entity.name][for slug in cmp.slugOpt],
+	[slug.name][/for],
+	[cmp.component.name],
+	_created)
+values (
+	:[cmp.entity.name][for slug in cmp.slugOpt],
+	:[slug.name][/for],
+	:[cmp.component.name]::jsonb,
+	:created)
+
+--.load
+select * from [cname] where [cmp.entity.name] = :[cmp.entity.name]
+	[for slug in cmp.slugOpt]and [slug.name] = :[slug.name][/for]
+	and _invalidated is null;
+
+--.get
+select * from [cname] where _id = :id;
+
+--.all
+select * from [cname] limit 1000;
+
+[/output.write]
+
+
+[output.java packapi cname]
+[for ent = cmp.entity, comp = cmp.component]
+[let rs]javax.ws.rs.[/let]
+package [packapi];
+
+[if cmp.slug.present][for slug in cmp.slugOpt]
+@[rs]Produces([rs]core.MediaType.APPLICATION_JSON)
+@[rs]Consumes([rs]core.MediaType.APPLICATION_JSON)
+@[rs]Path("/[toHyphen ent.name]/{[ent.name]}/[toHyphen comp.name]")
+public interface [cname] {
+	@[rs]Path("/{[slug.name]}")
+	@[rs]PUT void put(
+			@[rs]PathParam("[ent.name]") [typef ent.type] [ent.name],
+			@[rs]PathParam("[slug.name]") [typef slug.type] [slug.name],
+			[typef comp.type] [comp.name]);
+
+	@[rs]Path("/{[slug.name]}")
+	@[rs]GET [typef comp.type] get(
+			@[rs]PathParam("[ent.name]") [typef ent.type] [ent.name],
+			@[rs]PathParam("[slug.name]") [typef slug.type] [slug.name]);
+
+	// @[rs]Path("/[toHyphen cname]")
+	// @[rs]GET java.util.List<[typef comp.type]> all();
+}
+[/for]
+[else]
+
+@[rs]Produces([rs]core.MediaType.APPLICATION_JSON)
+@[rs]Consumes([rs]core.MediaType.APPLICATION_JSON)
+@[rs]Path("/[toHyphen ent.name]/{[ent.name]}/[toHyphen comp.name]")
+public interface [cname] {
+	@[rs]PUT void put(@[rs]PathParam("[ent.name]") [typef ent.type] [ent.name], [typef comp.type] [comp.name]);
+	@[rs]GET [typef comp.type] get(@[rs]PathParam("[ent.name]") [typef ent.type] [ent.name]);
+}
+[/if]
+[/for]
+[/output.java]
+
+[output.java pack (cname 'Endpoint')]
+[for ent = cmp.entity, comp = cmp.component]
+[let rs]javax.ws.rs.[/let]
+package [pack];
+
+[if cmp.slug.present][for slug in cmp.slugOpt]
+class [cname]Endpoint implements [packapi].[cname] {
+	@javax.inject.Inject java.time.Clock clock;
+	@javax.inject.Inject [cname]Access access;
+	@Override public void put(
+			[typef ent.type] [ent.name],
+			[typef slug.type] [slug.name],
+			[typef comp.type] [comp.name]) {
+		try {
+			access.store([cname]Record.of([ent.name], [slug.name], [comp.name]), clock.instant());
+		} catch (java.sql.SQLException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+
+	@Override public [typef comp.type]/*?*/ get(
+			[typef ent.type] [ent.name],
+			[typef slug.type] [slug.name]) {
+		try {
+			return access.load([ent.name], [slug.name])
+					.map([cname]Record::[comp.name])
+					.orElse(null);
+		} catch (java.sql.SQLException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+}
+[/for]
+[else]
+
+class [cname]Endpoint implements [packapi].[cname] {
+	@javax.inject.Inject java.time.Clock clock;
+	@javax.inject.Inject [cname]Access access;
+	@Override public void put([typef ent.type] [ent.name], [typef comp.type] [comp.name]) {
+		try {
+			access.store([cname]Record.of([ent.name], [comp.name]), clock.instant());
+		} catch (java.sql.SQLException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+
+	@Override public [typef comp.type]/*?*/ get([typef ent.type] [ent.name]) {
+		try {
+			return access.load([ent.name])
+					.map([cname]Record::[comp.name])
+					.orElse(null);
+		} catch (java.sql.SQLException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+}
+[/if]
+[/for]
+[/output.java]
+
+[output.java pack (cname 'Servicelet')]
+package [pack];
+
+public interface [cname]Servicelet {
+	io.immutables.micro.Servicelet [toConstant cname] = new io.immutables.micro.Facets("[toHyphen cname]")
+			.http(h -> {
+				h.provide([packapi].[cname].class).bindClass([cname]Endpoint.class);
+			})
+			.database(d -> {
+				d.record([cname]Record.class);
+				d.repository([cname]Access.class);
+			})
+			.toServicelet();
+}
+[/output.java]
+
+[/template]
+
+[template generateDataType Module m Datatype t]
+package [m.name];
+[for ctor = t.constructor]
+
+@io.immutables.ecs.Ecs.Style
+@org.immutables.data.Data
+[if ctor.takesUnit]
+@SuppressWarnings("immutables:incompat")
+@org.immutables.value.Value.Immutable(singleton = true, builder = false)
+[else]
+@org.immutables.value.Value.Immutable
+[/if]
+[if isInline t][if ctor.takesProduct]
+@org.immutables.data.Data.Inline
+[/if][/if]
+public abstract class [t.name][generics t][if isInline t][else if not ctor.takesUnit] implements With[t.name][/if] {
+	[t.name]() {}
+	[for p in ctor.mergedParameters]
+	[if ctor.takesProduct]@org.immutables.value.Value.Parameter[/if]
+	public abstract [typef p.type] [p.name]();
+	[/for]
+	[if ctor.takesUnit]
+
+	public static [generics t][t.name] of() {
+		return Immutable[t.name].of();
+	}
+	[else if ctor.takesProduct]
+
+	public static [generics t][t.name][generics t] of([for p in ctor.parameters][if not for.first], [/if][typef p.type] [p.name][/for]) {
+		return Immutable[t.name].of([for p in ctor.parameters][if not for.first], [/if][p.name][/for]);
+	}
+	[else]
+
+	public static final class Builder[generics t] extends Immutable[t.name].Builder {}
+	[/if]
+	[if isInline t]
+	[if ctor.takesUnit]
+
+	@Override public String toString() { return "[t.name]"; }
+	[else if ctor.takesProduct]
+
+	@Override public String toString() {
+		return "[t.name](" [for p in ctor.mergedParameters][if not for.first] + ", "[/if] + [p.name]()[/for] + ")";
+	}
+	[/if][/if]
+}
+[/for]
+[/template]
+
+[template generateEnumType Module m Datatype t]
+package [m.name];
+
+public enum [t.name] {
+	[for entry in t.constructors.entrySet, cname = entry.key][if not for.first],
+	[/if][cname][/for]
+}
+[/template]
+
+[template generateCaseType Module m Datatype t]
+package [m.name];
+
+@io.immutables.ecs.Ecs.Style
+@org.immutables.data.Data
+@org.immutables.value.Value.Enclosing
+public abstract class [t.name][generics t] {
+	[t.name]() {}
+
+  public abstract Case caseOf();
+
+	public enum Case {
+		[for entry in t.constructors.entrySet, cname = entry.key][if not for.first],
+		[/if][cname][/for]
+	}
+[for entry in t.constructors.entrySet,
+			cname = entry.key,
+			ctor = entry.value]
+	[if ctor.takesProduct]
+
+	[if ctor.takesUnit]
+	@SuppressWarnings("immutables:incompat")
+	@org.immutables.value.Value.Immutable(singleton = true, builder = false)
+	[else]
+	@org.immutables.value.Value.Immutable
+	[/if]
+	public static abstract class [cname][generics t] extends [t.name][generics t][if not ctor.takesUnit] implements Immutable[t.name].With[cname][generics t][/if] {
+		[for p in ctor.mergedParameters]
+		@org.immutables.value.Value.Parameter
+		public abstract [typef p.type] [p.name]();
+		[/for]
+
+		@Override public final Case caseOf() {
+			return Case.[cname];
+		}
+	}
+
+	public static [generics t][t.name][generics t] [toLower cname]([for p in ctor.parameters][if not for.first], [/if][typef p.type] [p.name][/for]) {
+		return Immutable[t.name].[cname].of([for p in ctor.parameters][if not for.first], [/if][p.name][/for]);
+	}
+	[else]
+
+	public static [generics t][t.name][generics t] [toLower cname](java.util.function.Consumer<[cname].Builder[generics t]> build) {
+		var builder = new [cname].Builder[generics t]();
+		build.accept(builder);
+		return builder.build();
+	}
+
+	@org.immutables.value.Value.Immutable
+	public static abstract class [cname][generics t] extends [t.name][generics t] {
+		[for p in ctor.parameters]
+		public abstract [typef p.type] [p.name]();
+		[/for]
+
+		@Override public final Case caseOf() {
+			return Case.[cname];
+		}
+
+		public static final class Builder[generics t] extends Immutable[t.name].[cname].Builder {}
+	}
+	[/if]
+[/for]
+	[generateMatching t]
+}
+[/template]
+
+[template generateMatching Datatype t]
+[for entry in t.constructors.entrySet,
+			cname = entry.key,
+			ctor = entry.value]
+
+public [t.name][generics t] if[cname](java.util.function.Consumer<? super [cname][generics t]> on) {
+	if (this instanceof [cname]) on.accept(([cname][generics t]) this);
+	return this;
+}
+[/for]
+
+public <R> matcher<R> match() { return new matcher<>(); }
+
+public final class matcher<R> {
+	[for cname in t.constructors.keySet]
+	private static final long [toConstant cname] = 1 << [for.index];
+	[/for]
+
+	private long visited = 0;
+	private boolean matched;
+	private R/*?*/ result;
+	matcher() {}
+[for entry in t.constructors.entrySet,
+			cname = entry.key,
+			ctor = entry.value]
+
+	public matcher<R> is[cname](java.util.function.Function<? super [cname][generics t], ? extends R> fn) {
+		if ((visited & [toConstant cname]) != 0) throw new IllegalStateException(alreadyVisited());
+		visited |= [toConstant cname];
+
+		if (!matched && [t.name].this instanceof [cname]) {
+			matched = true;
+			result = fn.apply(([cname][generics t]) [t.name].this);
+		}
+		return this;
+	}
+
+	public matcher<R> is[cname](R value) {
+		if ((visited & [toConstant cname]) != 0) throw new IllegalStateException(alreadyVisited());
+		visited |= [toConstant cname];
+
+		if (!matched && [t.name].this instanceof [cname]) {
+			matched = true;
+			result = value;
+		}
+		return this;
+	}
+	[if small ctor.parameters]
+
+	public matcher<R> of[cname](of[cname][prependVar 'R' t] fn) {
+		if ((visited & [toConstant cname]) != 0) throw new IllegalStateException(alreadyVisited());
+		visited |= [toConstant cname];
+
+		if (!matched && [t.name].this instanceof [cname]) {
+			matched = true;
+			[cname][generics t] instance = ([cname][generics t]) [t.name].this;
+			result = fn.apply([for p in ctor.parameters][if not for.first], [/if]instance.[p.name]()[/for]);
+		}
+		return this;
+	}
+	[/if]
+[/for]
+
+	public R orElse(R value) {
+		return matched ? result : value;
+	}
+
+	public R orElseGet(java.util.function.Supplier<R> supplier) {
+		return matched ? result : supplier.get();
+	}
+
+	public R orElse(java.util.function.Function<? super [t.name][generics t], ? extends R> compute) {
+		return matched ? result : compute.apply([t.name].this);
+	}
+
+	public R get() {
+		if (!matched) throw new IllegalStateException(notMatched());
+		return result;
+	}
+
+	private String notMatched() {
+		return "No cases matched: " + [t.name].this + ". You can use `orElse` methods instead of `get`";
+	}
+
+	private String alreadyVisited() {
+		return "More than once for: " + [t.name].this + ". Check for duplicate `of`/`is` cases";
+	}
+}
+[for entry in t.constructors.entrySet,
+			cname = entry.key,
+			ctor = entry.value]
+[if small ctor.parameters]
+
+@FunctionalInterface
+public interface of[cname][prependVar 'R' t] {
+	R apply([for p in ctor.parameters][if not for.first], [/if][typef p.type] [p.name][/for]);
+}
+[/if]
+[/for]
+[/template]

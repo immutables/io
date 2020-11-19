@@ -73,7 +73,7 @@ VSCode settings
 
 # Symlink for experimenting with local highlands,
 # usually bypassing remote version ./ext/highlands/
-.highlands
+/.highlands
 
 # MacOS custom file/folder attributes, irrelevant to the repo
 .DS_Store

@@ -1,0 +1,20 @@
+# This module is nested inside host micro module
+# please, don't repeat this pattern unless it's a good match
+# instead try to have modules as siblings of common parent
+# or embed into the same module having separate source folders or target/goals
+# the reason here is that intention was to make //io/micro:tester
+# instead of //io/micro/tester:tester. But we want these classes to be added only
+# in test scope and this doesn't play well with IDE which can depend on module,
+# but not parts of it (or at least there's no known and reliable way to handle it)
+
+load('//io:rules.bzl', 'java_module', 'publish_group', 'publish_ver')
+
+java_module(
+  name = 'tester',
+  exported_deps = [
+    '//io/micro:micro',
+    '//lib/junit:junit',
+    '//lib/mockito:mockito',
+  ],
+  maven_coords = publish_group() + ':micro.tester:' + publish_ver(),
+)

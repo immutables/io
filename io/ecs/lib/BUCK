@@ -1,0 +1,12 @@
+load('//io:rules.bzl', 'java_module', 'publish_group', 'publish_ver')
+
+# Runtime library of predefined and support classes, interfaces, annotations
+# to be used in the classpath for generated code.
+java_module(
+  name = 'lib',
+  deps = [
+    '//lib/immutables/value:annotations',
+  ],
+  visibility = ['PUBLIC'],
+  maven_coords = publish_group() + ':ecs.lib:' + publish_ver(),
+)

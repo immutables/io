@@ -46,5 +46,5 @@
 [maven]
   # version to be
   # this is custom macro-only config property
-  publish_ver = 0.0.1
+  publish_ver = 0.0.2
   publish_group = io.immutables

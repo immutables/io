@@ -1,0 +1,17 @@
+load('//io:rules.bzl', 'java_module')
+
+java_module(
+	name = 'use',
+	resources_add = glob(['**/*Servicelet.java']),
+  deps = [
+		'//lib/immutables/value:annotations',
+		'//io/micro:micro',
+		'//io/ecs/sample:pre',
+  ],
+  test_deps = [
+    '//io/micro/tester:tester',
+  ],
+  plugins = [
+    '//io/common:immutables',
+  ],
+)

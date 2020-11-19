@@ -12,7 +12,7 @@
 
 # phony targets are not bound to existense of directories or files by the same name
 # and always re-executed (once per make call)
-.PHONY: default up
+.PHONY: default up pub
 
 .DEFAULT_GOAL := default
 # explicitly requiring /bin/bash
@@ -28,7 +28,7 @@ prereq_bin = git curl java python buck node
 prereq_check = $(foreach bin,$(prereq_bin),$(if $(shell which $(bin)),,\
 		$(error "No `$(bin)` found in PATH. see README.md")))
 
-highlands_link = https://github.com/immutables/highlands/archive/v0.15.1.tar.gz
+highlands_link = https://github.com/immutables/highlands/archive/v0.16.tar.gz
 
 # The default is just to fetch, build, test all targets
 default:
@@ -68,3 +68,9 @@ cleanse:
 	rm -fr lib
 	rm -fr .up.lock.json
 	find . -type d -name '.out' -exec rm -fr {} +
+	find . -type f -name 'pom.xml' -exec rm {} +
+
+pub: .ext/highlands
+	$(prereq_check)
+	@printf "\e[00;33m[prepare pom files and artifacts for publishing]\e[00m\n"
+	node up --publish --center pom.xml --trace

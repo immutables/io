@@ -1,0 +1,552 @@
+-- Keywords should not be followed by a word identifier without delimiter
+keyword:
+  'module' ~ 'module' ! [a-zA-Z0-9]
+  'import' ~ 'import' ! [a-zA-Z0-9]
+  'type' ~ 'type' ! [a-zA-Z0-9]
+  'concept' ~ 'concept' ! [a-zA-Z0-9]
+  'interface' ~ 'interface' ! [a-zA-Z0-9]
+  'impl' ~ 'impl' ! [a-zA-Z0-9]
+  'return' ~ 'return' ! [a-zA-Z0-9]
+  'if' ~ 'if' ! [a-zA-Z0-9]
+  'else' ~ 'else' ! [a-zA-Z0-9]
+  'for' ~ 'for' ! [a-zA-Z0-9]
+  'case' ~ 'case' ! [a-zA-Z0-9]
+
+keyword-types:
+  'i8' ~ 'i8' ! [a-zA-Z0-9]
+  'i32' ~ 'i32' ! [a-zA-Z0-9]
+  'i64' ~ 'i64' ! [a-zA-Z0-9]
+  'u8' ~ 'u8' ! [a-zA-Z0-9]
+  'u32' ~ 'u32' ! [a-zA-Z0-9]
+  'u64' ~ 'u64' ! [a-zA-Z0-9]
+  'f32' ~ 'f32' ! [a-zA-Z0-9]
+  'f64' ~ 'f64' ! [a-zA-Z0-9]
+  'int' ~ 'int' ! [a-zA-Z0-9]
+  'bool' ~ 'bool' ! [a-zA-Z0-9]
+  'float' ~ 'float' ! [a-zA-Z0-9]
+
+keyword-values:
+  'true' ~ 'true' ! [a-zA-Z0-9]
+  'false' ~ 'false' ! [a-zA-Z0-9]
+
+identifier:
+  <name> ~ [a-z][a-zA-Z0-9]*
+  <typename> ~ [A-Z][a-zA-Z0-9]*
+
+other:
+  <string> ~ ["][^"]*["]
+  <decimal> ~ [0-9]+
+  <hexadecimal> ~ [#][0-9a-fA-F]+
+  -- FIXME if there's no newline at the end of file - lexer breaks with IOOBE
+  <comment-newline> ~ [/][/][^\n]*[\n]
+  <newline> ~ [\n]
+
+-- Only forcing the priority order for compound operators
+delimiters:
+  '::' ~ '::'
+  '??' ~ '??'
+  '||' ~ '||'
+  '&&' ~ '&&'
+  '^^' ~ '^^'
+  ':=' ~ ':='
+  '==' ~ '=='
+  '!=' ~ '!='
+  '++' ~ '++'
+  '+=' ~ '+='
+  '-=' ~ '-='
+  '*=' ~ '*='
+  '/=' ~ '/='
+  '%=' ~ '%='
+  '--' ~ '--'
+  '->' ~ '->'
+  '<-' ~ '<-'
+  '-' ~ '-'
+  '<=' ~ '<='
+  '>=' ~ '>='
+  '>..' ~ '>..'
+  '..<' ~ '..<'
+  '...' ~ '...'
+  '..' ~ '..'
+  '.' ~ '.'
+  ':' ~ ':'
+  '=' ~ '='
+  '+' ~ '+'
+  '/' ~ '/'
+  '<' ~ '<'
+  '>' ~ '>'
+  '?' ~ '?'
+  '%' ~ '%'
+  '*' ~ '*'
+  '?' ~ '?'
+  '!' ~ '!'
+  '|' ~ '|'
+  '&' ~ '&'
+
+-- lists terms which are skipped by parser
+ignored:
+  <spacing> ~ [\s\r\t]+
+
+--------------
+-- productions
+--------------
+
+unit
+  elements:unit-element+
+
+unit-element
+  | empty
+  | module-declaration
+  | import-declaration
+  | type-declaration
+  | concept-declaration
+  | interface-declaration
+  | local-binding
+  | feature-named
+
+empty
+  nl
+
+-- TODO rework nl, comments are not distributed to the proper elements
+(nl)
+  | comment:<comment-newline>
+  | <newline>
+
+-- TODO multisegment path name?
+module-declaration
+  'module' name:<name> nl?
+
+-- TODO multisegment path name? import spread? by names import
+import-declaration
+  'import' name:<name> nl?
+
+type-declaration
+  'type' name:<typename> type-parameters? constructor:constructor? type-constraints* features:features? nl?
+
+constructor
+  | constructor-parameter
+  | constructor-cases
+
+constructor-parameter
+  input:parameter
+
+constructor-cases
+  '{' nl* '|'? cases:constructor-case (nl* '|' cases:constructor-case)* nl* '}'
+
+constructor-case
+  name:<typename> constructor:parameter? features:features?
+
+concept-declaration
+  'concept' name:<typename> type-parameters? type-constraints* features:features? nl?
+
+interface-declaration
+  'interface' name:<typename> type-parameters? type-constraints* features:features? nl?
+
+(type-parameters)
+  '<' type-parameter:<typename> (',' type-parameter:<typename>)* '>'
+
+parameter
+  | parameter-product
+  | parameter-record
+
+parameter-product
+  | '(' nl* ')'
+  | '(' components:product-component (field-separator components:product-component)* field-separator? ')'
+
+product-component
+  | unnamed-parameter
+  | named-parameters
+
+parameter-record
+  | '{' nl* '}'
+  | '{' record-parameters (field-separator record-parameters)* field-separator? '}'
+
+(field-separator)
+  | ',' nl?
+  | nl
+
+(record-parameters)
+  | nl* '*' inline:type-reference-named
+  | fields:named-parameters-bind
+
+unnamed-parameter
+  nl* type:type-reference
+
+-- a, b Number
+named-parameters
+  nl* name:<name> (',' name:<name>)* type:type-reference
+
+-- a, b Bool: true
+named-parameters-bind
+  nl* name:<name> (',' name:<name>)* type:type-reference (':' expression)? type-constraints*
+
+type-reference
+  | type-reference-variant
+  | type-reference-invariant
+
+-- A | B | C
+type-reference-variant
+  alternative:type-reference-invariant (nl? '|' nl? alternative:type-reference-invariant)+
+
+-- (Aa, Bb)
+type-reference-product
+  | '(' nl* ')'
+  | '(' component:type-reference (field-separator component: type-reference)* field-separator? ')'
+
+-- {x, y, z int, comment String}
+-- { } make illegal?
+type-reference-record
+  | '{' nl* '}'
+  | '{' fields:named-parameters (field-separator fields:named-parameters)* field-separator? '}'
+
+type-reference-array
+  '[' component:type-reference ']'
+
+type-reference-setn
+  '{' component:type-reference '}'
+
+-- a~
+-- a?
+-- Aridna...
+type-reference-invariant
+  | type-reference-sequence
+  | type-reference-optional
+  | type-reference-slot
+  | type-reference-undecorated
+
+-- (A,B)
+-- {x, y Int}
+-- [Elem]
+-- A<B>
+type-reference-undecorated
+  | type-reference-product
+  | type-reference-record
+  | type-reference-setn
+  | type-reference-array
+  | type-reference-keyword
+  | type-reference-named
+
+-- Elem...
+type-reference-sequence
+  component:type-reference-undecorated '...'
+
+type-reference-optional
+  component:type-reference-undecorated '?'
+
+type-reference-slot
+  component:type-reference-undecorated '~'
+
+type-reference-keyword
+  | name:'i8'
+  | name:'i32'
+  | name:'i64'
+  | name:'u8'
+  | name:'u32'
+  | name:'u64'
+  | name:'f32'
+  | name:'f64'
+
+-- String
+-- Box<Nail>
+type-reference-named
+  name:<typename> type-arguments?
+
+-- <A, B, C>
+(type-arguments)
+  '<' argument:type-reference (',' argument:type-reference)* '>'
+
+-- :: A == B, C<D>
+(type-constraints)
+  nl? '::' constraint:type-constraint (',' constraint:type-constraint)*
+
+type-constraint
+  | type-constraint-equivalence
+  | type-constraint-conception
+  | type-constraint-feature-apply
+
+-- :: path(x), query(x, y)
+type-constraint-feature-apply
+  expression:expression-feature
+
+-- T == Box<Y>
+type-constraint-equivalence
+  left:type-reference '==' right:type-reference
+
+-- Eq<A>
+type-constraint-conception
+  concept:type-reference-named
+
+features
+  | '{' nl* '}'
+  | '{' element:features-element (nl element:features-element)* nl? '}'
+
+features-element
+  | features-element-local
+  | feature-named
+  | feature-operator-prefix
+  | feature-operator-infix
+  | feature-operator-postfix
+
+features-element-local
+  nl* binding:local-binding
+
+local-binding
+  | let-binding
+  | slot-binding
+
+feature-operator-prefix
+  nl* operator-prefix right:operand-parameter output:return-type? type-constraints* impl:statements?
+
+feature-operator-infix
+  nl* left:operand-parameter operator-infix right:operand-parameter output:return-type? type-constraints* impl:statements?
+
+feature-operator-postfix
+  nl* left:operand-parameter operator-postfix output:return-type? type-constraints* impl:statements?
+
+operand-parameter
+  | parameter
+  | type-reference-product
+
+feature-named
+  nl* name:<name> type-parameters? input:parameter? output:return-type? type-constraints* impl:statements?
+
+return-type
+  !'{' component:type-reference (',' component:type-reference)*
+
+-- TODO nested groups (converted to ephemerals) are resulting in bad code
+statements
+  | '{' '}'
+  | '{' nl+ '}'
+  | '{' nl* statement:statements-element (nl+ statement:statements-element)* nl* '}'
+
+let-binding
+  to:name-binding '=' from:expressions
+
+-- type should be valid
+slot-binding
+  to:name-binding type:type-reference-slot ':=' init:expression
+
+name-binding
+  component:<name> (',' component:<name>)*
+
+expressions
+  component:expression (',' component:expression)*
+
+statements-element
+  | local-binding
+  | statement-expression
+  | expression-effect
+  | expression
+  | empty
+
+expression-or-statement
+  | expression
+  | statement-expression
+
+statement-expression
+  | statement-return
+  | statement-if
+  | statement-for
+
+statement-for
+  'for' (to:name-binding '<-')? from:expression (nl? 'if' condition:expression)? yield:statements
+
+statement-return
+  'return' value:expression-or-statement?
+
+statement-if
+  | statement-if-guard
+  | statement-if-else
+
+statement-if-guard
+  | 'if' condition:if-condition 'else' otherwise:statement-return
+  | 'if' condition:if-condition then:statement-return
+
+statement-if-else
+  'if' condition:if-condition then:statements (nl? 'else' nl? otherwise:statement-else-if)
+
+statement-else-if
+  | statement-if-else
+  | statement-else
+
+statement-else
+  otherwise:statements?
+
+if-condition
+  | expression
+  | condition-pattern
+
+condition-pattern
+  to:pattern-binding '=' from:expressions
+
+pattern-binding
+  | name-binding
+
+expression
+  | expression-logical-sub
+
+expression-logical-sub
+  | expression-logical
+  | expression-relational-sub
+
+expression-logical
+  left:expression-relational-sub (nl? operator-infix-logical nl? right:expression-relational-sub)+
+
+expression-relational-sub
+  | expression-relational
+  | expression-additive-sub
+
+expression-relational
+  left:expression-additive-sub nl? operator-infix-relational nl? right:expression-additive-sub
+
+expression-additive-sub
+  | expression-additive
+  | expression-multiplicative-sub
+
+expression-additive
+  left:expression-multiplicative-sub (nl? operator-infix-additive nl? right:expression-multiplicative-sub)+
+
+expression-multiplicative-sub
+  | expression-multiplicative
+  | expression-ranging-sub
+
+expression-multiplicative
+  left:expression-ranging-sub (nl? operator-infix-multiplicative nl? right:expression-ranging-sub)+
+
+expression-ranging-sub
+  | expression-ranging
+  | expression-unary-sub
+
+expression-ranging
+  left:expression-unary-sub operator-infix-ranging right:expression-unary-sub
+
+expression-unary-sub
+  | expression-unary
+  | expression-access-sub
+
+expression-unary
+  operator-prefix right:expression-access-sub
+
+expression-access-sub
+  | expression-access
+  | expression-feature-sub
+
+expression-access
+  base:expression-feature-sub (nl? '.' nl? selector:expression-feature)+
+
+expression-feature-sub
+  | expression-feature
+  | expression-literal
+
+expression-feature
+  name:<name> argument:argument?
+
+expression-effect
+  | expression-effect-mutative
+  | expression-effect-assigning
+
+expression-effect-mutative
+  left:expression operator-postfix-mutative
+
+expression-effect-assigning
+  left:expression operator-infix-assigning right:expression
+
+argument
+  | literal-product
+  | literal-record
+  | literal-sequence
+
+expression-literal
+  | literal-product
+  | literal-sequence
+  | literal-constructor
+  | literal-bool
+  | literal-string
+  | literal-number-decimal
+  | literal-number-hexadecimal
+
+literal-constructor
+  type:<typename> argument:argument?
+
+literal-product
+  | '(' nl* ')'
+  | '(' component:component-expression (field-separator component:component-expression)* field-separator? ')'
+
+literal-record
+  | '{' nl* '}'
+  | '{' field:field-binding (field-separator field:field-binding)* field-separator? '}'
+
+literal-sequence
+  | '[' nl* ']'
+  | '[' component:component-expression (field-separator component:component-expression)* field-separator? ']'
+
+field-binding
+  nl* name:<name> ':' nl* value:expression-or-statement
+
+component-expression
+  nl* value:expression-or-statement
+
+literal-string
+  literal:<string>
+
+literal-number-decimal
+  literal:<decimal>
+
+literal-number-hexadecimal
+  literal:<hexadecimal>
+
+literal-bool
+  | literal:'true'
+  | literal:'false'
+
+(operator-prefix)
+  | operator:'-'
+  | operator:'!'
+
+(operator-postfix)
+  | operator-postfix-mutative
+
+(operator-postfix-mutative)
+  | operator:'--'
+  | operator:'++'
+
+(operator-infix)
+  | operator-infix-additive
+  | operator-infix-multiplicative
+  | operator-infix-relational
+  | operator-infix-logical
+  | operator-infix-assigning
+
+(operator-infix-multiplicative)
+  | operator:'/'
+  | operator:'*'
+  | operator:'%'
+
+(operator-infix-ranging)
+  | operator:'>..'
+  | operator:'..<'
+  | operator:'..'
+
+(operator-infix-additive)
+  | operator:'+'
+  | operator:'-'
+
+(operator-infix-relational)
+  | operator:'<'
+  | operator:'<='
+  | operator:'>'
+  | operator:'>='
+  | operator:'=='
+  | operator:'!='
+
+(operator-infix-assigning)
+  | operator:':='
+  | operator:'+='
+  | operator:'-='
+  | operator:'*='
+  | operator:'/='
+  | operator:'%='
+
+(operator-infix-logical)
+  | operator:'&&'
+  | operator:'||'
+  | operator:'^^'

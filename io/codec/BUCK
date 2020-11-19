@@ -15,4 +15,5 @@ java_module(
   plugins = [
 		'//io/common:immutables',
   ],
+  artifact = True,
 )

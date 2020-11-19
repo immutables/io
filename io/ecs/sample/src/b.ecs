@@ -1,0 +1,19 @@
+module b
+
+import system
+
+type Component<Y>
+
+type Z(a Int, bs Bs)
+
+type ItemRecord<X> :: Component<X>
+
+type Bs
+
+type Opt<T> { Some(T) | None }
+
+type Gup {
+  | One
+  | Two{a Int, b String}
+  | Three{c Int?}
+}

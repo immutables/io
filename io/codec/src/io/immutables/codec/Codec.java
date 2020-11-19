@@ -236,9 +236,7 @@ public abstract class Codec<T> {
 			public void put(Object obj) {}
 
 			@Override
-			public @Nullable Object get() {
-				return null;
-			}
+			public @Nullable Object get() { return null; }
 		};
 	}
 }

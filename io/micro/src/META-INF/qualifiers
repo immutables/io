@@ -1,0 +1,2 @@
+named=com.google.inject.name.Named
+topic.named=io.immutables.stream.Topic$Named

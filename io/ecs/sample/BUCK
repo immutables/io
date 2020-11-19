@@ -1,0 +1,39 @@
+
+genrule(
+  name = 'pre.src.zip',
+  srcs = glob(['src/**/*.ecs']),
+  cmd = '$(exe //io/ecs/gen:bin) --out ${TMP} --zip ${OUT} ${SRCS}',
+  out = 'pre.src.zip', # must be `.zip` !
+)
+
+java_library(
+  name = 'sample',
+  srcs = [':pre.src.zip'],
+  resources = [],
+  resources_root = 'src',
+  exported_deps = [
+    '//io/micro:micro',
+  ],
+  plugins = [
+    '//io/common:immutables',
+  ],
+  labels = ['ide_no_gen_srcs'],
+)
+
+# Create actual jar with resources excluding sources,
+# taking compiled library jar, including sources to get all non-class resources,
+# then exclude java and kotlin actual sources
+zip_file(
+  name = 'pre.jar',
+  out = 'pre.jar', # use name to match default for looking up //io/ecs/sample:pre internal library
+  srcs = [],
+  zip_srcs = [':sample', ':pre.src.zip'],
+  entries_to_exclude = ['.*\.java$'],
+)
+
+prebuilt_jar(
+  name = 'pre',
+  binary_jar = ':pre.jar',
+  source_jar = ':pre.src.zip',
+  visibility = ['PUBLIC'],
+)

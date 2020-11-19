@@ -501,13 +501,13 @@ public final class Regresql {
     if (!problems.isEmpty()) throw new RuntimeException(
         "\n" + Joiner.on("\n").join(problems));
 
-    return Maps.uniqueIndex(snippets, m -> m.name());
+    return Maps.uniqueIndex(snippets, MethodSnippet::name);
   }
 
   private static Set<String> uniqueAccessMethods(Class<?> accessorInterface) {
     Multiset<String> possiblyDuplicateMethods = Arrays.stream(accessorInterface.getMethods())
         .filter(Regresql::elibibleAccessMethod)
-        .map(m -> m.getName())
+        .map(Method::getName)
         .collect(Collectors.toCollection(HashMultiset::create));
 
     Set<String> unique = ImmutableSet.copyOf(possiblyDuplicateMethods.elementSet());

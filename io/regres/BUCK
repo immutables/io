@@ -13,8 +13,8 @@ java_module(
     '//io/common:common',
     '//io/codec:codec',
   ],
-  artifact = True,
   plugins = [
     '//io/common:immutables',
-  ]
+  ],
+  artifact = True,
 )

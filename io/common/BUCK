@@ -7,6 +7,7 @@ java_module(
 		'//lib/immutables/value:annotations',
 		'//lib/javax/annotation:annotation',
 	],
+	artifact = True,
 )
 
 java_annotation_processor(

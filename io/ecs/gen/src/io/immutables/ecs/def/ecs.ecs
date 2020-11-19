@@ -1,0 +1,7 @@
+module ecs
+
+concept Entity
+
+concept Component
+
+concept Slug
