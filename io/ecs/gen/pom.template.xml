@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>G<!--GROUP--></groupId>
+  <artifactId>A<!--ARTIFACT--></artifactId>
+  <version>V<!--VERSION--></version>
+  <packaging>jar</packaging>
+  <name>${project.groupId}.${project.artifactId}</name>
+  <parent>
+    <groupId>G<!--PARENT-GROUP--></groupId>
+    <artifactId>A<!--PARENT-ARTIFACT--></artifactId>
+    <version>V<!--PARENT-VERSION--></version>
+    <relativePath>P<!--PARENT-PATH--></relativePath>
+  </parent>
+  <dependencies><!--DEPENDENCIES-->
+  </dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.2.4</version>
+				<executions>
+					<execution>
+						<id>gen</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<shadedArtifactAttached>true</shadedArtifactAttached>
+							<minimizeJar>false</minimizeJar>
+							<createSourcesJar>true</createSourcesJar>
+							<shadedClassifierName>gen</shadedClassifierName>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<manifestEntries>
+										<Main-Class>io.immutables.ecs.gen.Main</Main-Class>
+									</manifestEntries>
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

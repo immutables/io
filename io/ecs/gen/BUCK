@@ -1,4 +1,4 @@
-load('//io:rules.bzl', 'java_test_vm_args')
+load('//io:rules.bzl', 'java_test_vm_args', 'publish_group', 'publish_ver')
 
 # The ECS generator code
 java_library(
@@ -26,6 +26,7 @@ java_library(
 		'//io/common:immutables',
 		'//lib/immutables/generator:templater',
 	],
+	maven_coords = publish_group() + ':ecs.gen:' + publish_ver(),
 )
 
 java_test(

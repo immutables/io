@@ -44,7 +44,6 @@ java_library(
 		'//lib/immutables/generator:processor',
 	],
 	resources_root = 'src',
-	maven_coords = publish_group() + ':grammar:processor:' + publish_ver(),
 )
 
 java_annotation_processor(
