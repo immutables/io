@@ -25,10 +25,10 @@ abstract class Ecs extends Builtins {
   @Generator.Typedef Definition.NamedParameter Parameter;
   @Generator.Typedef Definition.Constructor Constructor;
   @Generator.Typedef Definition.DataTypeDefinition Datatype;
-  @Generator.Typedef Definition.InterfaceDefinition Interface;
+  @Generator.Typedef io.immutables.ecs.def.Definition.ContractDefinition Contract;
   @Generator.Typedef Model.Component Component;
   @Generator.Typedef Model.DataType DataTypeModel;
-  @Generator.Typedef Model.InterfaceType InterfaceModel;
+  @Generator.Typedef Model.ContractType ContractModel;
 
   final Function<Vect<?>, String> genericf = vars -> vars.isEmpty() ? "" : vars.join(", ", "<", ">");
   final Function<Type.Parameterizable, String> generics = t -> genericf.apply(t.parameters());

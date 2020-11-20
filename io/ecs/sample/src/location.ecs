@@ -35,14 +35,14 @@ type Bugaga {
   | Three{c Int?}
 }
 
-interface Kaligula {
+contract Kaligula {
   gosu Int
   bosu(a, b i32) Bool
   buint
 }
 
-interface Two {
-  ui() :: GET, path("/ui")
+contract Two {
+  ui Int :: GET, path("/ui")
   arr(a, x Bool) Int :: POST, query(a, x)
   boor(h String?) Bool
 }

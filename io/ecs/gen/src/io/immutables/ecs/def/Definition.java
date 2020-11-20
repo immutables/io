@@ -70,7 +70,7 @@ public interface Definition {
 
   interface OfConcept extends Definition, TypeSignature, FeatureSet {}
 
-  interface OfInterface extends Definition, TypeSignature, FeatureSet {}
+  interface OfContract extends Definition, TypeSignature, FeatureSet {}
 
   @Immutable
   interface DataTypeDefinition extends OfType, Commented, ImmutableDefinition.WithDataTypeDefinition {
@@ -95,8 +95,8 @@ public interface Definition {
   }
 
   @Immutable
-  interface InterfaceDefinition extends OfInterface, Commented {
-    class Builder extends ImmutableDefinition.InterfaceDefinition.Builder {}
+  interface ContractDefinition extends OfContract, Commented {
+    class Builder extends ImmutableDefinition.ContractDefinition.Builder {}
   }
 
   @Immutable
@@ -135,7 +135,6 @@ public interface Definition {
       }
       return Type.Empty.of();
     }
-
     class Builder extends ImmutableDefinition.Constructor.Builder {}
   }
 }

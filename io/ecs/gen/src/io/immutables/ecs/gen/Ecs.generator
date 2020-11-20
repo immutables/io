@@ -10,13 +10,13 @@
 		[generateComponent cmp]
 	[/for]
 
-	[for iface in model.interfaces]
-    [generateInterface iface]
+	[for iface in model.contracts]
+    [generateContract iface]
   [/for]
 
 [/template]
 
-[template generateInterface InterfaceModel im]
+[template generateContract ContractModel im]
 [for m = im.module, t = im.definition]
 [output.system]
 public interface [m.name].[t.name] {

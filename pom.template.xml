@@ -64,7 +64,6 @@
 		<maven.compiler.compilerVersion>11</maven.compiler.compilerVersion>
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
-		<!-- Shared versions -->
 	</properties>
 
 	<repositories>

@@ -4,7 +4,7 @@ keyword:
   'import' ~ 'import' ! [a-zA-Z0-9]
   'type' ~ 'type' ! [a-zA-Z0-9]
   'concept' ~ 'concept' ! [a-zA-Z0-9]
-  'interface' ~ 'interface' ! [a-zA-Z0-9]
+  'contract' ~ 'contract' ! [a-zA-Z0-9]
   'impl' ~ 'impl' ! [a-zA-Z0-9]
   'return' ~ 'return' ! [a-zA-Z0-9]
   'if' ~ 'if' ! [a-zA-Z0-9]
@@ -99,7 +99,7 @@ unit-element
   | import-declaration
   | type-declaration
   | concept-declaration
-  | interface-declaration
+  | contract-declaration
   | local-binding
   | feature-named
 
@@ -138,8 +138,8 @@ constructor-case
 concept-declaration
   'concept' name:<typename> type-parameters? type-constraints* features:features? nl?
 
-interface-declaration
-  'interface' name:<typename> type-parameters? type-constraints* features:features? nl?
+contract-declaration
+  'contract' name:<typename> type-parameters? type-constraints* features:features? nl?
 
 (type-parameters)
   '<' type-parameter:<typename> (',' type-parameter:<typename>)* '>'

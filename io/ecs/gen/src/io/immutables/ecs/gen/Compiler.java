@@ -241,7 +241,7 @@ class Compiler {
     String name();
     Vect<Definition.OfType> types();
     Vect<Definition.OfConcept> concepts();
-    Vect<Definition.OfInterface> interfaces();
+    Vect<Definition.OfContract> interfaces();
 
     class Builder extends ImmutableImportModule.Builder {}
   }
@@ -393,7 +393,7 @@ class Compiler {
         onNamedDeclaration(t, t.name().toString().replace("SYSTEMKEYWORD", ""));
       }
 
-      @Override public void caseInterfaceDeclaration(SyntaxTrees.InterfaceDeclaration n) {
+      @Override public void caseContractDeclaration(SyntaxTrees.ContractDeclaration n) {
         onNamedDeclaration(n, n.name().toString());
       }
 
@@ -450,9 +450,9 @@ class Compiler {
       }
 
       @Override
-      public void caseInterfaceDeclaration(SyntaxTrees.InterfaceDeclaration interfaceDecl) {
+      public void caseContractDeclaration(SyntaxTrees.ContractDeclaration interfaceDecl) {
         var name = interfaceDecl.name().toString();
-        var interfaceBuilder = new Definition.InterfaceDefinition.Builder()
+        var interfaceBuilder = new Definition.ContractDefinition.Builder()
             .module(moduleName)
             .name(name);
 
@@ -1034,8 +1034,8 @@ class Compiler {
         }
       }
 
-      for (var type : m.definitions().only(Definition.InterfaceDefinition.class)) {
-        b.addInterfaces(Model.InterfaceType.of(m, type));
+      for (var type : m.definitions().only(Definition.ContractDefinition.class)) {
+        b.addContracts(Model.ContractType.of(m, type));
       }
     }
 

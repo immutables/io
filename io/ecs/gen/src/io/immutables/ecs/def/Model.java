@@ -15,7 +15,7 @@ public interface Model {
 
   Vect<Component> components();
 
-  Vect<InterfaceType> interfaces();
+  Vect<ContractType> contracts();
 
   class Builder extends ImmutableModel.Builder {}
 
@@ -34,12 +34,12 @@ public interface Model {
   }
 
   @Immutable
-  interface InterfaceType extends InModule {
+  interface ContractType extends InModule {
     @Parameter @Override Definition.Module module();
-    @Parameter Definition.InterfaceDefinition definition();
+    @Parameter Definition.ContractDefinition definition();
 
-    static InterfaceType of(Definition.Module m, Definition.InterfaceDefinition t) {
-      return ImmutableModel.InterfaceType.of(m, t);
+    static ContractType of(Definition.Module m, Definition.ContractDefinition t) {
+      return ImmutableModel.ContractType.of(m, t);
     }
   }
 
