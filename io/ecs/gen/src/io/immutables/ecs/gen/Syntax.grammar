@@ -29,9 +29,16 @@ keyword-values:
   'true' ~ 'true' ! [a-zA-Z0-9]
   'false' ~ 'false' ! [a-zA-Z0-9]
 
+keyword-http:
+  'GET' ~ 'GET' ! [a-zA-Z0-9]
+  'POST' ~ 'POST' ! [a-zA-Z0-9]
+  'PUT' ~ 'PUT' ! [a-zA-Z0-9]
+  'DELETE' ~ 'DELETE' ! [a-zA-Z0-9]
+
 identifier:
   <name> ~ [a-z][a-zA-Z0-9]*
   <typename> ~ [A-Z][a-zA-Z0-9]*
+  <verbatim> ~ [\u0060][^\u0060]*[\u0060]
 
 other:
   <string> ~ ["][^"]*["]
@@ -262,6 +269,7 @@ type-constraint
   | type-constraint-equivalence
   | type-constraint-conception
   | type-constraint-feature-apply
+  | type-constraint-http
 
 -- :: path(x), query(x, y)
 type-constraint-feature-apply
@@ -274,6 +282,9 @@ type-constraint-equivalence
 -- Eq<A>
 type-constraint-conception
   concept:type-reference-named
+
+type-constraint-http
+  uri-method path:uri-path
 
 features
   | '{' nl* '}'
@@ -550,3 +561,21 @@ literal-bool
   | operator:'&&'
   | operator:'||'
   | operator:'^^'
+
+(uri-method)
+  | method:'GET'
+  | method:'POST'
+  | method:'PUT'
+  | method:'DELETE'
+
+uri-path
+  segment:uri-segment+ '/'?
+
+uri-segment
+  | '/' slug:uri-slug ':' bind:<name>
+  | '/' slug:uri-slug
+  | '/' ':' bind:<name>
+  | '/'
+
+uri-slug
+  ('-'? (<name>|<typename>|<verbatim>))+ '-'?

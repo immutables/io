@@ -231,7 +231,7 @@ abstract class Production implements WithProduction {
 				rewritten.add(new Production.Builder()
 						.id(syntethicId)
 						.ephemeral(true)
-						.addAllAlternatives(alternatives)
+						.addAllAlternatives(alternatives.map(this::toAlternative)) // recursive rewrite
 						.build());
 
 				return new ReferencePart.Builder()
@@ -243,16 +243,16 @@ abstract class Production implements WithProduction {
 
 			@Override
 			protected ProductionPart asProductionPart(Group group) {
-				Identifier syntethicId = newSyntheticId();
+				Identifier syntheticId = newSyntheticId();
 
 				rewritten.add(new Production.Builder()
-						.id(syntethicId)
+						.id(syntheticId)
 						.ephemeral(true)
-						.addAlternatives(Alternative.of(group.parts()))
+						.addAlternatives(toAlternative(Alternative.of(group.parts()))) // recursive rewrite
 						.build());
 
 				return new ReferencePart.Builder()
-						.reference(syntethicId)
+						.reference(syntheticId)
 						.cardinality(group.cardinality())
 						.mode(group.mode())
 						.build();
@@ -350,7 +350,7 @@ abstract class Production implements WithProduction {
 			boolean subtypingReference(ProductionPart p) {
 				if (p instanceof ReferencePart) {
 					Production r = byIdentifier.get(((ReferencePart) p).reference());
-					return !r.ephemeral() && !p.tag().isPresent();
+					return !r.ephemeral() && p.tag().isEmpty();
 				}
 				return false;
 			}
@@ -436,7 +436,7 @@ abstract class Production implements WithProduction {
 			}
 
 			void addPart(Consumer<TaggedPart> parts, ProductionPart p) {
-				if (!p.tag().isPresent() || p instanceof Group) return;
+				if (p.tag().isEmpty() || p instanceof Group) return;
 
 				TaggedPart.Builder b = new TaggedPart.Builder()
 						.tag(p.tag().get())
@@ -450,7 +450,8 @@ abstract class Production implements WithProduction {
 					b.reference(r);
 					b.symbol(byIdentifier.get(r).ephemeral());
 				} else {
-					throw Unreachable.exhaustive();
+					throw new AssertionError("Got " + p);
+					//throw Unreachable.contractual();
 				}
 
 				parts.accept(b.build());

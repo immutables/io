@@ -17,4 +17,3 @@ type KeyVal {
   key String :: Entity
   value String
 } :: Component
-

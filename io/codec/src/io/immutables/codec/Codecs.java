@@ -419,6 +419,7 @@ public final class Codecs {
 		private final ScalarCodec<Integer> forInt = new ScalarCodec<>(ScalarCodec.INT, false);
 		private final ScalarCodec<Long> forLong = new ScalarCodec<>(ScalarCodec.LONG, false);
 		private final ScalarCodec<Double> forDouble = new ScalarCodec<>(ScalarCodec.DOUBLE, false);
+		private final ScalarCodec<Number> forNumber = new ScalarCodec<>(ScalarCodec.DOUBLE, false);
 		private final ScalarCodec<Boolean> forBoolean = new ScalarCodec<>(ScalarCodec.BOOLEAN, false);
 		private final ScalarCodec<String> forString = new ScalarCodec<>(ScalarCodec.STRING, false);
 
@@ -427,6 +428,7 @@ public final class Codecs {
 				.put(long.class, forLong).put(Long.class, forLong)
 				.put(double.class, forDouble).put(Double.class, forDouble)
 				.put(boolean.class, forBoolean).put(Boolean.class, forBoolean)
+				.put(Number.class, forNumber)
 				.put(String.class, forString)
 				.build(); // @formatter:on
 
@@ -508,7 +510,7 @@ public final class Codecs {
 			case INT: out.putInt(((Number) instance).intValue()); break;
 			case LONG: out.putLong(((Number) instance).longValue()); break;
 			case DOUBLE: out.putDouble(((Number) instance).doubleValue()); break;
-			case BOOLEAN: out.putBoolean(((Boolean) instance).booleanValue()); break;
+			case BOOLEAN: out.putBoolean((Boolean) instance); break;
 			case STRING: out.putString(instance.toString()); break;
 			} // @formatter:on
 		}

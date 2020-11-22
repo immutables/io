@@ -1,0 +1,54 @@
+load('//io:rules.bzl', 'java_test_vm_args', 'publish_group', 'publish_ver')
+
+# The ECS generator code
+java_library(
+	name = 'cubic',
+	srcs = glob(['src/**/*.java']),
+	resources = glob(['src/**/*'], exclude = ['*.java']),
+	deps = [
+		'//lib/immutables/value:annotations',
+		'//lib/immutables/generator:generator',
+		'//lib/immutables/data:data',
+		'//lib/immutables/trees:trees',
+	],
+	exported_deps = [
+		'//io/common:common',
+		'//io/codec:codec',
+		'//io/grammar:grammar',
+		'//lib/square/moshi:moshi',
+		'//lib/square/okio:okio',
+		'//lib/google/common:common',
+	],
+	resources_root = 'src',
+	extra_arguments = ['-Aresources.root={}/src'.format(package_name())],
+	plugins = [
+		'//io/grammar:processor',
+		'//io/common:immutables',
+		'//lib/immutables/generator:templater',
+	],
+	maven_coords = publish_group() + ':cubic:' + publish_ver(),
+)
+
+java_test(
+	name = 'test',
+	srcs = glob(['test/**/*.java']),
+	resources = glob(['test/**'], exclude=['*.java']),
+	deps = [
+		':cubic',
+		'//io/that:that',
+		'//lib/junit:junit',
+	],
+	resources_root = 'test',
+	plugins = [
+		'//io/common:immutables',
+	],
+	vm_args = java_test_vm_args(),
+)
+
+# Wraps generator as executable to be used from shell or via gen_rule
+java_binary(
+	name = 'bin',
+	deps = [':cubic'],
+	main_class = 'io.immutables.cubic.Main',
+	visibility = ['PUBLIC'],
+)

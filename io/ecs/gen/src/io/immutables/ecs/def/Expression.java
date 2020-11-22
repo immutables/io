@@ -73,7 +73,7 @@ public interface Expression {
   @Value.Immutable
   abstract class Apply implements Expression {
     public abstract @Value.Parameter String feature();
-    public abstract @Value.Parameter Optional<BoundedLiteral> argument();
+    public abstract @Value.Parameter Optional<Expression> argument();
 
     public static Apply of(String feature, BoundedLiteral argument) {
       return ImmutableExpression.Apply.of(feature, Optional.of(argument));

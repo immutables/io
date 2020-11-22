@@ -1153,8 +1153,8 @@ class Compiler {
   }
 
   public static void main(String... args) throws IOException {
-    var sourceName = "/io/immutables/ecs/gen/sample.ecs";
-    var filename = "sample.ecs";
+    var sourceName = "/io/immutables/ecs/gen/sample2.ecs";
+    var filename = "sample2.ecs";
 
     Src src = Src.from(Resources.getResource(Compiler.class, sourceName), filename);
 

@@ -1,12 +1,11 @@
 module http
 
-concept GET
+//concept GET
 
-concept POST
+//concept POST
 
-concept PUT
+//concept PUT
 
-concept DELETE
+//concept DELETE
 
-concept HEAD
-
+//concept HEAD

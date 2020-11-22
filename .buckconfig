@@ -9,7 +9,7 @@
 	ignore = .git/,.ext/,.out/
 
 [download]
-	in_build = false
+	in_build = true
 
 [log]
 	max_traces = 1

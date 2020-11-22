@@ -1,0 +1,18 @@
+module b
+
+import system
+
+// Galava
+type Abc {
+  // Comment heading aa
+  aa Int  // comment trailing aa
+  // Comment heading bb
+  bb String  // comment trailing bb
+}
+
+contract Two {
+  ui Int :: GET /it/now/or/before
+  arr(a, x Bool) -> Int :: POST /abcd-good/lord/:x/:a
+  boor(h String?) -> Bool
+  // sdsd
+}
