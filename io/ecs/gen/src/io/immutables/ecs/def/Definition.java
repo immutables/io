@@ -62,15 +62,19 @@ public interface Definition {
     }
   }
 
-  interface TypeSignature extends Type.Constrained, Type.Parameterizable, Type.Named {
-    String module();
-  }
+	interface HasModule {
+		String module();
+	}
+
+  interface TypeSignature extends Type.Constrained, Type.Parameterizable, Type.Named, HasModule {}
 
   interface OfType extends Definition, TypeSignature, FeatureSet {}
 
   interface OfConcept extends Definition, TypeSignature, FeatureSet {}
 
   interface OfContract extends Definition, TypeSignature, FeatureSet {}
+
+  interface OfEntity extends Definition, HasModule, Type.Constrained, Type.Named, FeatureSet {}
 
   @Immutable
   interface DataTypeDefinition extends OfType, Commented, ImmutableDefinition.WithDataTypeDefinition {
@@ -90,6 +94,12 @@ public interface Definition {
   }
 
   @Immutable
+	interface EntityDefinition extends OfEntity, Commented, ImmutableDefinition.WithEntityDefinition {
+		Constructor constructor();
+  	class Builder extends ImmutableDefinition.EntityDefinition.Builder {}
+	}
+
+  @Immutable
   interface ConceptDefinition extends OfConcept, Commented {
     class Builder extends ImmutableDefinition.ConceptDefinition.Builder {}
   }
@@ -104,6 +114,10 @@ public interface Definition {
     public abstract @Parameter String name();
     public abstract @Parameter Type type();
     public abstract @Parameter boolean hasSyntheticName(); // switch to default (Datatypes Fix)
+
+		public @Default String comment() {
+			return "";
+		}
 
     public static NamedParameter of(String name, Type type) {
       return ImmutableDefinition.NamedParameter.of(name, type, false);

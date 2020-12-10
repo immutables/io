@@ -30,8 +30,9 @@ final class Output {
 
   @Nullable String zip;
   @Nullable String out;
+	boolean schema;
 
-  private final ListMultimap<String, String> fileContent = ArrayListMultimap.create();
+	private final ListMultimap<String, String> fileContent = ArrayListMultimap.create();
 
   void finalizeResources() throws IOException {
     if (out != null) writeFiles(out);

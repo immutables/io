@@ -36,14 +36,13 @@ type Bugaga {
 }
 
 contract Kaligula {
-  gosu Int
-  bosu(a, b i32) Bool
-	buint
+  gosu -> Int
+  bosu(a, b i32) -> Bool
 }
 
 //, query(a, x), GET /ui/:a/:x ?a,x
 contract Two {
-	ui Int :: GET /it/now/or/`*****`
-	arr(a, x Bool) Int :: POST /abcd-good/lord/:x/:a
-	boor(h String?) Bool
+	ui -> Int :: GET /it/now/or/`*****`
+	arr(a, x Bool) -> Int :: POST /abcd-good/lord/:x/:a
+	boor(h String?) -> Bool
 }

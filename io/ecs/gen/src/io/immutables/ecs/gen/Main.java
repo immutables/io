@@ -11,7 +11,6 @@ import org.immutables.generator.Templates;
 
 public class Main {
   public static void main(String... args) throws IOException {
-    var template = new Generator_Ecs();
     var srcBuilder = Vect.<Path>builder();
 
     var output = new Output();
@@ -31,9 +30,17 @@ public class Main {
         if (!compiler.problems.isEmpty()) {
           exitWithProblems(compiler);
         }
-        template.model = model;
-        template.output = output;
-        template.generate().invoke(Templates.Invokation.initial());
+        if (output.schema) {
+					var template = new Generator_Schema();
+					template.model = model;
+					template.output = output;
+					template.generate().invoke(Templates.Invokation.initial());
+				} else {
+					var template = new Generator_Ecs();
+					template.model = model;
+					template.output = output;
+					template.generate().invoke(Templates.Invokation.initial());
+				}
       } else {
         exitWithProblems(compiler);
       }
@@ -53,7 +60,8 @@ public class Main {
     var deque = new ArrayDeque<>(Arrays.asList(args));
     while (!deque.isEmpty()) {
       switch (deque.peek()) { // @formatter:off
-			case "--out": output.out = requireValue(deque); break;
+			case "--schema": output.schema = true; deque.remove(); break;
+      case "--out": output.out = requireValue(deque); break;
 			case "--zip": output.zip = requireValue(deque); break;
 			default:  // @formatter:on
         if (deque.peek().startsWith("-")) {
@@ -81,7 +89,7 @@ public class Main {
   }
 
   private static void exitWithUsage() {
-    System.err.println("Usage: <thiscmd> [--out <dir>][--zip <file>] <source_file1> [ <source_file1>...]");
+    System.err.println("Usage: <thiscmd> [--out <dir>][--zip <file>] <source_file1> [<source_file1>...]");
     System.exit(-1);
   }
 }

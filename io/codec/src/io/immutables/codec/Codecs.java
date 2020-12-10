@@ -139,7 +139,7 @@ public final class Codecs {
 	};
 
 	public static <T> Codec<T> unsupported(TypeToken<T> type, @Nullable Annotation qualifier) {
-		return new UnsupportedCodec<T>(type, qualifier);
+		return new UnsupportedCodec<>(type, qualifier);
 	}
 
 	@FunctionalInterface

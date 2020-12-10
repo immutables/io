@@ -121,6 +121,7 @@ require('./.ext/highlands/')
 		`net.bytebuddy:byte-buddy-agent:1.10.9`,
 		`org.objenesis:objenesis:2.6`,
 	])
+	.lib('//lib/atlassian/commonmark', `com.atlassian.commonmark:commonmark:0.15.2`)
 	.lib('//io/ecs/sample:pre', {
 		internal: true,
 		includeGeneratedSrcs: ':sample',

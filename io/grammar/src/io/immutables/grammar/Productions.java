@@ -256,6 +256,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 
 	protected static abstract class Parser {
 		private static final int NO_MISMATCH = -1;
+		protected final Terms input;
 		protected final Terms.Traversal terms;
 		// TODO maybe reuse smartly segmented arrays?
 		protected long[] elements = EMPTY_LONG_ARRAY;
@@ -268,6 +269,7 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 		short currentProduction;
 
 		protected Parser(Terms input) {
+			this.input = input;
 			this.terms = input.traverse();
 			this.elements = Capacity.ensure(elements, 0, input.count() / 4); // XXX approximation ok?
 		}
@@ -417,6 +419,22 @@ public abstract class Productions<K, T extends TreeProduction<K>> {
 //			}
 //			return false;
 //		}
+		@Override
+		public final String toString() {
+			//long l0 = elements[position];
+			long l1 = elements[position + 1];
+			//short kind = decodeKind(l0);
+			//short part = decodePart(l0);
+			int termBegin = decodeTermBegin(l1);
+			int termEnd = decodeTermEnd(l1);
+
+			var builder = new StringBuilder()
+					.append(Strings.padStart(Integer.toHexString(position), 4, '0'))
+					.append(" |")
+					.append(l1 < 0 ? "????" : input.rangeInclusive(termBegin, termEnd).get(input.source()));
+
+			return builder.toString();
+		}
 	}
 
 	/** the total number of parsed productions and terms. */

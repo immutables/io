@@ -6,6 +6,13 @@ genrule(
   out = 'pre.src.zip', # must be `.zip` !
 )
 
+genrule(
+  name = 'pre.schema.zip',
+  srcs = glob(['src/**/*.ecs']),
+  cmd = '$(exe //io/ecs/gen:bin) --schema --out ${TMP} --zip ${OUT} ${SRCS}',
+  out = 'pre.schema.zip',
+)
+
 java_library(
   name = 'sample',
   srcs = [':pre.src.zip'],

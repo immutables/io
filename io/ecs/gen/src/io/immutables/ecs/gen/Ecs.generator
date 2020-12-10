@@ -1,7 +1,5 @@
 [template public generate]
 
-	[output.system]Hello World![/output.system]
-
 	[for dt in model.dataTypes]
 		[generateType dt]
 	[/for]
@@ -52,7 +50,7 @@ public interface [m.name].[t.name] {
 [let folder][cmp.module.name]/ecs/[/let]
 [let pack][cmp.module.name].ecs[/let]
 [let packapi][cmp.module.name][/let]
-[let cname][cmp.definition.name][/let]
+[let cname][cmp.name][/let]
 
 [output.java pack (cname 'Record')]
 package [pack];

@@ -1,18 +1,76 @@
-module b
+module b.do.jo
 
 import system
+import ecs
+
+type X
+
+// Baklava
+type Uio {
+//ddd
+  aa X //ss
+  // bu bu
+
+  // uu
+  // zzz
+  x X: true // trailing
+}
 
 // Galava
 type Abc {
+	...Uio
   // Comment heading aa
-  aa Int  // comment trailing aa
+  jj Int  // comment trailing aa
   // Comment heading bb
   bb String  // comment trailing bb
 }
 
+type Coord {x, y, z Double}
+
+type CoordCommaFirst {
+	, x Double
+	, y Double
+	, z Double
+}
+
+type Obj(name String) :: Inline
+
+type ObjCoord {  // <-- defines table name
+  `entity` Obj :: Entity   // <-- entity field
+  key String :: Slug
+  coord Coord // <-- defines name for component slice
+} :: Component
+
+type KeyVal
+	:: Component {
+  key String :: Entity
+  value String
+}
+
+entity XyzSample
+
+entity Abc {
+	// ABC
+	abc St1
+	// BAC
+	bac(slug u32) -> String<T>
+}
+
 contract Two {
-  ui Int :: GET /it/now/or/before
-  arr(a, x Bool) -> Int :: POST /abcd-good/lord/:x/:a
+  ui -> Int :: GET /it/now/or/before
+
+	// Just Comment
+	// Comment
+  arr(a, x Bool) -> Int :: POST /abcd-good/lord/:x/:a  // Trailing
+	arr1(a Int, x Bool) -> Int
+
+	arr2(
+		// Head 1
+		a Int // Tailspin 1
+		// Head 2
+		x Bool
+	) -> Int
+
+	// Before
   boor(h String?) -> Bool
-  // sdsd
 }

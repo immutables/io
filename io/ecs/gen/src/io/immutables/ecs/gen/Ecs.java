@@ -28,7 +28,7 @@ abstract class Ecs extends Builtins {
   @Generator.Typedef io.immutables.ecs.def.Definition.ContractDefinition Contract;
   @Generator.Typedef Model.Component Component;
   @Generator.Typedef Model.DataType DataTypeModel;
-  @Generator.Typedef Model.ContractType ContractModel;
+  @Generator.Typedef Model.Contract ContractModel;
 
   final Function<Vect<?>, String> genericf = vars -> vars.isEmpty() ? "" : vars.join(", ", "<", ">");
   final Function<Type.Parameterizable, String> generics = t -> genericf.apply(t.parameters());

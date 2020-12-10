@@ -33,11 +33,3 @@ type Optional<T> {
 }
 
 type Coord {x, y, z Double}
-
-type Obj(name String) : Inline
-
-type CoordRecord {  // <-- defines table name
-  entity Obj : Entity   // <-- entity field
-  key String : Slug
-  coord Coord   // <-- defines name for component slice
-} : Component

@@ -1,0 +1,12 @@
+module b.do.jo
+
+import system
+import ecs
+
+// c0.1
+entity Abc(code String) {
+	// c1.1
+	abc Int
+	// c3.1
+	bac(slug u32) -> String
+}

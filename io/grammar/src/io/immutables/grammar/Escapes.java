@@ -11,7 +11,7 @@ public final class Escapes {
 
 	private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
 
-	static char[] escapeUnsafe(char c) {
+	private static char[] unsafeEscape(char c) {
 		char[] result = new char[6];
 		result[0] = '\\';
 		result[1] = 'u';
@@ -35,6 +35,7 @@ public final class Escapes {
 					.put('\n', "\\n")
 					.put('\r', "\\r")
 					.put('\t', "\\t")
+					.put('\0', "\\0")
 					.build();
 
 	private static final ImmutableBiMap<Character, String> ESCAPES_RANGE =
@@ -51,7 +52,7 @@ public final class Escapes {
 			ESCAPES, ' '/* 0x20 */, '~'/* 0x7E */) {
 		@Override
 		protected char[] escapeUnsafe(char c) {
-			return escapeUnsafe(c);
+			return unsafeEscape(c);
 		}
 	};
 
@@ -59,7 +60,7 @@ public final class Escapes {
 			ESCAPES_RANGE, ' '/* 0x20 */, '~'/* 0x7E */) {
 		@Override
 		protected char[] escapeUnsafe(char c) {
-			return escapeUnsafe(c);
+			return unsafeEscape(c);
 		}
 	};
 

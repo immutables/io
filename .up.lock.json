@@ -736,6 +736,22 @@
       ]
     },
     {
+      "target": "//lib/atlassian/commonmark:commonmark",
+      "options": {},
+      "jars": [
+        {
+          "coords": "com.atlassian.commonmark:commonmark:0.15.2",
+          "sha1": "704c14e2a2bf23259b33785c0dd7249b8cdb3c4c"
+        }
+      ],
+      "srcs": [
+        {
+          "coords": "com.atlassian.commonmark:commonmark:0.15.2",
+          "sha1": "61011809064eb41de733b96e24124868357b651b"
+        }
+      ]
+    },
+    {
       "target": "//io/ecs/sample:pre",
       "options": {
         "internal": true,

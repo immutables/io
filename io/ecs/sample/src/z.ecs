@@ -1,0 +1,16 @@
+module x.y.z
+
+import system
+
+type X
+
+type Xyz {
+	x, y, z Int
+}
+
+entity Abc(code String) {
+	// ABC
+	orobo X
+	// BAC
+	bac(slug u32) -> Xyz
+}

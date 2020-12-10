@@ -1,0 +1,16 @@
+[template public generate]
+
+
+[output.append 'list.txt']
+	[for dt in model.dataTypes]
+		[dt]
+	[/for]
+	[for cmp in model.components]
+		[cmp]
+	[/for]
+	[for cr in model.contracts]
+		[cr]
+	[/for]
+[/output.append]
+
+[/template]

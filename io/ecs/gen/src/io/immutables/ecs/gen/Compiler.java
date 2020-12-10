@@ -23,8 +23,9 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
@@ -282,7 +283,7 @@ class Compiler {
         if (name != null) {
           reporter.problem(m, "Duplicate module declaration", "Was found <" + name + ">");
         }
-        moduleNameSlot.setPlain(m.name().toString());
+        moduleNameSlot.setPlain(moduleOf(m.name()));
       }
 
       @Override
@@ -309,7 +310,7 @@ class Compiler {
     new SyntaxTrees.Visitor() {
       @Override
       public void caseImportDeclaration(SyntaxTrees.ImportDeclaration i) {
-        imported.add(i.name().toString());
+        imported.add(moduleOf(i.name()));
       }
     }.caseUnit(unit);
 
@@ -330,7 +331,7 @@ class Compiler {
     new SyntaxTrees.Visitor() {
       @Override
       public void caseImportDeclaration(SyntaxTrees.ImportDeclaration i) {
-        var maybeModule = importResolver.getModule(i.name().toString());
+        var maybeModule = importResolver.getModule(moduleOf(i.name()));
 
         if (maybeModule.isPresent()) {
           var m = maybeModule.get();
@@ -379,7 +380,7 @@ class Compiler {
               //locallyBuilder.putImportedConcepts(ref, c);
             }
           }
-        } else reporter.problem(i, "Cannot find module " + i.name(),
+        } else reporter.problem(i, "Cannot find module " + moduleOf(i.name()),
             "It is not declared or spelled differently");
       }
 
@@ -414,7 +415,11 @@ class Compiler {
     return locallyBuilder.build();
   }
 
-  static void buildModule(
+	private static String moduleOf(Vect<Symbol> name) {
+  	return name.join(".");
+	}
+
+	static void buildModule(
       String moduleName,
       Reporter reporter,
       SyntaxTrees.Unit unit,
@@ -430,6 +435,7 @@ class Compiler {
         var name = conceptDecl.name().toString();
         var conceptBuilder = new Definition.ConceptDefinition.Builder()
             .module(moduleName)
+						.comment(getComment(conceptDecl.comment()))
             .name(name);
 
         var signatureScope = new SignatureScope(moduleScope, name);
@@ -454,6 +460,7 @@ class Compiler {
         var name = interfaceDecl.name().toString();
         var interfaceBuilder = new Definition.ContractDefinition.Builder()
             .module(moduleName)
+						.comment(getComment(interfaceDecl.comment()))
             .name(name);
 
         var signatureScope = new SignatureScope(moduleScope, name);
@@ -505,6 +512,7 @@ class Compiler {
 
         return builder.addAllInParameters(buildConstructor(reporter, featureScope, feature.input()).parameters())
             .out(feature.output().map(ret -> extractReturnType(scope, ret)).orElse(Type.Empty.of()))
+						.comment(getComment(feature.comment()))
             .build();
       }
 
@@ -515,13 +523,64 @@ class Compiler {
             .otherwise(rt -> Type.Product.of(rt.map(r -> extractType.match(r, scope))));
       }
 
-      @Override
+			@Override
+			public void caseEntityDeclaration(SyntaxTrees.EntityDeclaration entityDecl) {
+      	var name = entityDecl.name().toString();
+
+				var parameter = entityDecl.constructor();
+
+				if (parameter.isEmpty()) {
+					reporter.problem(entityDecl, "No constructor parameter for an Entity" + name,
+							"Entity definition should have one inline constructor parameter of scalar type like: (code String)");
+					return;
+				}
+
+				if (parameter.get().components().size() > 1) {
+					reporter.problem(entityDecl, "More than one constructor parameter for an Entity" + name,
+							"Entity definition should have one inline constuctor parameter of scalar type like: (code String)");
+					return;
+				}
+
+				var signatureScope = new SignatureScope(moduleScope, name);
+
+				var e = new Definition.EntityDefinition.Builder()
+						.name(name)
+						.module(moduleName)
+						.comment(getComment(entityDecl.comment()))
+						.constructor(buildConstructor(reporter, signatureScope, parameter));
+
+				for (var facet : entityDecl.facet()) {
+					var facetName = facet.name().toString();
+
+					var comment = getComment(facet.comment());
+					var componentType = extractType.match(facet.type(), signatureScope);
+
+					if (facet.slug().isPresent()) {
+						var slug = facet.slug().get();
+						var slugComment = getComment(slug.comment());
+						var slugName = slug.name().toString();
+						var slugType = extractType.match(slug.type(), signatureScope);
+
+						var slugParameter = Definition.NamedParameter.of(slugName, slugType)
+								.withComment(slugComment);
+
+						e.addFeatures(Type.Feature.of(facetName, Vect.of(slugParameter), componentType)
+								.withComment(comment));
+					} else {
+						e.addFeatures(Type.Feature.field(facetName, componentType).withComment(comment));
+					}
+				}
+
+				moduleBuilder.addDefinitions(e.build());
+			}
+
+			@Override
       public void caseTypeDeclaration(SyntaxTrees.TypeDeclaration typeDecl) {
         @Nullable var topConstructor = typeDecl.constructor().orElse(null);
 
         var t = new Definition.DataTypeDefinition.Builder();
         var name = typeDecl.name().toString().replace("SYSTEMKEYWORD", "");
-        t.name(name).module(moduleName);
+        t.name(name).module(moduleName).comment(getComment(typeDecl.comment()));
 
         if (topConstructor instanceof SyntaxTrees.ConstructorCases) {
           t.hasCases(true);
@@ -576,7 +635,7 @@ class Compiler {
 
       private Constraint.Concept extractConcept(SignatureScope signatureScope, SyntaxTrees.TypeReferenceNamed concept) {
         Type type = extractType.match(concept, signatureScope);
-/*
+/**
         type.accept(new Type.Visitor<Void, Definition.OfConcept>() {
           @Override public Definition.OfConcept reference(Type.Reference d, Void in) {
             var module = modules.get(reference.module());
@@ -606,10 +665,14 @@ class Compiler {
     }.caseUnit(unit);
   }
 
-  static Definition.Constructor buildConstructor(
+	private static String getComment(Vect<Symbol> comment) {
+		return comment.map(s -> s.toString().substring(2).trim()).join("\n");
+	}
+
+	static Definition.Constructor buildConstructor(
       Reporter reporter,
       SignatureScope scope,
-      Optional<SyntaxTrees.Parameter> parameter) {
+      Optional<? extends SyntaxTrees.Parameter> parameter) {
 
     var constructorBuilder = new Definition.Constructor.Builder();
 
@@ -718,6 +781,10 @@ class Compiler {
           Maps.transformValues(dt.constructors(),
               c -> mergeInlineParameters(problems, c, modules)));
     }
+    if (definition instanceof Definition.EntityDefinition) {
+    	var ed = (Definition.EntityDefinition) definition;
+			return ed.withConstructor(mergeInlineParameters(problems, ed.constructor(), modules));
+		}
     return definition;
   }
 
@@ -777,7 +844,7 @@ class Compiler {
               var datatype = (Definition.DataTypeDefinition) definition;
 
               if (!datatype.constructor().takesRecord()) {
-                problems.add("Embedding require record constructor, a not positional production "
+                problems.add("Embedding require record constructor, not a positional production "
                     + datatype.constructor().toType());
                 break datatype;
               }
@@ -1019,12 +1086,37 @@ class Compiler {
   }
 
   Model extractModel() {
-    var modules = Iterables.filter(definedModules.values(),
-        c -> !predefModuleNames.contains(c.name()));
+    var modules = definedModules.values()
+					.stream()
+					.filter(c -> !predefModuleNames.contains(c.name()))
+					.collect(Collectors.toList());
 
     Model.Builder b = new Model.Builder();
 
     for (var m : modules) {
+			for (var entity : m.definitions().only(Definition.EntityDefinition.class)) {
+				b.addDataTypes(Model.DataType.of(m, toDataType(entity)));
+				b.addEntities(Model.Entity.of(m, entity));
+
+				for (var f : entity.features()) {
+					var entityParameter = Definition.NamedParameter.of(
+							CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, entity.name()),
+							Type.Reference.of(m.name(), entity.name()));
+
+					Model.Component.Builder component = new Model.Component.Builder()
+							.module(m)
+							.name(entity.name() + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, f.name()))
+							.entity(entityParameter)
+							.component(Definition.NamedParameter.of(f.name(), f.out()));
+
+					var in = f.inParameters();
+					if (in.size() == 1) {
+						component.slug(in.get(0));
+					}
+					b.addComponents(component.build());
+				}
+			}
+
       for (var type : m.definitions().only(Definition.DataTypeDefinition.class)) {
         var reference = Type.Reference.of(m.name(), type.name());
         if (isComponent(m, type, reference)) {
@@ -1035,14 +1127,34 @@ class Compiler {
       }
 
       for (var type : m.definitions().only(Definition.ContractDefinition.class)) {
-        b.addContracts(Model.ContractType.of(m, type));
+        b.addContracts(Model.Contract.of(m, type));
       }
     }
 
     return b.build();
   }
 
-  Optional<Definition.DataTypeDefinition> findDatatype(Type type) {
+	private Definition.DataTypeDefinition toDataType(Definition.EntityDefinition entity) {
+		var builder = new Definition.DataTypeDefinition.Builder()
+				.module(entity.module())
+				.name(entity.name())
+				.comment(entity.comment())
+				.hasCases(false)
+				.putConstructors(entity.name(), entity.constructor())
+				.addAllConstraints(entity.constraints());
+
+		if (!entity.hasConcept(ecsEntity)) {
+			builder.addConstraints(Constraint.Concept.of(ecsEntity));
+		}
+
+		if (!entity.hasConcept(systemInline)) {
+			builder.addConstraints(Constraint.Concept.of(systemInline));
+		}
+
+		return builder.build();
+	}
+
+	Optional<Definition.DataTypeDefinition> findDatatype(Type type) {
     return type.accept(new Type.Visitor<Void, Optional<Definition.DataTypeDefinition>>() {
       @Override public Optional<Definition.DataTypeDefinition> reference(Type.Reference ref, Void in) {
         @Nullable var m = definedModules.get(ref.module());
@@ -1073,7 +1185,7 @@ class Compiler {
 
     Model.Component.Builder builder = new Model.Component.Builder()
         .module(module)
-        .definition(definition);
+        .name(definition.name());
 
     boolean wasEntity = false;
     boolean wasSlug = false;
@@ -1144,8 +1256,7 @@ class Compiler {
     if (hasConcept(definition.constraints(), ecsComponent)) {
       if (definition.hasCases() || !definition.constructor().takesRecord()) {
         problems.add("Component definition " + type + " cannot be case type, but must have simple record constructor." +
-            " " +
-            "The the component value field can be of any datatype.");
+            " The the component value field can be of any datatype.");
       }
       return problems.isEmpty();
     }
@@ -1153,17 +1264,18 @@ class Compiler {
   }
 
   public static void main(String... args) throws IOException {
-    var sourceName = "/io/immutables/ecs/gen/sample2.ecs";
-    var filename = "sample2.ecs";
+    var sourceName = "/io/immutables/ecs/gen/sample3.ecs";
+    var filename = "sample3.ecs";
 
     Src src = Src.from(Resources.getResource(Compiler.class, sourceName), filename);
 
     Compiler compiler = new Compiler();
     compiler.add(src);
-    compiler.addPredef();
+ 		compiler.addPredef();
     if (compiler.compile()) {
       for (var source : compiler.moduleSources.values()) {
         System.out.println(source.productions.show());
+        System.out.println(source.productions.construct());
       }
       for (var m : compiler.definedModules.values()) {
         printModule(m);

@@ -36,4 +36,9 @@ public interface Constraint {
       return expression().toString();
     }
   }
+
+	@Immutable
+  abstract class MethodUri implements Constraint {
+
+	}
 }

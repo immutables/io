@@ -8,7 +8,7 @@ type Coord {x, y, z Double}
 type Obj(name String) :: Inline
 
 type ObjCoord {  // <-- defines table name
-  entity Obj :: Entity   // <-- entity field
+  ent Obj :: Entity   // <-- entity field
   key String :: Slug
   coord Coord // <-- defines name for component slice
 } :: Component

@@ -253,7 +253,7 @@ public interface Source {
 			return sb.toString();
 		}
 
-		private static final String ELLIPSIS = "...";
+		private static final String ELLIPSIS = "\u2026";
 		private static final String GUTTER_SEPARATOR = " |";
 		private static final int TAB_WIDTH = Integer.getInteger("im.source.tab-width", 2);
 	}

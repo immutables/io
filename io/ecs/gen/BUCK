@@ -18,6 +18,7 @@ java_library(
 		'//lib/square/moshi:moshi',
 		'//lib/square/okio:okio',
 		'//lib/google/common:common',
+		'//lib/atlassian/commonmark:commonmark',
 	],
 	resources_root = 'src',
 	extra_arguments = ['-Aresources.root={}/src'.format(package_name())],

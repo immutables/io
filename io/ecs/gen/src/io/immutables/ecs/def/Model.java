@@ -3,6 +3,7 @@ package io.immutables.ecs.def;
 import io.immutables.collect.Vect;
 import java.util.Optional;
 import org.immutables.data.Data;
+import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
@@ -12,12 +13,11 @@ import org.immutables.value.Value.Parameter;
 @Immutable
 public interface Model {
   Vect<DataType> dataTypes();
+  Vect<Contract> contracts();
+	Vect<Entity> entities();
+	Vect<Component> components();
 
-  Vect<Component> components();
-
-  Vect<ContractType> contracts();
-
-  class Builder extends ImmutableModel.Builder {}
+	class Builder extends ImmutableModel.Builder {}
 
   interface InModule {
     Definition.Module module();
@@ -34,21 +34,34 @@ public interface Model {
   }
 
   @Immutable
-  interface ContractType extends InModule {
+  interface Contract extends InModule {
     @Parameter @Override Definition.Module module();
     @Parameter Definition.ContractDefinition definition();
 
-    static ContractType of(Definition.Module m, Definition.ContractDefinition t) {
-      return ImmutableModel.ContractType.of(m, t);
+    static Contract of(Definition.Module m, Definition.ContractDefinition t) {
+      return ImmutableModel.Contract.of(m, t);
     }
   }
 
+	@Immutable
+	interface Entity extends InModule {
+		@Parameter @Override Definition.Module module();
+		@Parameter Definition.EntityDefinition definition();
+
+		static Entity of(Definition.Module m, Definition.EntityDefinition t) {
+			return ImmutableModel.Entity.of(m, t);
+		}
+	}
+
   @Immutable
   interface Component extends InModule {
-    Definition.DataTypeDefinition definition();
+    String name();
     Optional<Definition.NamedParameter> slug();
     Definition.NamedParameter entity();
     Definition.NamedParameter component();
+    default @Default String comment() {
+    	return "";
+		}
 
     // Guava optional used for compatibility with template engine
     default com.google.common.base.Optional<Definition.NamedParameter> slugOpt() {

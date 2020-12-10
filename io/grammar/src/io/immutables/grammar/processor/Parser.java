@@ -191,9 +191,9 @@ class Parser extends BaseParser<Object> {
 				LiteralChar());
 	}
 
-	@Label("EscapeSpecial\\[nrcfbs-]")
+	@Label("EscapeSpecial\\[nrcfbs-0]")
 	Rule EscapeSpecial() {
-		return Sequence(AnyOf("nrtfbs[]^-\\"), CharEscapeSpecial.of());
+		return Sequence(AnyOf("nrtfbs[]^-\\0"), CharEscapeSpecial.of());
 	}
 
 	@Label("EscapedChar\\{ascii !letters !digits !whitespace}")

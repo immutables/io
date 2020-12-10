@@ -276,7 +276,13 @@ public interface Type {
 
     public @Derived boolean exists() { return true; }
 
-    @Override
+		public @Default String comment() {
+    	return "";
+		}
+
+		public abstract Feature withComment(String comment);
+
+		@Override
     public String toString() {
       var in = in() == Empty.of() ? "" : in().toString();
       if (!in.isEmpty()
@@ -315,7 +321,11 @@ public interface Type {
 
         @Override public boolean exists() { return false; }
 
-        @Override public String toString() {
+				@Override public Feature withComment(String comment) {
+					return this;
+				}
+
+				@Override public String toString() {
           return "!" + name + "!" + in() + " -> " + out();
         }
       };
@@ -453,7 +463,7 @@ public interface Type {
   }
 
   default <T> T ifReference(java.util.function.Function<Type.Reference, T> ifReference, T defaultValue) {
-    return accept(new Visitor<T, T>() {
+    return accept(new Visitor<>() {
       @Override public T reference(Reference d, T in) {
         return ifReference.apply(d);
       }

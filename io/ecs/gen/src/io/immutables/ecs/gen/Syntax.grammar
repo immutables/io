@@ -5,6 +5,7 @@ keyword:
   'type' ~ 'type' ! [a-zA-Z0-9]
   'concept' ~ 'concept' ! [a-zA-Z0-9]
   'contract' ~ 'contract' ! [a-zA-Z0-9]
+  'entity' ~ 'entity' ! [a-zA-Z0-9]
   'impl' ~ 'impl' ! [a-zA-Z0-9]
   'return' ~ 'return' ! [a-zA-Z0-9]
   'if' ~ 'if' ! [a-zA-Z0-9]
@@ -46,6 +47,9 @@ other:
   <hexadecimal> ~ [#][0-9a-fA-F]+
   -- FIXME if there's no newline at the end of file - lexer breaks with IOOBE
   <comment-newline> ~ [/][/][^\n]*[\n]
+  -- FIXME have completely broken EOF tracking for comments etc, block comment problems
+  -- FIXME  maybe more problems requiring improve matching structure algoritm
+  --<comment-block> ~ [/][/][/][^\0]*[/][/][/]
   <newline> ~ [\n]
 
 -- Only forcing the priority order for compound operators
@@ -101,14 +105,15 @@ unit
   elements:unit-element+
 
 unit-element
-  | empty
   | module-declaration
   | import-declaration
   | type-declaration
   | concept-declaration
   | contract-declaration
+  | entity-declaration
   | local-binding
   | feature-named
+  | empty
 
 empty
   nl
@@ -117,17 +122,25 @@ empty
 (nl)
   | comment:<comment-newline>
   | <newline>
+--  | comment:<comment-block>
+
+-- Leading comment
+(lc)
+  comment:<comment-newline>
+
+(ln)
+  <newline>
 
 -- TODO multisegment path name?
 module-declaration
-  'module' name:<name> nl?
+  lc* 'module' module-name nl
 
 -- TODO multisegment path name? import spread? by names import
 import-declaration
-  'import' name:<name> nl?
+  lc* 'import' module-name nl
 
 type-declaration
-  'type' name:<typename> type-parameters? constructor:constructor? type-constraints* features:features? nl?
+  lc* 'type' name:<typename> type-parameters? type-constraints* constructor:constructor? type-constraints* nl
 
 constructor
   | constructor-parameter
@@ -140,13 +153,29 @@ constructor-cases
   '{' nl* '|'? cases:constructor-case (nl* '|' cases:constructor-case)* nl* '}'
 
 constructor-case
-  name:<typename> constructor:parameter? features:features?
+  lc* name:<typename> constructor:parameter? features:features?
 
 concept-declaration
-  'concept' name:<typename> type-parameters? type-constraints* features:features? nl?
+  lc* 'concept' name:<typename> type-parameters? type-constraints* features:features? nl?
 
 contract-declaration
-  'contract' name:<typename> type-parameters? type-constraints* features:features? nl?
+  lc* 'contract' name:<typename> type-parameters? type-constraints* features:features? nl?
+
+entity-declaration
+  lc* 'entity' name:<typename> constructor:parameter-product? entity-facets?
+
+(entity-facets)
+  '{' (','? entity-facets-element)* '}'
+
+(entity-facets-element)
+  | facet:entity-facet
+  | nl
+
+entity-facet
+  lc* name-feature slug:entity-slug? nl* type:type-reference
+
+entity-slug
+  nl* '(' nl* name-feature type:type-reference nl* ')' nl* '->'
 
 (type-parameters)
   '<' type-parameter:<typename> (',' type-parameter:<typename>)* '>'
@@ -164,27 +193,35 @@ product-component
   | named-parameters
 
 parameter-record
-  | '{' nl* '}'
-  | '{' record-parameters (field-separator record-parameters)* field-separator? '}'
+  '{' (','? parameter-record-element)* '}'
+
+(parameter-record-element)
+  | record-parameters
+  | nl
+
+--field-separator fields:named-parameters-bind field-separator?
+(decl-field-separator)
+  | ',' nl?
+  | <newline>
 
 (field-separator)
   | ',' nl?
   | nl
 
 (record-parameters)
-  | nl* '*' inline:type-reference-named
+  | '...' inline:type-reference-named
   | fields:named-parameters-bind
 
 unnamed-parameter
-  nl* type:type-reference
+  nl* type:type-reference type-constraints*
 
 -- a, b Number
 named-parameters
-  nl* name:<name> (',' name:<name>)* type:type-reference
+  nl* name-feature (',' name-feature)* type:type-reference
 
 -- a, b Bool: true
 named-parameters-bind
-  nl* name:<name> (',' name:<name>)* type:type-reference (':' expression)? type-constraints*
+  lc* name-feature (',' name-feature)* type:type-reference (':' expression)? type-constraints* nl?
 
 type-reference
   | type-reference-variant
@@ -200,10 +237,9 @@ type-reference-product
   | '(' component:type-reference (field-separator component: type-reference)* field-separator? ')'
 
 -- {x, y, z int, comment String}
--- { } make illegal?
+-- { } illegal, right?
 type-reference-record
-  | '{' nl* '}'
-  | '{' fields:named-parameters (field-separator fields:named-parameters)* field-separator? '}'
+  '{' fields:named-parameters (field-separator fields:named-parameters)* field-separator? '}'
 
 type-reference-array
   '[' component:type-reference ']'
@@ -318,10 +354,14 @@ operand-parameter
   | type-reference-product
 
 feature-named
-  nl* name:<name> type-parameters? input:parameter? output:return-type? type-constraints* impl:statements?
+  nl* name-feature type-parameters? input:parameter? output:return-type? type-constraints* impl:statements?
+
+(name-feature)
+  | name:<name>
+  | name:<verbatim>
 
 return-type
-  !'{' component:type-reference (',' component:type-reference)*
+  !'{' '->' component:type-reference (',' component:type-reference)*
 
 -- TODO nested groups (converted to ephemerals) are resulting in bad code
 statements
@@ -449,7 +489,7 @@ expression-feature-sub
   | expression-literal
 
 expression-feature
-  name:<name> argument:argument?
+  name-feature argument:argument?
 
 expression-effect
   | expression-effect-mutative
@@ -491,7 +531,7 @@ literal-sequence
   | '[' component:component-expression (field-separator component:component-expression)* field-separator? ']'
 
 field-binding
-  nl* name:<name> ':' nl* value:expression-or-statement
+  nl* name-feature ':' nl* value:expression-or-statement
 
 component-expression
   nl* value:expression-or-statement
@@ -569,7 +609,7 @@ literal-bool
   | method:'DELETE'
 
 uri-path
-  segment:uri-segment+ '/'?
+  segment:uri-segment+
 
 uri-segment
   | '/' slug:uri-slug ':' bind:<name>
@@ -579,3 +619,6 @@ uri-segment
 
 uri-slug
   ('-'? (<name>|<typename>|<verbatim>))+ '-'?
+
+(module-name)
+  name-feature ('.' name-feature)*
