@@ -1,16 +1,299 @@
 [template public generate]
 
+[generateModulesDoc]
 
-[output.append 'list.txt']
-	[for dt in model.dataTypes]
-		[dt]
-	[/for]
-	[for cmp in model.components]
-		[cmp]
-	[/for]
-	[for cr in model.contracts]
-		[cr]
-	[/for]
+[for md in model.modules]
+  [generateModuleDoc md]
+[/for]
+
+[for dt in model.dataTypes]
+  [generateDataTypeDoc dt]
+  [generateSchema dt]
+[/for]
+
+[for ent in model.entities]
+  [generateEntityDoc ent.module.name ent.definition]
+[/for]
+
+[/template]
+
+[template generateModulesDoc]
+[let filename]index.md[/let]
+
+[output.append filename]
+## ❮modules❯
+
+[for md in model.modules]
+* ['['][md.name] →[']']([md.name]/index.md)
+[/for]
+[/output.append]
+[/template]
+
+[template generateModuleDoc ModuleDefinition md]
+[for m = md.name]
+[let filename][m]/index.md[/let]
+
+[output.append filename]
+# [m]
+
+### ❮module❯
+
+[for dt in model.dataTypes if dt.module.name eq m]
+[if for.first]
+#### ❮datatypes❯
+[/if]
+
+* ['['][dt.definition.name][']']([dt.definition.name].md)
+[/for]
+
+[for ent in model.entities if ent.module.name eq m]
+[if for.first]
+#### ❮entities❯
+[/if]
+
+* ['['][ent.definition.name][']']([ent.definition.name].entity.md)
+[/for]
+
+[/output.append]
+
+[/for]
+[/template]
+
+[template generateEntityDoc String module EntityDefinition ent]
+
+[let filename][module]/[ent.name].entity.md[/let]
+
+[output.append filename]
+# [ent.name]
+
+### ❮entity❯
+
+* ['['][ent.name][']']([ent.name].md)
+
+[if ent.comment]
+[for String lc in linesOf ent.comment]
+[lc]
+[/for]
+[else]
+__Entity — the existence of something considered apart from its properties__
+[/if]
+
+
+#### ❮facets❯
+
+[for f in ent.features]
+
+* `[f.name]`[if f.inParameters] **(** [for p in f.inParameters][p.name] [for Typed tt = decideType p.type][showType tt][/for][/for] **)**[/if] → [for Typed tt = decideType f.out][showType tt][/for]
+
+[for Datatype dt = findDataType f.out]
+[if dt][if not dt.hasCases][if dt.constructor.mergedParameters]
+[attributesTable dt.constructor]
+[/if][/if][/if]
+[/for]
+[/for]
+
 [/output.append]
 
 [/template]
+
+[template generateDataTypeDoc DataTypeModel dt]
+[for m = dt.module, t = dt.definition]
+
+[let filename][m.name]/[t.name].md[/let]
+
+[output.append filename]
+# [t.name]
+
+['[']← [m.name][']'](./index.md)
+
+[if t.hasCases]
+### ❮case datatype❯
+
+[else if isInline t]
+### ❮inline datatype❯
+
+[else]
+### ❮datatype❯
+[/if]
+
+[if t.comment]
+[for String lc in linesOf t.comment]
+[lc]
+[/for]
+[else]
+  [if t.hasCases]
+_This is case datatype, i.e. discriminated union type. Case types have multiple alternative constructors for different variants of a data_
+  [else if isInline t]
+_This is inline data type, during data coding/serialization it is replaced by the value of its constructor argument_
+  [else]
+_Datatypes are expressed as records/tuples
+  [/if]
+[/if]
+
+[if t.isEnum]
+[for k in t.constructors.keySet]
+## [k]
+[/for]
+[else if t.hasCases]
+[for entry in t.constructors.entrySet, cname = entry.key, ctor = entry.value]
+## [cname]
+### ❮attributes❯
+[attributesTable ctor]
+[generateAttributeMemo ctor]
+[/for]
+[else]
+### ❮attributes❯
+[attributesTable t.constructor]
+[generateAttributeMemo t.constructor]
+[/if]
+
+[/output.append]
+
+[/for]
+[/template]
+
+[template generateAttributeMemo Constructor c]
+[for p in c.mergedParameters]
+
+[if p.comment]
+* `[p.name]` — [for String lc in linesOf p.comment]
+[lc][/for]
+[/if]
+[/for]
+[/template]
+
+[template generateSchema DataTypeModel dt]
+[for m = dt.module, t = dt.definition]
+
+[let filename][m.name]/[t.name].yaml[/let]
+
+[output.append filename]
+---
+module: [m.name]
+typename: [t.name]
+---
+[if t.comment]
+description: |
+  [for String lc in linesOf t.comment]
+  [lc][/for][/if]
+[if isInline t]
+[for p in t.constructor.mergedParameters, Typed tt = decideType p.type]
+[typeSpec tt]
+[/for]
+[else if t.isEnum]
+enum:
+[for k in t.constructors.keySet]
+- [k]
+[/for]
+[else if t.hasCases]
+oneOf:
+[for entry in t.constructors.entrySet, cname = entry.key, ctor = entry.value]
+- type: object
+  [if ctor.mergedParameters]
+  required:
+  [for p in ctor.mergedParameters if isRequired p.type]
+  - [p.name]
+  [/for]
+  - '@case'
+  properties:
+    '@case':
+      const: [cname]
+    [for p in ctor.mergedParameters]
+    [p.name]:
+      [propertySpec p]
+    [/for]
+  [/if]
+[/for]
+[else]
+type: object
+[if t.constructor.mergedParameters]
+required:
+[for p in t.constructor.mergedParameters if isRequired p.type]
+- [p.name]
+[/for]
+properties:
+  [for p in t.constructor.mergedParameters]
+  [p.name]:
+    [propertySpec p]
+  [/for]
+[/if]
+[/if]
+[/output.append]
+
+[/for]
+[/template]
+
+[template propertySpec Parameter p]
+[if p.comment]
+description: |
+  [for String lc in linesOf p.comment]
+  [lc][/for][/if]
+[for Typed tt = decideType p.type][typeSpec tt][/for]
+[/template]
+
+[template typeSpec Typed t]
+[if t.option]
+[typeSpec t.element]
+[else if t.mapn]
+type: object
+additionalProperties: true
+[else if t.arrayLike]
+type: array
+[if t.setn]uniqueItems: true[/if]
+items:
+  [typeSpec t.element]
+[else if t.system]
+[systemType t.name]
+[else if t.referenceLike]
+$ref: '../[t.module]/[t.name].yaml'
+[else]
+[/if]
+[/template]
+
+[template systemType String t]
+[if t eq 'Int']
+type: integer
+format: int32
+[else if t eq 'Long']
+type: integer
+format: int64
+[else if t eq 'String']
+type: string
+[else if t eq 'Bool']
+type: boolean
+[else]
+type: number
+[/if]
+[/template]
+
+[template attributesTable Constructor c]
+
+| Name | Type | Required |
+|------|------|:--------:|
+[for p in c.mergedParameters]
+| [p.name] | [for Typed tt = decideType p.type][showType tt][/for] | [if isRequired p.type]✔[/if] |
+[/for]
+
+[/template]
+
+[template showType Typed t][output.trim]
+
+[if t.option]
+[showType t.element]**?**<sub><em>opt</em></sub>
+[else if t.mapn]
+**\{** [showType t.key] **:** [showType t.value] **\}**<sub><em>map</em></sub>
+[else if t.array]
+**['\[']** [showType t.element] **['\]']**<sub><em>array</em></sub>
+[else if t.setn]
+**\{** [showType t.element] **\}**<sub><em>set</em></sub>
+[else if t.system]
+**[t.name]**
+[else if t.parameterized]
+[showType t.unparameterized]**\<** [for a in t.arguments][if not for.first], [/if][showType a][/for] **\>**
+[else if t.reference]
+['['][t.name][']'](../[t.module]/[t.name].md)
+[else]
+`[t.type]`
+[/if]
+
+[/output.trim][/template]

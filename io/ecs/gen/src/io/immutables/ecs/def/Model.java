@@ -1,5 +1,6 @@
 package io.immutables.ecs.def;
 
+import io.immutables.Nullable;
 import io.immutables.collect.Vect;
 import java.util.Optional;
 import org.immutables.data.Data;
@@ -16,6 +17,7 @@ public interface Model {
   Vect<Contract> contracts();
 	Vect<Entity> entities();
 	Vect<Component> components();
+	Vect<Definition.Module> modules();
 
 	class Builder extends ImmutableModel.Builder {}
 
@@ -70,4 +72,13 @@ public interface Model {
 
     class Builder extends ImmutableModel.Component.Builder {}
   }
+
+	default @Nullable DataType getDatatype(String module, String name) {
+		for (var d : dataTypes()) {
+			if (d.module().name().equals(module) && d.definition().name().equals(name)) {
+				return d;
+			}
+		}
+		return null;
+	}
 }

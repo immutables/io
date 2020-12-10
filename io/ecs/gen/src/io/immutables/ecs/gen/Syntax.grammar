@@ -247,6 +247,10 @@ type-reference-array
 type-reference-setn
   '{' component:type-reference '}'
 
+-- {Int: String}
+type-reference-mapn
+  '{' key:type-reference ':' value:type-reference '}'
+
 -- a~
 -- a?
 -- Aridna...
@@ -263,6 +267,7 @@ type-reference-invariant
 type-reference-undecorated
   | type-reference-product
   | type-reference-record
+  | type-reference-mapn
   | type-reference-setn
   | type-reference-array
   | type-reference-keyword

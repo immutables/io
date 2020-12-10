@@ -129,7 +129,11 @@ abstract class Ecs extends Builtins {
       return "java.util.Optional<" + o.component().accept(this, wrapped()) + ">";
     }
 
-    @Override public String otherwise(Type t, TypeOpts in) {
+		@Override public String mapn(Type.Mapn m, TypeOpts in) {
+			return "java.util.Map<" + m.key().accept(this, wrapped()) + ", " + m.value().accept(this, wrapped()) + ">";
+		}
+
+		@Override public String otherwise(Type t, TypeOpts in) {
       return t.toString();
     }
   };

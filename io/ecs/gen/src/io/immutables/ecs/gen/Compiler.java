@@ -495,7 +495,9 @@ class Compiler {
         var name = feature.name().toString();
         var featureScope = new SignatureScope(scope, name);
 
-        var builder = new Type.Feature.Builder().name(name);
+        var builder = new Type.Feature.Builder()
+						.name(name)
+						.comment(getComment(feature.comment()));
 
         for (Symbol s : feature.typeParameter()) {
           @Nullable var v = featureScope.introduceParameter(s.toString());
@@ -512,7 +514,6 @@ class Compiler {
 
         return builder.addAllInParameters(buildConstructor(reporter, featureScope, feature.input()).parameters())
             .out(feature.output().map(ret -> extractReturnType(scope, ret)).orElse(Type.Empty.of()))
-						.comment(getComment(feature.comment()))
             .build();
       }
 
@@ -578,9 +579,12 @@ class Compiler {
       public void caseTypeDeclaration(SyntaxTrees.TypeDeclaration typeDecl) {
         @Nullable var topConstructor = typeDecl.constructor().orElse(null);
 
-        var t = new Definition.DataTypeDefinition.Builder();
-        var name = typeDecl.name().toString().replace("SYSTEMKEYWORD", "");
-        t.name(name).module(moduleName).comment(getComment(typeDecl.comment()));
+				var name = typeDecl.name().toString().replace("SYSTEMKEYWORD", "");
+
+				var t = new Definition.DataTypeDefinition.Builder()
+						.name(name)
+						.module(moduleName)
+						.comment(getComment(typeDecl.comment()));
 
         if (topConstructor instanceof SyntaxTrees.ConstructorCases) {
           t.hasCases(true);
@@ -666,7 +670,7 @@ class Compiler {
   }
 
 	private static String getComment(Vect<Symbol> comment) {
-		return comment.map(s -> s.toString().substring(2).trim()).join("\n");
+		return comment.map(s -> s.toString().substring("//".length())).join("");
 	}
 
 	static Definition.Constructor buildConstructor(
@@ -729,7 +733,9 @@ class Compiler {
 
           var parameter = Definition.NamedParameter.of(
               uniqueName(p, s),
-              extractType.match(t, scope)).withConstraints(constraints);
+              extractType.match(t, scope))
+							.withConstraints(constraints)
+							.withComment(getComment(p.comment()));
 
           constructorBuilder.addParameters(parameter);
 
@@ -743,7 +749,8 @@ class Compiler {
           var t = p.type();
           constructorBuilder.addParameters(Definition.NamedParameter.of(
               uniqueName(p, s),
-              extractType.match(t, scope)));
+              extractType.match(t, scope))
+							.withComment(getComment(p.comment())));
 
           parameterCounter++;
         }
@@ -1032,7 +1039,13 @@ class Compiler {
       return Type.Setn.of(this.match(v.component(), scope));
     }
 
-    @Override public Type caseTypeReferenceKeyword(SyntaxTrees.TypeReferenceKeyword v, Scope scope) {
+		@Override
+		public Type caseTypeReferenceMapn(SyntaxTrees.TypeReferenceMapn v, Scope scope) {
+			return Type.Mapn.of(this.match(v.key(), scope), this.match(v.value(), scope));
+		}
+
+    @Override
+		public Type caseTypeReferenceKeyword(SyntaxTrees.TypeReferenceKeyword v, Scope scope) {
       return scope.getType(v.name().toString(), v);
     }
 
@@ -1044,7 +1057,7 @@ class Compiler {
           .otherwise(vs -> Type.Product.of(vs.map(t -> this.match(t, scope))));
     }
 
-    @Override
+		@Override
     protected Type fallback(TreeProduction<SyntaxTrees> v, Scope scope) {
       // TODO in general we need a way to easily get source text from
       // productionIndex / (termBegin, termEnd)
@@ -1091,7 +1104,8 @@ class Compiler {
 					.filter(c -> !predefModuleNames.contains(c.name()))
 					.collect(Collectors.toList());
 
-    Model.Builder b = new Model.Builder();
+    Model.Builder b = new Model.Builder()
+    		.addAllModules(modules);
 
     for (var m : modules) {
 			for (var entity : m.definitions().only(Definition.EntityDefinition.class)) {

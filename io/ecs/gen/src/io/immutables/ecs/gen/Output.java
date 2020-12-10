@@ -24,6 +24,7 @@ import org.immutables.generator.PostprocessingMachine;
 import org.immutables.generator.Templates;
 import org.immutables.generator.Templates.Invokable;
 import org.immutables.generator.Templates.Invokation;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 final class Output {
   private static final String NO_REWRITE_IMPORTS = "//-no-import-rewrite";
@@ -117,7 +118,32 @@ final class Output {
     }
   };
 
-  public final Templates.Invokable write = new Templates.Invokable() {
+	public final Templates.Invokable trim = new OutputFilter() {
+		@Override
+		void apply(Invokation invokation, CharSequence content, @Nullable Templates.Invokable original) {
+			invokation.out(CharMatcher.whitespace().trimFrom(content));
+		}
+	};
+
+	private static abstract class OutputFilter extends Templates.Fragment {
+		public OutputFilter() {
+			super(1);
+		}
+
+		abstract void apply(Invokation invokation, CharSequence content, @Nullable Templates.Invokable original);
+
+		@Override
+		public final void run(Invokation invokation) {
+			Object param = invokation.param(0);
+			Invokable original = param instanceof Templates.Invokable
+					? (Templates.Invokable) param
+					: null;
+
+			apply(invokation, param.toString(), original);
+		}
+	}
+
+	public final Templates.Invokable write = new Templates.Invokable() {
     @Override
     @Nullable
     public Invokable invoke(Invokation invokation, Object... parameters) {

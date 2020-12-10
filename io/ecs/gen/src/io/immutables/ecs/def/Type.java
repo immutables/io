@@ -1,5 +1,6 @@
 package io.immutables.ecs.def;
 
+import io.immutables.Nullable;
 import io.immutables.collect.Vect;
 import java.util.Optional;
 import org.immutables.data.Data;
@@ -135,6 +136,26 @@ public interface Type {
       return ImmutableType.Setn.of(component);
     }
   }
+
+	@Immutable
+	abstract class Mapn implements Structural {
+		public abstract @Parameter Type key();
+		public abstract @Parameter Type value();
+
+		@Override
+		public <I, O> O accept(Visitor<I, O> v, I in) {
+			return v.mapn(this, in);
+		}
+
+		@Override
+		public String toString() {
+			return "{" + key() + ": " +  value() + "}";
+		}
+
+		public static Mapn of(Type key, Type value) {
+			return ImmutableType.Mapn.of(key, value);
+		}
+	}
 
   @Immutable
   abstract class Parameterized implements Type {
@@ -457,10 +478,14 @@ public interface Type {
       return otherwise(Undefined, in);
     }
 
+		default O mapn(Mapn m, I in) {
+			return otherwise(m, in);
+		}
+
     default O otherwise(Type t, I in) {
       throw new UnsupportedOperationException("cannot handle type " + t + " with input: " + in);
     }
-  }
+	}
 
   default <T> T ifReference(java.util.function.Function<Type.Reference, T> ifReference, T defaultValue) {
     return accept(new Visitor<>() {

@@ -2,15 +2,36 @@ module x.y.z
 
 import system
 
-type X
+// Please explain me this clearly
+type Xi
 
+// In very many words
 type Xyz {
 	x, y, z Int
 }
 
+type Bbz { A | B | C }
+
+// Approxion
+// What in haven's name you talking about
+// Right now
+type Zyx {
+	// bo ro bo
+	// gog og bo
+	orobo Xi
+	// go zo no
+	// og og og
+	bac Xyz
+
+	asu {Xi}
+	hm [Xyz]
+	mogo {Int: String}
+}
+
+// Overall this is insanity
 entity Abc(code String) {
 	// ABC
-	orobo X
+	orobo Xi
 	// BAC
 	bac(slug u32) -> Xyz
 }
