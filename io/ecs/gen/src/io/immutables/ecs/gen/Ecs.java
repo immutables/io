@@ -34,7 +34,8 @@ abstract class Ecs extends Builtins {
   final Function<Type.Parameterizable, String> generics = t -> genericf.apply(t.parameters());
   final Function<Type.Parameterizable, String> diamond = t -> t.parameters().isEmpty() ? "" : "<>";
   final Function<Type.Parameterizable, String> unknown = t -> genericf.apply(t.parameters().map(__ -> "?"));
-  final Predicate<Definition.TypeSignature> isInline = t -> t.hasConcept(Compiler.systemInline);
+  final Predicate<Definition.DataTypeDefinition> isInline = t -> t.hasConcept(Compiler.systemInline)
+			|| t.isEnum();
   final Predicate<Type.Constrained> isHttpGet = t -> t.hasConcept(Compiler.httpGet);
   final Predicate<Type.Constrained> isHttpPost = t -> t.hasConcept(Compiler.httpPost);
   final Predicate<Type.Constrained> isHttpPut = t -> t.hasConcept(Compiler.httpPut);

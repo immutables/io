@@ -162,7 +162,7 @@ contract-declaration
   lc* 'contract' name:<typename> type-parameters? type-constraints* features:features? nl?
 
 entity-declaration
-  lc* 'entity' name:<typename> constructor:parameter-product? entity-facets?
+  lc* 'entity' name:<typename> constructor:parameter-product? type-constraints* entity-facets?
 
 (entity-facets)
   '{' (','? entity-facets-element)* '}'

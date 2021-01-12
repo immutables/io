@@ -108,7 +108,10 @@ public abstract class Codec<T> {
 
 		@Override
 		public void encode(Out out, T instance) throws IOException {
-			if (instance == null) out.putNull();
+			if (instance == null) {
+				out.putNull();
+				return;
+			}
 			strict.encode(out, instance);
 		}
 

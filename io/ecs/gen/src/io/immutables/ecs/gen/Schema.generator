@@ -18,20 +18,20 @@
 [/template]
 
 [template generateModulesDoc]
-[let filename]index.md[/let]
+[let filename]readme.md[/let]
 
 [output.append filename]
 ## ❮modules❯
 
 [for md in model.modules]
-* ['['][md.name] →[']']([md.name]/index.md)
+* ['['][md.name] →[']']([md.name]/readme.md)
 [/for]
 [/output.append]
 [/template]
 
 [template generateModuleDoc ModuleDefinition md]
 [for m = md.name]
-[let filename][m]/index.md[/let]
+[let filename][m]/readme.md[/let]
 
 [output.append filename]
 # [m]
@@ -75,7 +75,7 @@
 [lc]
 [/for]
 [else]
-__Entity — the existence of something considered apart from its properties__
+_Entity — the existence of something considered apart from its properties_
 [/if]
 
 
@@ -83,7 +83,7 @@ __Entity — the existence of something considered apart from its properties__
 
 [for f in ent.features]
 
-* `[f.name]`[if f.inParameters] **(** [for p in f.inParameters][p.name] [for Typed tt = decideType p.type][showType tt][/for][/for] **)**[/if] → [for Typed tt = decideType f.out][showType tt][/for]
+`[f.name]`[if f.inParameters] **(** [for p in f.inParameters][p.name] [for Typed tt = decideType p.type][showType tt][/for][/for] **)**[/if] → [for Typed tt = decideType f.out][showType tt][/for]
 
 [for Datatype dt = findDataType f.out]
 [if dt][if not dt.hasCases][if dt.constructor.mergedParameters]
@@ -104,7 +104,7 @@ __Entity — the existence of something considered apart from its properties__
 [output.append filename]
 # [t.name]
 
-['[']← [m.name][']'](./index.md)
+['[']← [m.name][']'](./readme.md)
 
 [if t.hasCases]
 ### ❮case datatype❯
@@ -126,7 +126,7 @@ _This is case datatype, i.e. discriminated union type. Case types have multiple 
   [else if isInline t]
 _This is inline data type, during data coding/serialization it is replaced by the value of its constructor argument_
   [else]
-_Datatypes are expressed as records/tuples
+_Datatypes are expressed as records/tuples_
   [/if]
 [/if]
 
@@ -277,9 +277,8 @@ type: number
 [/template]
 
 [template showType Typed t][output.trim]
-
 [if t.option]
-[showType t.element]**?**<sub><em>opt</em></sub>
+[showType t.element] **?**<sub><em>opt</em></sub>
 [else if t.mapn]
 **\{** [showType t.key] **:** [showType t.value] **\}**<sub><em>map</em></sub>
 [else if t.array]
@@ -287,7 +286,7 @@ type: number
 [else if t.setn]
 **\{** [showType t.element] **\}**<sub><em>set</em></sub>
 [else if t.system]
-**[t.name]**
+[t.name]
 [else if t.parameterized]
 [showType t.unparameterized]**\<** [for a in t.arguments][if not for.first], [/if][showType a][/for] **\>**
 [else if t.reference]
@@ -295,5 +294,4 @@ type: number
 [else]
 `[t.type]`
 [/if]
-
 [/output.trim][/template]

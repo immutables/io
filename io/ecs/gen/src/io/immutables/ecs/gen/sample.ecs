@@ -24,7 +24,7 @@ type Dabra<T> {
 	z (Int, Int, String)
 	k ()
 	o Int
-} : Xy<T>, Xy<Dabra<T>>
+} :: Xy<T>, Xy<Dabra<T>>
 
 // Optional
 type Optional<T> {

@@ -24,7 +24,7 @@ public interface TryItServicelet {
       }
     });
 
-    var ping = stream.produce(String.class, "ping").sender();
+		var ping = stream.produce(String.class, "ping").sender();
     var pong = stream.produce(String.class, "pong").sender();
 
     stream.consume(String.class, "ping")

@@ -28,8 +28,10 @@ public final class Datatypes {
 
 	@SuppressWarnings("unchecked") // based on type token runtime check and convention
 	public static @Nullable <T> Datatype<T> findDatatype(TypeToken<T> type) {
+		Class<?> rawType = type.getRawType();
+		if (rawType.isPrimitive() || rawType.isArray()) return null;
 		// these transitions are based on current datatype generation conventions
-		Class<?> definitionClass = getDefinitionClass(type.getRawType());
+		Class<?> definitionClass = getDefinitionClass(rawType);
 		// don't torture classes which are not probable to be datatype definition
 		if (!Modifier.isAbstract(definitionClass.getModifiers())) return null;
 
@@ -65,7 +67,12 @@ public final class Datatypes {
 	}
 
 	private static @Nullable Class<?> loadFromTheSamePackage(Class<?> c, String name) {
-		String prefix = c.getPackage().getName();
+		Package pack = c.getPackage();
+		if (pack == null) {
+			// this is when accidentally primitive/non-nominal type is passed here
+			return null;
+		}
+		String prefix = pack.getName();
 		if (!prefix.isEmpty()) prefix += ".";
 		try {
 			return Class.forName(prefix + name, false, c.getClassLoader());
@@ -84,7 +91,6 @@ public final class Datatypes {
 		return c;
 	}
 
-	@SuppressWarnings("unchecked") // covariant immutable cast + runtime checks
 	public static <T> Datatype<T> forStruct(Class<T> type) {
 		checkArgument(type.getTypeParameters().length == 0, "must not have type parameters,"
 				+ " use forStruct(TypeToken) instead with valid type arguments. %s", type);

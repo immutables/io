@@ -1,8 +1,10 @@
 package io.immutables.micro;
 
+import io.immutables.codec.FieldFormat;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
+import com.google.common.base.CaseFormat;
 import org.immutables.data.Data;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Enclosing;
@@ -82,6 +84,7 @@ public interface Manifest {
    * just required but no servicelet actually export, so instead of doing orthogonal technology / direction(in,out), we
    * start with specific combinations.
    */
+  @FieldFormat(CaseFormat.LOWER_HYPHEN)
   enum Kind {
     HTTP_REQUIRE,
     HTTP_PROVIDE,

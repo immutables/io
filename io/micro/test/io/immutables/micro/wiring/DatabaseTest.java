@@ -20,7 +20,6 @@ import static io.immutables.that.Assert.that;
 public class DatabaseTest {
   interface Repo extends SqlAccessor {}
 
-  private static final int PORT = 26259;
   private static final Servicelet.Name s1 = Servicelet.name("s1");
 
   private static final Injector injector = new Launcher()
@@ -66,9 +65,9 @@ public class DatabaseTest {
       })
       .inject();
 
-  @BeforeClass
+  //@BeforeClass
   public static void ensureListening() {
-    DockerRunner.assertPostgresRunning(PORT);
+    DockerRunner.assertPostgresRunning(26259);
   }
 
   @Test

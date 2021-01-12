@@ -1,5 +1,6 @@
 package io.immutables.codec;
 
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import com.squareup.moshi.JsonReader;
 import com.squareup.moshi.JsonWriter;
@@ -88,22 +89,28 @@ final class DatatypeCodec<T> extends Codec<T> {
 	private final FieldIndex mapper;
 	private final boolean asCase;
 	private final @Nullable Feature<T, Object> inlineFeature;
+	private final CaseFormat fieldFormat;
 
 	DatatypeCodec(Datatype<T> meta, Resolver lookup, boolean asCase) {
 		this.meta = meta;
 		this.asCase = asCase;
+		fieldFormat = fieldFormatOf(meta);
 		features = collectFeatures(meta);
 		codecs = collectCodecs(lookup, meta, features);
 		mapper = indexFields(features, asCase);
 		this.inlineFeature = findInlineFeature(meta);
 	}
 
+	private static CaseFormat fieldFormatOf(Datatype<?> meta) {
+		var annotation = meta.type().getRawType().getAnnotation(FieldFormat.class);
+		return annotation != null ? annotation.value() : CaseFormat.LOWER_CAMEL;
+	}
+
 	boolean isInline() {
 		return inlineFeature != null;
 	}
 
-	@Nullable
-	static <T> Feature<T, Object> findInlineFeature(Datatype<T> meta) {
+	private static @Nullable <T> Feature<T, Object> findInlineFeature(Datatype<T> meta) {
 		if (meta.isInline()) {
 			// Current support for a single inline field
 			// no qualifier and only if everything else matches
@@ -155,7 +162,11 @@ final class DatatypeCodec<T> extends Codec<T> {
 	private FieldIndex indexFields(Feature<T, ?>[] features, boolean asCase) {
 		String[] knownNames = new String[features.length + (asCase ? 2 : 0)];
 		for (int i = 0; i < features.length; i++) {
-			knownNames[i] = features[i].name();
+			var name = features[i].name();
+			if (fieldFormat != CaseFormat.LOWER_CAMEL) {
+				name = CaseFormat.LOWER_CAMEL.to(fieldFormat, name);
+			}
+			knownNames[i] = name;
 		}
 		if (asCase) {
 			knownNames[features.length] = CASE_DISCRIMINATOR;

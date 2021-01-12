@@ -5,6 +5,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import javax.annotation.Nullable;
+import com.google.common.base.CaseFormat;
 import org.immutables.data.Data;
 import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
@@ -39,5 +40,21 @@ public interface Dutu {
 		OptionalDouble d();
 
 		class Builder extends ImmutableDutu.Opts.Builder {}
+	}
+
+	@Immutable(builder = false)
+	@FieldFormat(CaseFormat.LOWER_HYPHEN)
+	interface Format {
+		int fieldName();
+		float reallyAnotherField();
+		@Nullable String someNullable();
+
+		class Builder extends ImmutableDutu.Format.Builder {}
+	}
+
+	@FieldFormat(CaseFormat.LOWER_HYPHEN)
+	enum Ggz {
+		GG_WP,
+		gG
 	}
 }

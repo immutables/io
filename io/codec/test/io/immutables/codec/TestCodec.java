@@ -187,6 +187,33 @@ public class TestCodec {
 	}
 
 	@Test
+	public void fieldFormat() throws IOException {
+		Codec<Dutu.Format> codec = l.get(new TypeToken<Dutu.Format>() {});
+
+		var val = new Dutu.Format.Builder()
+				.reallyAnotherField(1.0f)
+				.fieldName(1)
+				.build();
+		var json = toJson(codec, val);
+
+		that(json).is("{'field-name':1,'really-another-field':1.0}");
+		that(codec.decode(in(json))).equalTo(val);
+	}
+
+	@Test
+	public void enumFormat() throws IOException {
+		Codec<Dutu.Ggz> codec = l.get(new TypeToken<Dutu.Ggz>() {});
+
+		var json = toJson(codec, Dutu.Ggz.GG_WP);
+		that(json).is("'gg-wp'");
+		that(codec.decode(in(json))).same(Dutu.Ggz.GG_WP);
+
+		json = toJson(codec, Dutu.Ggz.gG);
+		that(json).is("'g-g'");
+		that(codec.decode(in(json))).same(Dutu.Ggz.gG);
+	}
+
+	@Test
 	public void caseList() throws IOException {
 		Codec<List<Cases>> codec = l.get(new TypeToken<>() {});
 

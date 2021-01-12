@@ -398,7 +398,11 @@ class Compiler {
         onNamedDeclaration(n, n.name().toString());
       }
 
-      private void onNamedDeclaration(TreeProduction<SyntaxTrees> p, String name) {
+			@Override public void caseEntityDeclaration(SyntaxTrees.EntityDeclaration e) {
+				onNamedDeclaration(e, e.name().toString());
+			}
+
+			private void onNamedDeclaration(TreeProduction<SyntaxTrees> p, String name) {
         if (importedNames.containsKey(name)) {
           reporter.problem(p,
               "Local declaration " + name + " have a name conflicting with imported " + importedNames.get(name),

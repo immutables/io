@@ -1,6 +1,7 @@
 package io.immutables.codec;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -118,16 +119,12 @@ public final class Codecs {
 	};
 
 	private static final Codec.Factory ENUMS = new Codec.Factory() {
-		final Function<Enum<?>, String> format =
-				e -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, e.name());
-
 		@SuppressWarnings("unchecked")
 		@Override
-
 		public @Nullable <T> Codec<T> get(Resolver lookup, TypeToken<T> type) {
 			Class<?> c = type.getRawType();
 			if (c.isEnum()) {
-				return (Codec<T>) new EnumCodec<>((Class<Enum<?>>) c, format, false);
+				return (Codec<T>) new EnumCodec<>((Class<Enum<?>>) c, false);
 			}
 			return null;
 		}
@@ -317,14 +314,14 @@ public final class Codecs {
 		}
 	}
 
-	public static final class EnumCodec<E> extends Codec<E> implements NullAware {
+	public static final class EnumCodec<E extends Enum<?>> extends Codec<E> implements NullAware {
 		private final ImmutableBiMap<String, E> constants;
 		private final boolean supportsNull;
 		private EnumCodec<E> nullableCounterpart;
 		private final Class<E> type;
 
-		public EnumCodec(Class<E> type, Function<E, String> naming, boolean supportsNull) {
-			this(type, indexConstants(type, naming), supportsNull);
+		public EnumCodec(Class<E> type, boolean supportsNull) {
+			this(type, indexConstants(type), supportsNull);
 		}
 
 		EnumCodec(Class<E> type, ImmutableBiMap<String, E> constants, boolean supportsNull) {
@@ -333,10 +330,21 @@ public final class Codecs {
 			this.supportsNull = supportsNull;
 		}
 
-		private static <E> ImmutableBiMap<String, E> indexConstants(Class<E> type, Function<E, String> naming) {
+		private static <E extends Enum<?>> ImmutableBiMap<String, E> indexConstants(Class<E> type) {
+			var annotation = type.getAnnotation(FieldFormat.class);
+			@Nullable CaseFormat format = annotation != null ? annotation.value() : null;
+
 			ImmutableBiMap.Builder<String, E> builder = ImmutableBiMap.builder();
 			for (E e : type.getEnumConstants()) {
-				builder.put(naming.apply(e), e);
+				var name = e.name();
+				if (format != null) {
+					CaseFormat sourceFormat = CaseFormat.UPPER_UNDERSCORE;
+					if (!name.contains("_") && !name.toUpperCase().equals(name)) {
+						sourceFormat = Character.isUpperCase(name.charAt(0)) ? CaseFormat.UPPER_CAMEL : CaseFormat.LOWER_CAMEL;
+					}
+					name = sourceFormat.to(format, name);
+				}
+				builder.put(name, e);
 			}
 			return builder.build();
 		}
@@ -419,6 +427,7 @@ public final class Codecs {
 		private final ScalarCodec<Integer> forInt = new ScalarCodec<>(ScalarCodec.INT, false);
 		private final ScalarCodec<Long> forLong = new ScalarCodec<>(ScalarCodec.LONG, false);
 		private final ScalarCodec<Double> forDouble = new ScalarCodec<>(ScalarCodec.DOUBLE, false);
+		private final ScalarCodec<Float> forFloat = new ScalarCodec<>(ScalarCodec.FLOAT, false);
 		private final ScalarCodec<Number> forNumber = new ScalarCodec<>(ScalarCodec.DOUBLE, false);
 		private final ScalarCodec<Boolean> forBoolean = new ScalarCodec<>(ScalarCodec.BOOLEAN, false);
 		private final ScalarCodec<String> forString = new ScalarCodec<>(ScalarCodec.STRING, false);
@@ -427,6 +436,7 @@ public final class Codecs {
 				.put(int.class, forInt).put(Integer.class, forInt)
 				.put(long.class, forLong).put(Long.class, forLong)
 				.put(double.class, forDouble).put(Double.class, forDouble)
+				.put(float.class, forFloat).put(Float.class, forFloat)
 				.put(boolean.class, forBoolean).put(Boolean.class, forBoolean)
 				.put(Number.class, forNumber)
 				.put(String.class, forString)
@@ -451,9 +461,10 @@ public final class Codecs {
 	static final class ScalarCodec<T> extends Codec<T> implements NullAware {
 		static final int INT = 0;
 		static final int LONG = 1;
-		static final int DOUBLE = 2;
-		static final int BOOLEAN = 3;
-		static final int STRING = 4;
+		static final int FLOAT = 2;
+		static final int DOUBLE = 3;
+		static final int BOOLEAN = 4;
+		static final int STRING = 5;
 
 		private final boolean supportsNull;
 		private final int type;
@@ -490,6 +501,10 @@ public final class Codecs {
 			switch (type) { // @formatter:off
 			case INT: return box(in.takeInt());
 			case LONG: return box(in.takeLong());
+			case FLOAT: {
+				Float f = (float) in.takeDouble();
+				return (T) f;
+			}
 			case DOUBLE: return box(in.takeDouble());
 			case BOOLEAN: return box(in.takeBoolean());
 			case STRING: return box(in.takeString());
@@ -509,6 +524,7 @@ public final class Codecs {
 			switch (type) { // @formatter:off
 			case INT: out.putInt(((Number) instance).intValue()); break;
 			case LONG: out.putLong(((Number) instance).longValue()); break;
+			case FLOAT:
 			case DOUBLE: out.putDouble(((Number) instance).doubleValue()); break;
 			case BOOLEAN: out.putBoolean((Boolean) instance); break;
 			case STRING: out.putString(instance.toString()); break;

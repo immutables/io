@@ -22,13 +22,13 @@ public interface Cases {
 	interface C extends Cases {
 		@Parameter
 		String c();
-		public static C of(String str) {
+		static C of(String str) {
 			return ImmutableCases.C.of(str);
 		}
 	}
 	@Immutable(builder = false, singleton = true)
 	interface D extends Cases {
-		public static D of() {
+		static D of() {
 			return ImmutableCases.D.of();
 		}
 	}
