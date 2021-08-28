@@ -7,6 +7,7 @@ import io.immutables.stream.Topic;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -39,7 +40,7 @@ public class Streams {
     }
 
     /**
-     * Should autostarting on localhost be attempted (by launching docker container).
+     * Should auto-starting on localhost be attempted (by launching docker container).
      */
     @Default
     default boolean autostart() {
@@ -49,8 +50,8 @@ public class Streams {
     @Value.Check
     default void check() {
       if (autostart()) {
-        Preconditions.checkState(LocalPorts.isLocalhost(hostPort().getHost()), "auto start on localhost only, but got" +
-            " " + hostPort().getHost());
+        Preconditions.checkState(LocalPorts.isLocalhost(hostPort().getHost()),
+            "auto start on localhost only, but got " + hostPort().getHost());
       }
     }
 
@@ -70,15 +71,18 @@ public class Streams {
       CREATE_IF_NOT_EXIST
     }
 
+    @Value.Redacted
+    Map<String, String> props();
+
     class Builder extends ImmutableStreams.Setup.Builder {}
   }
 
   public interface SenderFactory {
-    <R> Sender<R> create(Key<R> key);
+    <R> Sender<R> create(Servicelet.Name servicelet, Key<R> key);
   }
 
   public interface DispatcherFactory {
-    <R> Service create(Key<R> key, Optional<String> group, Provider<Receiver<R>> provider);
+    <R> Service create(Servicelet.Name servicelet, Key<R> key, Optional<String> group, Provider<Receiver<R>> provider);
   }
 
   /**
@@ -97,10 +101,11 @@ public class Streams {
   public static <R> Provider<Sender<R>> senderProvider(Key<R> key) {
     return new Provider<>() {
       @Inject SenderFactory factory;
+      @Inject Servicelet.Name servicelet;
 
       @Override
       public Sender<R> get() {
-        return factory.create(key);
+        return factory.create(servicelet, key);
       }
     };
   }
@@ -112,11 +117,12 @@ public class Streams {
     return new Provider<>() {
       @Inject DispatcherFactory factory;
       @Inject Injector injector;
+      @Inject Servicelet.Name servicelet;
 
       @Override
       public Service get() {
         Provider<Receiver<R>> receiverProvider = injector.getProvider(receiverKey);
-        return factory.create(key, group, receiverProvider);
+        return factory.create(servicelet, key, group, receiverProvider);
       }
     };
   }

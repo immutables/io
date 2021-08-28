@@ -24,16 +24,14 @@ import org.immutables.generator.PostprocessingMachine;
 import org.immutables.generator.Templates;
 import org.immutables.generator.Templates.Invokable;
 import org.immutables.generator.Templates.Invokation;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 final class Output {
   private static final String NO_REWRITE_IMPORTS = "//-no-import-rewrite";
 
   @Nullable String zip;
   @Nullable String out;
-	boolean schema;
 
-	private final ListMultimap<String, String> fileContent = ArrayListMultimap.create();
+  private final ListMultimap<String, String> fileContent = ArrayListMultimap.create();
 
   void finalizeResources() throws IOException {
     if (out != null) writeFiles(out);

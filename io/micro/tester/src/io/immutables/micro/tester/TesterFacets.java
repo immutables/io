@@ -30,6 +30,8 @@ public interface TesterFacets {
 
   TesterFacets configure(Consumer<Binder> configure);
 
+  TesterFacets setup(String section, Object setup);
+
   interface TesterHttpFacet extends ServiceletFacets.HttpFacet {
     @Override
     <I> ProvideEndpoint<I> provide(Key<I> key);

@@ -12,6 +12,8 @@ import org.immutables.value.Value;
 @Target({})
 public @interface Ecs {
   @Value.Style(
+			instance = "valueOf",
+			of = "valueOf", // this is necessary to avoid clash
       overshadowImplementation = true,
       visibility = Value.Style.ImplementationVisibility.PACKAGE,
       defaults = @Value.Immutable(builder = false))

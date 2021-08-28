@@ -1,6 +1,7 @@
 package io.immutables.micro.stream.http.kafka;
 
 import io.immutables.codec.OkJson;
+import io.immutables.micro.Servicelet;
 import io.immutables.stream.Receiver;
 import io.immutables.stream.Sender;
 import io.immutables.stream.Topic;
@@ -151,7 +152,7 @@ public class KafkaHttpModule implements Module {
   @Singleton
   public SenderFactory senderProvider(Injector injector, OkJson json) {
     return new SenderFactory() {
-      @Override public <R> Sender<R> create(Key<R> key) {
+      @Override public <R> Sender<R> create(Servicelet.Name servicelet, Key<R> key) {
         BrokerApi brokerApi = injector.getInstance(BrokerApi.class);
         return new Producer<>(brokerApi, json, Producer.Setup.of(topicFor(key), key.getTypeLiteral().getType()));
       }
@@ -162,7 +163,8 @@ public class KafkaHttpModule implements Module {
   @Singleton
   public DispatcherFactory dispatcherFactory(Injector injector, OkJson json, ExceptionSink sink) {
     return new DispatcherFactory() {
-      @Override public <R> Service create(Key<R> key, Optional<String> group, Provider<Receiver<R>> receiver) {
+      @Override public <R> Service create(
+          Servicelet.Name servicelet, Key<R> key, Optional<String> group, Provider<Receiver<R>> receiver) {
         BrokerApi brokerApi = injector.getInstance(BrokerApi.class);
         return new Dispatcher<>(brokerApi, sink, json, receiver::get,
             new Dispatcher.Setup.Builder()

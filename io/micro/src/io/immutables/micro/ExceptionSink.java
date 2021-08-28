@@ -95,7 +95,7 @@ public interface ExceptionSink {
    * will be always wrapped into {@link RuntimeException} with attached message containing thread name.
    */
   static Thread.UncaughtExceptionHandler asUncaughtHandler(ExceptionSink sink) {
-    return (t, e) -> sink.unhandled(new Error("Uncaught in thread: " + t.getName(), e));
+    return (t, e) -> sink.unhandled(new RuntimeException("Uncaught in thread: " + t.getName(), e));
   }
 }
 

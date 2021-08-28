@@ -8,10 +8,7 @@ import io.immutables.codec.Codecs;
 import io.immutables.codec.OkJson;
 import io.immutables.codec.Resolver;
 import io.immutables.collect.Vect;
-import io.immutables.ecs.def.Constraint;
-import io.immutables.ecs.def.Definition;
-import io.immutables.ecs.def.Model;
-import io.immutables.ecs.def.Type;
+import io.immutables.ecs.def.*;
 import io.immutables.grammar.Symbol;
 import io.immutables.grammar.TreeProduction;
 import okio.Okio;
@@ -23,6 +20,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ArrayListMultimap;
@@ -54,6 +52,7 @@ class Compiler {
   void addPredef() {
     sources.add(Src.from(Resources.getResource(getClass(), "/io/immutables/ecs/def/system.ecs"), "system.ecs"));
     sources.add(Src.from(Resources.getResource(getClass(), "/io/immutables/ecs/def/ecs.ecs"), "ecs.ecs"));
+    sources.add(Src.from(Resources.getResource(getClass(), "/io/immutables/ecs/def/http.ecs"), "http.ecs"));
   }
 
   void add(Src s) {
@@ -78,12 +77,7 @@ class Compiler {
 
     var modulesForImports = new HashMap<String, ImportModule>();
 
-    ImportResolver importResolver = new ImportResolver() {
-      @Override
-      public Optional<ImportModule> getModule(String name) {
-        return Optional.ofNullable(modulesForImports.get(name));
-      }
-    };
+    ImportResolver importResolver = name -> Optional.ofNullable(modulesForImports.get(name));
 
     for (String moduleName : compilationOrder()) {
       var moduleBuilder = new Definition.Module.Builder().name(moduleName);
@@ -117,6 +111,7 @@ class Compiler {
         .name(module.name())
         .addAllConcepts(module.definitions().only(Definition.OfConcept.class))
         .addAllTypes(module.definitions().only(Definition.OfType.class))
+        .addAllEntities(module.definitions().only(Definition.OfEntity.class))
         .build();
   }
 
@@ -125,7 +120,7 @@ class Compiler {
     var order = new LinkedHashSet<String>();
     var visiting = new HashSet<String>();
     visitOrderModules(order, visiting, moduleSources.keySet());
-    //  System.err.println("ORDER!! " + Vect.from(order));
+//    System.err.println("ORDER!! " + Vect.from(order));
     return Vect.from(order);
   }
 
@@ -241,6 +236,7 @@ class Compiler {
   interface ImportModule {
     String name();
     Vect<Definition.OfType> types();
+    Vect<Definition.OfEntity> entities();
     Vect<Definition.OfConcept> concepts();
     Vect<Definition.OfContract> interfaces();
 
@@ -335,7 +331,19 @@ class Compiler {
 
         if (maybeModule.isPresent()) {
           var m = maybeModule.get();
-
+          for (var t : m.entities()) {
+            if (localNameSet.contains(t.name())) {
+              reporter.problem(i,
+                  "Imported entity type from `" + m.name() + "` conflicts with already defined type: " + t.name(), "");
+            } else if (importedNames.containsKey(t.name())) {
+              reporter.problem(i,
+                  "Imported entity type `" + m.name() + "` conflicts with another import: " + importedNames.get(t.name()), "");
+            } else {
+              var ref = Type.Reference.of(m.name(), t.name());
+              importedNames.put(t.name(), ref);
+              locallyBuilder.putTypes(t.name(), ref);
+            }
+          }
           for (var t : m.types()) {
             if (localNameSet.contains(t.name())) {
               reporter.problem(i,
@@ -347,7 +355,6 @@ class Compiler {
               var ref = Type.Reference.of(m.name(), t.name());
               importedNames.put(t.name(), ref);
               locallyBuilder.putTypes(t.name(), ref);
-              //locallyBuilder.putImportedTypes(ref, t);
             }
           }
           for (var c : m.concepts()) {
@@ -386,20 +393,20 @@ class Compiler {
 
       @Override
       public void caseConceptDeclaration(SyntaxTrees.ConceptDeclaration c) {
-        onNamedDeclaration(c, c.name().toString());
+        onNamedDeclaration(c, unquote(c.name()));
       }
 
       @Override
       public void caseTypeDeclaration(SyntaxTrees.TypeDeclaration t) {
-        onNamedDeclaration(t, t.name().toString().replace("SYSTEMKEYWORD", ""));
+        onNamedDeclaration(t, unquote(t.name()).replace("SYSTEMKEYWORD", ""));
       }
 
       @Override public void caseContractDeclaration(SyntaxTrees.ContractDeclaration n) {
-        onNamedDeclaration(n, n.name().toString());
+        onNamedDeclaration(n, unquote(n.name()));
       }
 
 			@Override public void caseEntityDeclaration(SyntaxTrees.EntityDeclaration e) {
-				onNamedDeclaration(e, e.name().toString());
+				onNamedDeclaration(e, unquote(e.name()));
 			}
 
 			private void onNamedDeclaration(TreeProduction<SyntaxTrees> p, String name) {
@@ -419,24 +426,53 @@ class Compiler {
     return locallyBuilder.build();
   }
 
-	private static String moduleOf(Vect<Symbol> name) {
+  private static String unquote(Symbol name) {
+    return name.charAt(0) == '\u0060' ? name.unquote() : name.toString(); // FIXME `type` feature name
+  }
+
+  private static String moduleOf(Vect<Symbol> name) {
   	return name.join(".");
 	}
 
 	static void buildModule(
       String moduleName,
-      Reporter reporter,
+      PerSource source,
       SyntaxTrees.Unit unit,
       LocallyKnownTypes localTypeNames,
       Definition.Module.Builder moduleBuilder) {
 
-    var moduleScope = new ModuleScope(moduleName, reporter, localTypeNames);
+    var moduleScope = new ModuleScope(moduleName, source, localTypeNames);
 
     new SyntaxTrees.Visitor() {
+      public void extractConstraints(
+          SignatureScope scope,
+          Iterable<? extends SyntaxTrees.TypeConstraint> constraints,
+          Consumer<? super Constraint> consumer) {
+        for (var constraint : constraints) {
+          if (constraint instanceof SyntaxTrees.TypeConstraintConception) {
+            var concept = ((SyntaxTrees.TypeConstraintConception) constraint).concept();
+            consumer.accept(extractConcept(scope, concept));
+          } else if (constraint instanceof SyntaxTrees.TypeConstraintHttp) {
+            var http = ((SyntaxTrees.TypeConstraintHttp) constraint);
+            consumer.accept(extractMethodUri(http, constraints));
+          } else if (constraint instanceof SyntaxTrees.TypeConstraintFeatureApply) {
+            var apply = ((SyntaxTrees.TypeConstraintFeatureApply) constraint);
+            var featureName = apply.expression().name().toString();
+            if (source.importedModules.contains("http")
+              && (featureName.equals("query")
+              || featureName.equals("matrix"))) {
+             // consumer.accept(extractFeatureApply(featureName, apply.expression().argument()));
+            } else {
+              source.problem(apply, "Unknown feature in type constraint `" + featureName + "`", "");
+            }
+          }
+        }
+      }
+
       @Override
       public void caseConceptDeclaration(SyntaxTrees.ConceptDeclaration conceptDecl) {
 
-        var name = conceptDecl.name().toString();
+        var name = unquote(conceptDecl.name());
         var conceptBuilder = new Definition.ConceptDefinition.Builder()
             .module(moduleName)
 						.comment(getComment(conceptDecl.comment()))
@@ -446,22 +482,17 @@ class Compiler {
         for (Symbol s : conceptDecl.typeParameter()) {
           @Nullable var v = signatureScope.introduceParameter(s.toString());
           if (v != null) conceptBuilder.addParameters(v);
-          else reporter.problem(conceptDecl, "Duplicate type parameter: " + s, "");
+          else source.problem(conceptDecl, "Duplicate type parameter: " + s, "");
         }
 
-        for (var constraint : conceptDecl.constraint()) {
-          if (constraint instanceof SyntaxTrees.TypeConstraintConception) {
-            var concept = ((SyntaxTrees.TypeConstraintConception) constraint).concept();
-            conceptBuilder.addConstraints(extractConcept(signatureScope, concept));
-          }
-        }
+        extractConstraints(signatureScope, conceptDecl.constraint(), conceptBuilder::addConstraints);
 
-        if (reporter.ok()) moduleBuilder.addDefinitions(conceptBuilder.build());
+        if (source.ok()) moduleBuilder.addDefinitions(conceptBuilder.build());
       }
 
       @Override
       public void caseContractDeclaration(SyntaxTrees.ContractDeclaration interfaceDecl) {
-        var name = interfaceDecl.name().toString();
+        var name = unquote(interfaceDecl.name());
         var interfaceBuilder = new Definition.ContractDefinition.Builder()
             .module(moduleName)
 						.comment(getComment(interfaceDecl.comment()))
@@ -471,7 +502,7 @@ class Compiler {
         for (Symbol s : interfaceDecl.typeParameter()) {
           @Nullable var v = signatureScope.introduceParameter(s.toString());
           if (v != null) interfaceBuilder.addParameters(v);
-          else reporter.problem(interfaceDecl, "Duplicate type parameter: " + s, "");
+          else source.problem(interfaceDecl, "Duplicate type parameter: " + s, "");
         }
 
         var features = interfaceDecl.features()
@@ -485,18 +516,13 @@ class Compiler {
           }
         }
 
-        for (var constraint : interfaceDecl.constraint()) {
-          if (constraint instanceof SyntaxTrees.TypeConstraintConception) {
-            var concept = ((SyntaxTrees.TypeConstraintConception) constraint).concept();
-            interfaceBuilder.addConstraints(extractConcept(signatureScope, concept));
-          }
-        }
+        extractConstraints(signatureScope, interfaceDecl.constraint(), interfaceBuilder::addConstraints);
 
-        if (reporter.ok()) moduleBuilder.addDefinitions(interfaceBuilder.build());
+        if (source.ok()) moduleBuilder.addDefinitions(interfaceBuilder.build());
       }
 
       private Type.Feature extractFeature(SignatureScope scope, SyntaxTrees.FeatureNamed feature) {
-        var name = feature.name().toString();
+        var name = unquote(feature.name());
         var featureScope = new SignatureScope(scope, name);
 
         var builder = new Type.Feature.Builder()
@@ -506,17 +532,12 @@ class Compiler {
         for (Symbol s : feature.typeParameter()) {
           @Nullable var v = featureScope.introduceParameter(s.toString());
           if (v != null) builder.addParameters(v);
-          else reporter.problem(feature, "Duplicate type parameter: " + s, "");
+          else source.problem(feature, "Duplicate type parameter: " + s, "");
         }
 
-        for (var constraint : feature.constraint()) {
-          if (constraint instanceof SyntaxTrees.TypeConstraintConception) {
-            var concept = ((SyntaxTrees.TypeConstraintConception) constraint).concept();
-            builder.addConstraints(extractConcept(featureScope, concept));
-          }
-        }
+        extractConstraints(featureScope, feature.constraint(), builder::addConstraints);
 
-        return builder.addAllInParameters(buildConstructor(reporter, featureScope, feature.input()).parameters())
+        return builder.addAllInParameters(buildConstructor(source, featureScope, feature.input()).parameters())
             .out(feature.output().map(ret -> extractReturnType(scope, ret)).orElse(Type.Empty.of()))
             .build();
       }
@@ -530,18 +551,18 @@ class Compiler {
 
 			@Override
 			public void caseEntityDeclaration(SyntaxTrees.EntityDeclaration entityDecl) {
-      	var name = entityDecl.name().toString();
+      	var name = unquote(entityDecl.name());
 
 				var parameter = entityDecl.constructor();
 
 				if (parameter.isEmpty()) {
-					reporter.problem(entityDecl, "No constructor parameter for an Entity" + name,
+					source.problem(entityDecl, "No constructor parameter for an entity " + name,
 							"Entity definition should have one inline constructor parameter of scalar type like: (code String)");
 					return;
 				}
 
 				if (parameter.get().components().size() > 1) {
-					reporter.problem(entityDecl, "More than one constructor parameter for an Entity" + name,
+					source.problem(entityDecl, "More than one constructor parameter for an entity " + name,
 							"Entity definition should have one inline constuctor parameter of scalar type like: (code String)");
 					return;
 				}
@@ -552,10 +573,10 @@ class Compiler {
 						.name(name)
 						.module(moduleName)
 						.comment(getComment(entityDecl.comment()))
-						.constructor(buildConstructor(reporter, signatureScope, parameter));
+						.constructor(buildConstructor(source, signatureScope, parameter));
 
 				for (var facet : entityDecl.facet()) {
-					var facetName = facet.name().toString();
+					var facetName = unquote(facet.name());
 
 					var comment = getComment(facet.comment());
 					var componentType = extractType.match(facet.type(), signatureScope);
@@ -563,7 +584,7 @@ class Compiler {
 					if (facet.slug().isPresent()) {
 						var slug = facet.slug().get();
 						var slugComment = getComment(slug.comment());
-						var slugName = slug.name().toString();
+						var slugName = unquote(slug.name());
 						var slugType = extractType.match(slug.type(), signatureScope);
 
 						var slugParameter = Definition.NamedParameter.of(slugName, slugType)
@@ -583,7 +604,7 @@ class Compiler {
       public void caseTypeDeclaration(SyntaxTrees.TypeDeclaration typeDecl) {
         @Nullable var topConstructor = typeDecl.constructor().orElse(null);
 
-				var name = typeDecl.name().toString().replace("SYSTEMKEYWORD", "");
+				var name = unquote(typeDecl.name()).replace("SYSTEMKEYWORD", "");
 
 				var t = new Definition.DataTypeDefinition.Builder()
 						.name(name)
@@ -597,21 +618,17 @@ class Compiler {
           for (Symbol s : typeDecl.typeParameter()) {
             @Nullable var v = signatureScope.introduceParameter(s.toString());
             if (v != null) t.addParameters(v);
-            else reporter.problem(typeDecl, "Duplicate type parameter: " + s, "");
+            else source.problem(typeDecl, "Duplicate type parameter: " + s, "");
           }
 
           for (var constructorCase : ((SyntaxTrees.ConstructorCases) topConstructor).cases()) {
             Optional<SyntaxTrees.Parameter> parameter = constructorCase.constructor();
-            var constructor = buildConstructor(reporter, signatureScope, parameter);
-            t.putConstructors(constructorCase.name().toString(), constructor);
+            var constructor = buildConstructor(source, signatureScope, parameter);
+            t.putConstructors(unquote(constructorCase.name()), constructor);
           }
 
-          for (var constraint : typeDecl.constraint()) {
-            if (constraint instanceof SyntaxTrees.TypeConstraintConception) {
-              var concept = ((SyntaxTrees.TypeConstraintConception) constraint).concept();
-              t.addConstraints(extractConcept(signatureScope, concept));
-            }
-          }
+          extractConstraints(signatureScope, typeDecl.constraint(), t::addConstraints);
+
         } else if (topConstructor instanceof SyntaxTrees.ConstructorParameter || topConstructor == null) {
           t.hasCases(false);
 
@@ -619,31 +636,73 @@ class Compiler {
           for (Symbol s : typeDecl.typeParameter()) {
             @Nullable var v = signatureScope.introduceParameter(s.toString());
             if (v != null) t.addParameters(v);
-            else reporter.problem(typeDecl, "Duplicate type parameter: " + s, "");
+            else source.problem(typeDecl, "Duplicate type parameter: " + s, "");
           }
 
           var constructor = buildConstructor(
-              reporter,
+              source,
               signatureScope,
               Optional.ofNullable(topConstructor)
                   .map(cp -> ((SyntaxTrees.ConstructorParameter) cp).input()));
 
           t.putConstructors(name, constructor);
 
-          for (var constraint : typeDecl.constraint()) {
-            if (constraint instanceof SyntaxTrees.TypeConstraintConception) {
-              var concept = ((SyntaxTrees.TypeConstraintConception) constraint).concept();
-              t.addConstraints(extractConcept(signatureScope, concept));
+          extractConstraints(signatureScope, typeDecl.constraint(), t::addConstraints);
+        }
+
+        if (source.ok()) moduleBuilder.addDefinitions(t.build());
+      }
+
+      private Constraint.MethodUri extractMethodUri(SyntaxTrees.TypeConstraintHttp http,
+          Iterable<? extends SyntaxTrees.TypeConstraint> constraints) {
+        Set<String> queryParams = new HashSet<>();
+        for (var constraint : constraints) {
+          if (constraint instanceof SyntaxTrees.TypeConstraintFeatureApply) {
+            var apply = ((SyntaxTrees.TypeConstraintFeatureApply) constraint);
+            var featureName = apply.expression().name().toString();
+            var argument = apply.expression().argument();
+            if (featureName.equals("query") && argument.isPresent()) {
+              queryParams.addAll(new ExtractParameters().collectParams(argument.get()));
             }
           }
         }
+        return new Constraint.MethodUri.Builder()
+            .method(http.method().map(Symbol::toString))
+            .uri(http.path().map(u -> toUriString(source, u)))
+            .addAllQueryParameters(queryParams)
+            .addAllPathParameters(http.path().stream()
+                .flatMap(u -> u.segment().stream())
+                .flatMap(s -> s.bind().stream())
+                .map(Object::toString)
+                .collect(Collectors.toSet()))
+            .build();
+      }
+/*
+      private Constraint.FeatureApply extractFeatureApply(String name, Optional<SyntaxTrees.Argument> argument) {
+        return argument.map(arg -> Expression.Apply.of(name, Expression.Product.of(new ExtractParameters().collectExpressions())))
+            .orElseGet(() -> Expression.Apply.of(name));
+      }*/
 
-        if (reporter.ok()) moduleBuilder.addDefinitions(t.build());
+      // Only handles parameters
+      class ExtractParameters extends SyntaxTrees.Visitor {
+        final Set<String> params = new HashSet<>();
+
+        Set<String> collectParams(SyntaxTrees.Argument argument) {
+          if (argument instanceof SyntaxTrees.LiteralProduct) {
+            caseLiteralProduct((SyntaxTrees.LiteralProduct) argument);
+          }
+          return params;
+        }
+
+        @Override
+        public void caseExpressionFeature(SyntaxTrees.ExpressionFeature value) {
+          params.add(value.name().toString());
+        }
       }
 
       private Constraint.Concept extractConcept(SignatureScope signatureScope, SyntaxTrees.TypeReferenceNamed concept) {
         Type type = extractType.match(concept, signatureScope);
-/**
+/*
         type.accept(new Type.Visitor<Void, Definition.OfConcept>() {
           @Override public Definition.OfConcept reference(Type.Reference d, Void in) {
             var module = modules.get(reference.module());
@@ -673,7 +732,19 @@ class Compiler {
     }.caseUnit(unit);
   }
 
-	private static String getComment(Vect<Symbol> comment) {
+  private static String toUriString(PerSource source, SyntaxTrees.UriPath u) {
+    return u.segment().map(segment -> "/"
+        + segment.slug().map(slug -> getChars(source, slug)).orElse("")
+        + segment.bind().map(bind -> "{" + bind + "}").orElse(""))
+        .join("");
+  }
+
+  private static String getChars(PerSource source, SyntaxTrees.UriSlug u) {
+    return source.terms.rangeInclusive(u.termBegin(), u.termEnd())
+        .get(source.terms.source()).toString();
+  }
+
+  private static String getComment(Vect<Symbol> comment) {
 		return comment.map(s -> s.toString().substring("//".length())).join("");
 	}
 
@@ -706,7 +777,7 @@ class Compiler {
       }
 
       private String uniqueName(TreeProduction<SyntaxTrees> production, Symbol name) {
-        String n = name.toString();
+        String n = unquote(name);
         if (!parameterNames.add(n)) {
           reporter.problem(production, "Duplicate parameter name " + n,
               "All parameter names should be different");
@@ -1018,7 +1089,7 @@ class Compiler {
   private static final SyntaxTrees.Matcher<Scope, Type> extractType = new SyntaxTrees.Matcher<>() {
     @Override
     public Type caseTypeReferenceNamed(SyntaxTrees.TypeReferenceNamed v, Scope scope) {
-      var resolvedType = scope.getType(v.name().toString(), v);
+      var resolvedType = scope.getType(unquote(v.name()), v);
       var args = v.argument();
 
       if (!args.isEmpty() && resolvedType instanceof Type.Reference) {
@@ -1108,20 +1179,23 @@ class Compiler {
 					.filter(c -> !predefModuleNames.contains(c.name()))
 					.collect(Collectors.toList());
 
-    Model.Builder b = new Model.Builder()
+    Model.Builder modelBuilder = new Model.Builder()
     		.addAllModules(modules);
 
     for (var m : modules) {
 			for (var entity : m.definitions().only(Definition.EntityDefinition.class)) {
-				b.addDataTypes(Model.DataType.of(m, toDataType(entity)));
-				b.addEntities(Model.Entity.of(m, entity));
+				modelBuilder.addDataTypes(Model.DataType.of(m, toDataType(entity)));
+        var entityParameter = Definition.NamedParameter.of(
+            CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, entity.name()),
+            Type.Reference.of(m.name(), entity.name()));
 
-				for (var f : entity.features()) {
-					var entityParameter = Definition.NamedParameter.of(
-							CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, entity.name()),
-							Type.Reference.of(m.name(), entity.name()));
+        var entityBuilder = new Model.Entity.Builder()
+            .module(m)
+            .entity(entityParameter)
+            .definition(entity);
 
-					Model.Component.Builder component = new Model.Component.Builder()
+        for (var f : entity.features()) {
+					Model.Component.Builder componentBuilder = new Model.Component.Builder()
 							.module(m)
 							.name(entity.name() + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, f.name()))
 							.entity(entityParameter)
@@ -1129,30 +1203,34 @@ class Compiler {
 
 					var in = f.inParameters();
 					if (in.size() == 1) {
-						component.slug(in.get(0));
+						componentBuilder.slug(in.get(0));
 					}
-					b.addComponents(component.build());
+          var component = componentBuilder.build();
+					entityBuilder.addComponents(component);
+          modelBuilder.addComponents(component);
 				}
+
+        modelBuilder.addEntities(entityBuilder.build());
 			}
 
       for (var type : m.definitions().only(Definition.DataTypeDefinition.class)) {
         var reference = Type.Reference.of(m.name(), type.name());
         if (isComponent(m, type, reference)) {
-          produceComponent(b, m, type, reference);
+          produceComponent(modelBuilder, m, type, reference);
         } else {
-          b.addDataTypes(Model.DataType.of(m, type));
+          modelBuilder.addDataTypes(Model.DataType.of(m, type));
         }
       }
 
       for (var type : m.definitions().only(Definition.ContractDefinition.class)) {
-        b.addContracts(Model.Contract.of(m, type));
+        modelBuilder.addContracts(Model.Contract.of(m, type));
       }
     }
 
-    return b.build();
+    return modelBuilder.build();
   }
 
-	private Definition.DataTypeDefinition toDataType(Definition.EntityDefinition entity) {
+  private Definition.DataTypeDefinition toDataType(Definition.EntityDefinition entity) {
 		var builder = new Definition.DataTypeDefinition.Builder()
 				.module(entity.module())
 				.name(entity.name())
@@ -1221,6 +1299,7 @@ class Compiler {
           problems.add("Only one field of component " + type + " can be ::Entity." +
               " Duplicate entity field: `" + p.name() + "`");
         } else {
+//				findEntity(p.type());
           Optional<Definition.DataTypeDefinition> datatype = findDatatype(p.type());
 
           if (datatype.isEmpty() || !datatype.get().hasConcept(systemInline)) {
@@ -1261,7 +1340,7 @@ class Compiler {
     }
   }
 
-  static boolean hasConcept(Vect<Constraint> constraints, Type type) {
+	static boolean hasConcept(Vect<Constraint> constraints, Type type) {
     return constraints
         .only(Constraint.Concept.class)
         .any(c -> c.type().equals(type));

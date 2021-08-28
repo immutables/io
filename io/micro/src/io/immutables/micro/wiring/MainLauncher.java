@@ -1,15 +1,13 @@
 package io.immutables.micro.wiring;
 
 import io.immutables.codec.OkJson;
+import io.immutables.micro.kafka.KafkaModule;
 import okio.Okio;
 import io.immutables.micro.Launcher;
 import io.immutables.micro.Manifest;
 import io.immutables.micro.Servicelet;
 import io.immutables.micro.creek.BrokerModule;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -31,7 +29,7 @@ public final class MainLauncher {
   }
 
   public void run() {
-    if (Arrays.equals(arguments, new String[]{"--print-manifest"})) {
+    if (Arrays.equals(arguments, new String[]{ARG_PRINT_MANIFEST})) {
       OkJson json = new Launcher()
           .add(new JsonModule())
           .inject()
@@ -58,10 +56,10 @@ public final class MainLauncher {
         .add(new DatabaseModule())
         .add(new ClockModule())
         //.add(new KafkaModule())// KafkaModule() //KafkaHttpModule()//new BrokerModule()
-        .add(new BrokerModule())
+        .add(Set.of(arguments).contains(ARG_KAFKA) ? new KafkaModule() :  new BrokerModule())
         .add(new ExceptionPrinting())
         .add(new MicroInfoModule())
-        .add(new ManifestCatalogExport())
+//        .add(new ManifestCatalogExport()) //TODO fixme(or fixed)? StackOverflowError at io.immutables.micro.spect.CatalogCollector.extractType(CatalogCollector.java:179)
         .add(new FactReporting());
 
     for (Servicelet s : servicelets) {
@@ -84,4 +82,7 @@ public final class MainLauncher {
 
     manager.startAsync().awaitHealthy();
   }
+
+  public static final String ARG_KAFKA = "--kafka";
+  public static final String ARG_PRINT_MANIFEST = "--print-manifest";
 }

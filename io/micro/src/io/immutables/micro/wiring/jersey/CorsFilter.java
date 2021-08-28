@@ -39,7 +39,8 @@ public class CorsFilter implements ContainerRequestFilter, ContainerResponseFilt
     if (request.getMethod().equalsIgnoreCase(HttpMethod.OPTIONS)) {
       Response.ResponseBuilder r = Response.ok();
 
-      r.header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+      r.header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+          cors.allowedOrigins().contains(ANY) && cors.forceAnyOrigin() ? ANY : origin);
       r.header(HttpHeaders.VARY, HttpHeaders.ORIGIN);
 
       if (cors.allowCredentials()) {
@@ -78,7 +79,8 @@ public class CorsFilter implements ContainerRequestFilter, ContainerResponseFilt
     }
 
     var h = response.getHeaders();
-    h.putSingle(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, cors.allowedOrigins().contains(ANY) ? ANY : origin);
+    h.putSingle(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+        cors.allowedOrigins().contains(ANY) && cors.forceAnyOrigin() ? ANY : origin);
     h.putSingle(HttpHeaders.VARY, HttpHeaders.ORIGIN);
 
     if (cors.allowCredentials()) {

@@ -2,6 +2,7 @@ package io.immutables.micro;
 
 import javax.annotation.Nullable;
 
+@Deprecated
 public final class DynamicOutput {
   public final Object value;
 

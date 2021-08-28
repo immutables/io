@@ -138,6 +138,11 @@ public class Facets implements ServiceletFacets {
     return this;
   }
 
+  @Override
+  public Facets start(Runnable callback) {
+    return configure(healthy(callback));
+  }
+
   protected final HttpFacet http = new HttpFacet() {
     @Override
     public <I> RequireEndpoint<I> require(Key<I> key) {
@@ -317,10 +322,9 @@ public class Facets implements ServiceletFacets {
           .enque(platformBlocks::add);
 
       return new ConsumeRecords<>() {
-        Named allocatedUniqueName = autoName.get();
+        final Named allocatedUniqueName = autoName.get();
+        final Key<Receiver<R>> receiverKey = Streams.toReceiverKey(key, allocatedUniqueName);
         Optional<String> group = Optional.empty();
-
-        Key<Receiver<R>> receiverKey = Streams.toReceiverKey(key, allocatedUniqueName);
 
         @Override
         public GroupConsumeRecords<R> inGroup(String group) {

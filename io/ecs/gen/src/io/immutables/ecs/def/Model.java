@@ -2,6 +2,7 @@ package io.immutables.ecs.def;
 
 import io.immutables.Nullable;
 import io.immutables.collect.Vect;
+import java.util.List;
 import java.util.Optional;
 import org.immutables.data.Data;
 import org.immutables.value.Value.Default;
@@ -47,12 +48,11 @@ public interface Model {
 
 	@Immutable
 	interface Entity extends InModule {
-		@Parameter @Override Definition.Module module();
-		@Parameter Definition.EntityDefinition definition();
+		Definition.EntityDefinition definition();
+    Definition.NamedParameter entity();
+    List<Component> components();
 
-		static Entity of(Definition.Module m, Definition.EntityDefinition t) {
-			return ImmutableModel.Entity.of(m, t);
-		}
+    class Builder extends ImmutableModel.Entity.Builder {}
 	}
 
   @Immutable
@@ -64,7 +64,6 @@ public interface Model {
     default @Default String comment() {
     	return "";
 		}
-
     // Guava optional used for compatibility with template engine
     default com.google.common.base.Optional<Definition.NamedParameter> slugOpt() {
       return com.google.common.base.Optional.fromJavaUtil(slug());

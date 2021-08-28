@@ -65,6 +65,26 @@ public class Databases {
     String connect();
 
     /**
+     * While username and password can be passed in connection string, if possible pass them separately so password
+     * will not be exposed in auxiliary runtime info.
+     */
+    @Value.Redacted
+    @Value.Default
+    default String username() {
+      return "";
+    }
+
+    /**
+     * While username and password can be passed in connection string, if possible pass them separately so password
+     * will not be exposed in auxiliary runtime info.
+     */
+    @Value.Redacted
+    @Value.Default
+    default String password() {
+      return "";
+    }
+
+    /**
      * Parses connect string. The parsed URI doesn't contain "jdbc:" scheme prefix. URI construction will throw
      * exceptions and this will result in defaulting configuration in case of URL syntax error etc.
      */

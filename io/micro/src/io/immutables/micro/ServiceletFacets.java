@@ -5,6 +5,7 @@ import io.immutables.stream.Sender;
 import java.util.function.Consumer;
 import com.google.inject.Binder;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.name.Names;
 
@@ -22,6 +23,8 @@ public interface ServiceletFacets {
   Facets configure(Consumer<Binder> configure);
 
   Facets configurePlatform(Consumer<Binder> configure);
+
+  Facets start(Runnable healthy);
 
   interface HttpFacet {
     <I> RequireEndpoint<I> require(Key<I> key);
@@ -86,6 +89,14 @@ public interface ServiceletFacets {
        */
       default void bindInstance(I instance) {
         bind(b -> b.toInstance(instance));
+      }
+
+      default void bindKey(Key<? extends I> targetKey) {
+        bind(b -> b.to(targetKey));
+      }
+
+      default void bindKey(Class<? extends I> targetKey) {
+        bind(b -> b.to(Key.get(targetKey)));
       }
     }
   }
@@ -153,6 +164,14 @@ public interface ServiceletFacets {
        */
       default void bindInstance(Receiver<R> instance) {
         bind(b -> b.toInstance(instance));
+      }
+
+      default void bindKey(Key<? extends Receiver<R>> targetKey) {
+        bind(b -> b.to(targetKey));
+      }
+
+      default void bindKey(Class<? extends Receiver<R>> targetKey) {
+        bind(b -> b.to(Key.get(targetKey)));
       }
     }
   }

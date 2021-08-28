@@ -10,32 +10,19 @@ import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
 import org.immutables.generator.Builtins;
 import org.immutables.generator.Generator;
+import org.immutables.generator.Intrinsics;
 import org.immutables.generator.Templates;
 import org.immutables.generator.Templates.Invokable;
 
 @Generator.Template
-abstract class Ecs extends Builtins {
-  Output output;
-  Model model;
-
-  abstract Invokable generate();
-
-  @Generator.Typedef io.immutables.ecs.def.Definition Definition;
-  @Generator.Typedef Definition.Module Module;
-  @Generator.Typedef Definition.NamedParameter Parameter;
-  @Generator.Typedef Definition.Constructor Constructor;
-  @Generator.Typedef Definition.DataTypeDefinition Datatype;
-  @Generator.Typedef io.immutables.ecs.def.Definition.ContractDefinition Contract;
-  @Generator.Typedef Model.Component Component;
-  @Generator.Typedef Model.DataType DataTypeModel;
-  @Generator.Typedef Model.Contract ContractModel;
-
+abstract class Jawa extends Support {
   final Function<Vect<?>, String> genericf = vars -> vars.isEmpty() ? "" : vars.join(", ", "<", ">");
   final Function<Type.Parameterizable, String> generics = t -> genericf.apply(t.parameters());
   final Function<Type.Parameterizable, String> diamond = t -> t.parameters().isEmpty() ? "" : "<>";
   final Function<Type.Parameterizable, String> unknown = t -> genericf.apply(t.parameters().map(__ -> "?"));
   final Predicate<Definition.DataTypeDefinition> isInline = t -> t.hasConcept(Compiler.systemInline)
 			|| t.isEnum();
+/*
   final Predicate<Type.Constrained> isHttpGet = t -> t.hasConcept(Compiler.httpGet);
   final Predicate<Type.Constrained> isHttpPost = t -> t.hasConcept(Compiler.httpPost);
   final Predicate<Type.Constrained> isHttpPut = t -> t.hasConcept(Compiler.httpPut);
@@ -44,22 +31,30 @@ abstract class Ecs extends Builtins {
   final Predicate<Type.Constrained> hasPath = t -> t.getConstaintFeature("path").isPresent();
   final Function<Type.Constrained, String> getPath = t -> t.getConstraintFirstArgument("path")
       .map(Object::toString)
-      .orElse("!!!");
+      .orElse("!%%%!");
+*/
+  final Predicate<Type.Constrained> hasHttpMethod = t -> t.getMethodUri().flatMap(m -> m.method()).isPresent();
+  final Function<Type.Constrained, String> getHttpMethod = t -> t.getMethodUri().flatMap(m -> m.method())
+      .orElse("!METHOD!");
+  final Predicate<Type.Constrained> hasHttpUri = t -> t.getMethodUri().flatMap(m -> m.uri()).isPresent();
+  final Function<Type.Constrained, String> getHttpUri = t -> t.getMethodUri().flatMap(m -> m.uri())
+      .orElse("!URI!");
+
+  final Templates.Binary<Type.Constrained, String, Boolean> isHttpPathParameter =
+      (t, p) -> t.getMethodUri().map(m -> m.pathParameters().contains(p)).orElse(false);
+
+  final Templates.Binary<Type.Constrained, String, Boolean> isHttpQueryParameter =
+      (t, p) -> t.getMethodUri().map(m -> m.queryParameters().contains(p)).orElse(false);
 
   final Predicate<Vect<?>> small = v -> v.size() <= 5; //v.size() > 0 &&
 
   final Function<Type, String> typew = t -> t.accept(typeFormatter, wrapped());
   final Function<Type, String> typef = t -> t.accept(typeFormatter, new TypeOpts());
 
-  final Function<Object, String> toHyphen =
-      Functions.compose(
-          CaseFormat.LOWER_CAMEL.converterTo(CaseFormat.LOWER_HYPHEN),
-          Functions.toStringFunction());
-
-  final Function<Object, String> toUnder =
-      Functions.compose(
-          CaseFormat.LOWER_CAMEL.converterTo(CaseFormat.LOWER_UNDERSCORE),
-          Functions.toStringFunction());
+  final String rs = "javax.ws.rs.";
+  final String svc = "io.immutables.ecs.service.";
+  final String imv = "org.immutables.value.Value.";
+  final String ju = "java.util.";
 
   final Invokable prependVar = new Invokable() {
     @Override public Invokable invoke(Templates.Invokation invokation, Object... parameters) {
@@ -96,7 +91,8 @@ abstract class Ecs extends Builtins {
         case "i64":
         case "u64":
         case "Long": return in.wrap ? "Long" : "long";
-        case "f32": return in.wrap ? "Float" : "float";
+        case "f32":
+        case "Float": return in.wrap ? "Float" : "float";
         case "f64":
         case "Double": return in.wrap ? "Double" : "double";
         case "Bool": return in.wrap ? "Boolean" : "boolean";
@@ -107,7 +103,7 @@ abstract class Ecs extends Builtins {
 
     @Override public String parameterized(Type.Parameterized d, TypeOpts in) {
       return d.reference().accept(this, in)
-          + "<" + d.arguments().map(a -> a.accept(this, wrapped())) + ">";
+          + "<" + d.arguments().map(a -> a.accept(this, wrapped())).join(", ") + ">";
     }
 
     @Override public String product(Type.Product p, TypeOpts in) {

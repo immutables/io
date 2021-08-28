@@ -3,17 +3,20 @@ module a
 import system
 import ecs
 
-type Coord {x, y, z Double}
+type Coord(x, y, z Double)
 
-type Obj(name String) :: Inline
+entity Obj(name String) {
+	coord(key String) -> Coord
+}
+// LEGACY free form components? Need to revise
 
-type ObjCoord {  // <-- defines table name
-  ent Obj :: Entity   // <-- entity field
-  key String :: Slug
-  coord Coord // <-- defines name for component slice
-} :: Component
-
-type KeyVal {
-  key String :: Entity
-  value String
-} :: Component
+//type ObjCoord {  // <-- defines table name
+//  ent Obj :: Entity   // <-- entity field
+//  key String :: Slug
+//  coord Coord // <-- defines name for component slice
+//} :: Component
+//
+//type KeyVal {
+//  key String :: Entity
+//  value String
+//} :: Component

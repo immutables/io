@@ -4,6 +4,7 @@ import io.immutables.codec.Codec;
 import io.immutables.codec.Codecs;
 import io.immutables.codec.OkJson;
 import io.immutables.codec.Pipe;
+import io.immutables.micro.Systems.Shared;
 import okio.Buffer;
 import okio.Okio;
 import io.immutables.micro.ExceptionSink;
@@ -109,6 +110,12 @@ final class LoadSetupModule extends AbstractModule {
   }
 
   @Provides
+  public @Shared SetupLoader sharedSetupLoader(SetupLoader setupLoader) {
+    return setupLoader;
+  }
+
+  @Provides
+  @Singleton
   public SetupLoader loader(@Systems SharedConf conf, OkJson json, ExceptionSink exceptionSink) {
     return new SetupLoader() {
       @Override
@@ -193,30 +200,29 @@ final class LoadSetupModule extends AbstractModule {
     }
 
     private String transform(CharSequence string) {
-      StringBuffer result = new StringBuffer();
+      StringBuilder result = new StringBuilder();
       Matcher matcher = PLACEHOLDER_PATTERN.matcher(string);
       boolean found = matcher.find();
       if (!found) return string.toString();
       do {
         String key = matcher.group(1);
-        Supplier<String> defaultSupplier = matcher::group;
-        String value = getValue(key, defaultSupplier);
-        matcher.appendReplacement(result, value);
+        String value = getValue(key, matcher.group());
+        matcher.appendReplacement(result, value.replace("$", "\\$"));
       } while (matcher.find());
 
       matcher.appendTail(result);
       return result.toString();
     }
 
-    private String getValue(String key, Supplier<String> defaults) {
+    private String getValue(String key, String defaults) {
       return resolvers.stream()
           .flatMap(resolver -> resolver.get(key).stream())
           .findFirst()
-          .orElseGet(defaults);
+          .orElse(defaults);
     }
   }
 
   private static final String ENV_FILE = "MICRO_SETUP";
   private static final String DEFAULT_FILE = "micro.setup.local";
-  private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{([\\w\\W\\d_.]+?)}");
+  private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{([a-zA-Z0-9_.]+?)}");
 }

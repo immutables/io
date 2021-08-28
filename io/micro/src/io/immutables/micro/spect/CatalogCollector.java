@@ -185,6 +185,9 @@ final class CatalogCollector {
   }
 
   Types.Reference extractType(Class<?> raw, Type generic) {
+    if (raw == Object.class) {
+      return intractable(generic.getTypeName());
+    }
     var reference = SCALARS.get(raw);
     if (reference != null) return reference;
     if (raw == Optional.class) {
@@ -203,13 +206,18 @@ final class CatalogCollector {
     if (generic == raw) { // FIXME currently we don't encode generic substitute types, or other non-datatypes
       @Nullable var datatype = Datatypes.findDatatype(TypeToken.of(raw));
       if (datatype != null) {
-        if (!structs.containsKey(raw)) {
-          // cannot do computeIfAbsent -> concurrent modification exception
+        var existingStruct = structs.get(raw);
+        if (existingStruct == null) {
+          structs.put(raw, incomplete);
           Types.Struct struct = createStruct(raw, datatype);
           structs.put(raw, struct);
           return struct.reference();
         }
-        return structs.get(raw).reference();
+        if (existingStruct == incomplete) {
+          // will be filled after
+          return struct(raw);
+        }
+        return existingStruct.reference();
       }
     }
     return intractable(generic.getTypeName());
@@ -347,4 +355,9 @@ final class CatalogCollector {
         .name(name)
         .build();
   }
+
+  private static final Types.Struct incomplete = new Types.Struct.Builder()
+      .reference(intractable("incomplete"))
+      .inline(false)
+      .build();
 }

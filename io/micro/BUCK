@@ -12,7 +12,6 @@ java_module(
   ],
   exported_deps = [
 		'//io/common:common',
-    '//io/stream:stream',
     '//io/regres:regres',
     '//io/ecs/lib:lib',
     '//lib/glassfish/jersey:jersey',

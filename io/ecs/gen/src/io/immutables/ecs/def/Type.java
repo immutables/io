@@ -1,8 +1,8 @@
 package io.immutables.ecs.def;
 
-import io.immutables.Nullable;
 import io.immutables.collect.Vect;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.immutables.data.Data;
 import org.immutables.value.Value.*;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -137,25 +137,25 @@ public interface Type {
     }
   }
 
-	@Immutable
-	abstract class Mapn implements Structural {
-		public abstract @Parameter Type key();
-		public abstract @Parameter Type value();
+  @Immutable
+  abstract class Mapn implements Structural {
+    public abstract @Parameter Type key();
+    public abstract @Parameter Type value();
 
-		@Override
-		public <I, O> O accept(Visitor<I, O> v, I in) {
-			return v.mapn(this, in);
-		}
+    @Override
+    public <I, O> O accept(Visitor<I, O> v, I in) {
+      return v.mapn(this, in);
+    }
 
-		@Override
-		public String toString() {
-			return "{" + key() + ": " +  value() + "}";
-		}
+    @Override
+    public String toString() {
+      return "{" + key() + ": " + value() + "}";
+    }
 
-		public static Mapn of(Type key, Type value) {
-			return ImmutableType.Mapn.of(key, value);
-		}
-	}
+    public static Mapn of(Type key, Type value) {
+      return ImmutableType.Mapn.of(key, value);
+    }
+  }
 
   @Immutable
   abstract class Parameterized implements Type {
@@ -266,6 +266,12 @@ public interface Type {
           .any(c -> c.type().equals(concept));
     }
 
+    default Optional<Constraint.MethodUri> getMethodUri() {
+      return constraints()
+          .only(Constraint.MethodUri.class)
+          .findFirst(t -> true);
+    }
+
     default Optional<Expression> getConstaintFeature(String name) {
       return constraints()
           .only(Constraint.FeatureApply.class)
@@ -297,13 +303,19 @@ public interface Type {
 
     public @Derived boolean exists() { return true; }
 
-		public @Default String comment() {
-    	return "";
-		}
+    public @Default String comment() {
+      return "";
+    }
 
-		public abstract Feature withComment(String comment);
+    public void forEachType(Consumer<Type> forType) {
+      constraints().forEach(c -> c.forEachType(forType));
+      inParameters().forEach(p -> forType.accept(p.type()));
+      forType.accept(out());
+    }
 
-		@Override
+    public abstract Feature withComment(String comment);
+
+    @Override
     public String toString() {
       var in = in() == Empty.of() ? "" : in().toString();
       if (!in.isEmpty()
@@ -342,11 +354,11 @@ public interface Type {
 
         @Override public boolean exists() { return false; }
 
-				@Override public Feature withComment(String comment) {
-					return this;
-				}
+        @Override public Feature withComment(String comment) {
+          return this;
+        }
 
-				@Override public String toString() {
+        @Override public String toString() {
           return "!" + name + "!" + in() + " -> " + out();
         }
       };
@@ -421,6 +433,64 @@ public interface Type {
     }
   };
 
+  interface Traversal<I> extends Visitor<I, Void> {
+    default Void parameterized(Parameterized d, I in) {
+      reference(d.reference(), in);
+      for (var a : d.arguments()) {
+        a.accept(this, in);
+      }
+      return null;
+    }
+
+    default Void product(Product p, I in) {
+      for (var c : p.components()) {
+        c.accept(this, in);
+      }
+      return null;
+    }
+
+    default Void record(Record r, I in) {
+      for (var f : r.fields()) {
+        f.forEachType(t -> t.accept(this, in));
+      }
+      return null;
+    }
+
+    default Void alternative(Alternative v, I in) {
+      for (var a : v.alternatives()) {
+        a.accept(this, in);
+      }
+      return null;
+    }
+
+    default Void array(Array a, I in) {
+      a.component().accept(this, in);
+      return null;
+    }
+
+    default Void setn(Setn s, I in) {
+      s.component().accept(this, in);
+      return null;
+    }
+
+    default Void option(Option o, I in) {
+      o.component().accept(this, in);
+      return null;
+    }
+
+    default Void functional(Function f, I in) {
+      f.in().accept(this, in);
+      f.out().accept(this, in);
+      return null;
+    }
+
+    default Void mapn(Mapn m, I in) {
+      m.key().accept(this, in);
+      m.value().accept(this, in);
+      return null;
+    }
+  }
+
   interface Visitor<I, O> {
     default O variable(Variable v, I in) {
       return otherwise(v, in);
@@ -478,14 +548,14 @@ public interface Type {
       return otherwise(Undefined, in);
     }
 
-		default O mapn(Mapn m, I in) {
-			return otherwise(m, in);
-		}
+    default O mapn(Mapn m, I in) {
+      return otherwise(m, in);
+    }
 
     default O otherwise(Type t, I in) {
       throw new UnsupportedOperationException("cannot handle type " + t + " with input: " + in);
     }
-	}
+  }
 
   default <T> T ifReference(java.util.function.Function<Type.Reference, T> ifReference, T defaultValue) {
     return accept(new Visitor<>() {

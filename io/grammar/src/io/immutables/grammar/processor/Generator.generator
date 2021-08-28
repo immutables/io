@@ -361,7 +361,7 @@ switch (t) {
 [for l in prod.literalAlternatives]
 case TERM_[asTokenConstant l]:
 [/for]
-	match([if prod.hasTagged]part != 0 ? [for tg in prod.parts][if for.first]PART_[asConstant tg.tag][/if][/for] : [/if]NO_PART, t);
+	match([if prod.hasTagged]part != NO_PART ? [for tg in prod.parts][if for.first]PART_[asConstant tg.tag][/if][/for] : [/if]NO_PART, t);
 	return end(part, p);
 default:
 	[-- Just use first in alternatives do describe mismatch --]
@@ -402,12 +402,12 @@ while ([inlineMatch p for.index]);[-- multiple optional --]
 
 [template inlineMatch Part p Integer partIndex][output.trim]
 	[if p.literal]
-term([if p.tagged]part != 0 ? PART_[asConstant p.tag] : [/if]NO_PART, TERM_[asTokenConstant p.literal])
+term([if p.tagged]part != NO_PART ? PART_[asConstant p.tag] : [/if]NO_PART, TERM_[asTokenConstant p.literal])
 	[else if p.reference]
 		[if p.reference.ephemeral]
-[asVar p.reference.id](part != 0 ? ANY_PART : NO_PART)
+[asVar p.reference.id](part != NO_PART ? ANY_PART : NO_PART)
 		[else if p.tagged]
-[asVar p.reference.id](part != 0 ? PART_[asConstant p.tag] : NO_PART)
+[asVar p.reference.id](part != NO_PART ? PART_[asConstant p.tag] : NO_PART)
 		[else]
 [asVar p.reference.id](NO_PART)
 		[/if]

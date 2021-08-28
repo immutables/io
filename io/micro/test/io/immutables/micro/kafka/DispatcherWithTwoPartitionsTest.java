@@ -2,6 +2,8 @@ package io.immutables.micro.kafka;
 
 import io.immutables.codec.OkJson;
 import io.immutables.micro.ExceptionSink;
+import io.immutables.micro.MicroInfo;
+import io.immutables.micro.Servicelet;
 import io.immutables.micro.Streams;
 import io.immutables.micro.wiring.docker.DockerRunner;
 import io.immutables.stream.Keyed;
@@ -15,6 +17,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.net.HostAndPort;
 import org.junit.*;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.net.HostAndPort.fromParts;
@@ -29,7 +32,8 @@ import static io.immutables.micro.kafka.Await.await;
 @Ignore("Hope temporary")
 public class DispatcherWithTwoPartitionsTest {
 
-  private static KafkaModule.BrokerInfo BROKER_INFO;
+  private static KafkaModule.BrokerInfo brokerInfo;
+  private static final Servicelet.Name servicelet = Servicelet.name("test");
   private static final OkJson JSON = new OkJson();
   private static final ExceptionSink SINK = ExceptionSink.assertNoUnhandled();
 
@@ -48,7 +52,7 @@ public class DispatcherWithTwoPartitionsTest {
   @BeforeClass
   public static void ensureListening() {
     String kafkaHost = DockerRunner.assertKafkaIsRunning(KafkaModule.KAFKA_STANDARD_PORT);
-    BROKER_INFO = new KafkaModule.BrokerInfo.Builder()
+    brokerInfo = new KafkaModule.BrokerInfo.Builder()
         .hostPort(fromParts(kafkaHost, KafkaModule.KAFKA_STANDARD_PORT))
         .setup(new Streams.Setup.Builder().build())
         .build();
@@ -68,7 +72,7 @@ public class DispatcherWithTwoPartitionsTest {
         .pollInterval(Duration.ofMillis(20))
         .idleReceiverTimeout(Duration.ofMinutes(5))
         .maxPollRecords(10);
-    KafkaAdmin.create(BROKER_INFO.connect(), topic, 2);
+    KafkaAdmin.create(brokerInfo.connect(), topic, 2);
 
     buckets = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
     receiver = records -> buckets.putAll(Thread.currentThread().getName(), records);
@@ -78,7 +82,7 @@ public class DispatcherWithTwoPartitionsTest {
   public void after() {
     if (dispatcher1 != null) dispatcher1.stopAsync().awaitTerminated();
     if (dispatcher2 != null) dispatcher2.stopAsync().awaitTerminated();
-    KafkaAdmin.deleteTopic(BROKER_INFO.connect(), topic);
+    KafkaAdmin.deleteTopic(brokerInfo.connect(), topic);
   }
 
   @Test
@@ -325,29 +329,29 @@ public class DispatcherWithTwoPartitionsTest {
   }
 
   private void send(FooRecord record) {
-    try (KafkaSender<FooRecord> sender = new KafkaSender<>(BROKER_INFO, JSON, SINK, senderSetup)) {
+    try (KafkaSender<FooRecord> sender = new KafkaSender<>(servicelet, brokerInfo, JSON, SINK, senderSetup)) {
       sender.write(record);
     }
   }
 
   private void send(List<FooRecord> records) {
-    try (KafkaSender<FooRecord> sender = new KafkaSender<>(BROKER_INFO, JSON, SINK, senderSetup)) {
+    try (KafkaSender<FooRecord> sender = new KafkaSender<>(servicelet, brokerInfo, JSON, SINK, senderSetup)) {
       sender.write(records);
     }
   }
 
   private Dispatcher<FooRecord> createAndStartDispatcher(String group, boolean autoCommit) {
-    Dispatcher<FooRecord> recordDispatcher = new Dispatcher<>(BROKER_INFO, SINK, JSON, () -> receiver,
+    Dispatcher<FooRecord> recordDispatcher = new Dispatcher<>(servicelet, brokerInfo, SINK, JSON, () -> receiver,
         defaultSetupBuilder.group(group).autoCommit(autoCommit).build());
     recordDispatcher.startAsync().awaitRunning();
     return recordDispatcher;
   }
 
   private class FooRecord implements Keyed<Integer>, Sharded<Integer> {
-
     private String value;
-
-    private FooRecord(String value) {this.value = value;}
+    private FooRecord(String value) {
+      this.value = value;
+    }
 
     @Override
     public Integer key() {

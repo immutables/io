@@ -1,12 +1,25 @@
 package io.immutables.micro.tester;
 
 
-import io.immutables.micro.*;
+import com.google.inject.Binder;
+import com.google.inject.Inject;
+import com.google.inject.Key;
+import com.google.inject.binder.LinkedBindingBuilder;
+import com.google.inject.internal.Messages;
+import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.util.Types;
+import io.immutables.micro.DatabaseScript;
+import io.immutables.micro.Databases;
+import io.immutables.micro.Manifest;
+import io.immutables.micro.MixinModule;
+import io.immutables.micro.References;
+import io.immutables.micro.Servicelet;
 import io.immutables.micro.wiring.ServiceletNameModule;
 import io.immutables.regres.ConnectionProvider;
 import io.immutables.regres.SqlAccessor;
 import io.immutables.stream.Receiver;
-
+import org.mockito.Mockito;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -15,14 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import com.google.inject.Binder;
-import com.google.inject.Inject;
-import com.google.inject.Key;
-import com.google.inject.binder.LinkedBindingBuilder;
-import com.google.inject.internal.Messages;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.util.Types;
-import org.mockito.Mockito;
+import static io.immutables.micro.tester.SetupModule.SETUPS;
 
 /**
  * Tester Servicelet facets composer which builds the servicelet which "tests"
@@ -69,6 +75,17 @@ final class Facets extends io.immutables.micro.Facets {
     @Override
     public TesterFacets configure(Consumer<Binder> configure) {
       Facets.super.configure(configure);
+      return this;
+    }
+
+    @Override
+    public TesterFacets setup(String section, Object setup) {
+      StackTraceElement source = getCallingSource(this);
+      Facets.super.configurePlatform(b ->
+          MapBinder.newMapBinder(b.withSource(source), String.class, Object.class, SETUPS)
+              .addBinding(section)
+              .toInstance(setup)
+      );
       return this;
     }
 
@@ -357,5 +374,6 @@ final class Facets extends io.immutables.micro.Facets {
    * This repository is used internally by tester servicelet to access target servicelet's database for general
    * purposes, like running init/cleanup scripts within that database.
    */
-  interface BridgeRepository extends SqlAccessor {}
+  interface BridgeRepository extends SqlAccessor {
+  }
 }

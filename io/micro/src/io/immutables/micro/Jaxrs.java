@@ -12,6 +12,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Qualifier;
+import javax.ws.rs.Path;
 import javax.ws.rs.client.WebTarget;
 import com.google.common.net.HostAndPort;
 import com.google.inject.Binder;
@@ -133,6 +134,10 @@ public final class Jaxrs {
       return "";
     }
     @Value.Default
+    default boolean forceAnyOrigin() {
+      return false;
+    }
+    @Value.Default
     default int corsMaxAge() {
       return -1;
     }
@@ -159,7 +164,7 @@ public final class Jaxrs {
     Set<EndpointEntry> endpoints();
 
     /**
-     * If {@code true}, the local endpoinds launched on this same platform will be auto-resolved.
+     * If {@code true}, the local endpoints launched on this same platform will be auto-resolved.
      */
     @Value.Default
     default boolean resolveInPlatform() {
@@ -194,10 +199,19 @@ public final class Jaxrs {
     }
 
     default URI createFallbackUri(HostAndPort localplatform, Manifest.Reference reference) {
+      var ref = reference.value();
+      var key = References.key(reference);
+      Class<? super Object> type = key.getTypeLiteral().getRawType();
+      var path = type.getAnnotation(Path.class);
+      var pname = type.getPackage().getName();
+      if (path != null && (pname.equals("robofs") || pname.equals("edge"))) {
+        ref = pname;
+        //ref = ref.replace("//", "/");
+      }
       return URI.create(fallbackUri()
           .replace(FALLBACK_HOST, localplatform.getHost())
           .replace(FALLBACK_PORT, localplatform.getPortOrDefault(80) + "")
-          .replace(FALLBACK_KEY, reference.value()));
+          .replace(FALLBACK_KEY, ref));
     }
 
     /** By default our CORS is very permissive. */
@@ -209,6 +223,11 @@ public final class Jaxrs {
           .addAllowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
           .addAllowedHeaders("Origin", "Content-Type", "Accept", "Authorization")
           .build();
+    }
+
+    @Value.Default
+    default String authorize() {
+      return "";
     }
 
     String FALLBACK_HOST = "<localplatform>";

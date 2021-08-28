@@ -2,6 +2,8 @@ package io.immutables.micro.kafka;
 
 import io.immutables.codec.OkJson;
 import io.immutables.micro.ExceptionSink;
+import io.immutables.micro.MicroInfo;
+import io.immutables.micro.Servicelet;
 import io.immutables.micro.Streams;
 import io.immutables.micro.wiring.docker.DockerRunner;
 import io.immutables.stream.Keyed;
@@ -18,6 +20,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.net.HostAndPort;
 import org.junit.*;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.net.HostAndPort.fromParts;
@@ -33,7 +36,8 @@ public class DispatcherWithOnePartitionTest {
 
   private static final OkJson json = new OkJson();
 
-  private static KafkaModule.BrokerInfo BROKER_INFO;
+  private static KafkaModule.BrokerInfo brokerInfo;
+  private static final Servicelet.Name servicelet = Servicelet.name("test");
 
   private ListMultimap<String, FooRecord> buckets;
   private Receiver<FooRecord> receiver;
@@ -52,7 +56,7 @@ public class DispatcherWithOnePartitionTest {
   @BeforeClass
   public static void ensureListening() {
     String kafkaHost = DockerRunner.assertKafkaIsRunning(KafkaModule.KAFKA_STANDARD_PORT);
-    BROKER_INFO = new KafkaModule.BrokerInfo.Builder()
+    brokerInfo = new KafkaModule.BrokerInfo.Builder()
         .hostPort(fromParts(kafkaHost, KafkaModule.KAFKA_STANDARD_PORT))
         .setup(new Streams.Setup.Builder().build())
         .build();
@@ -73,7 +77,7 @@ public class DispatcherWithOnePartitionTest {
         .idleReceiverTimeout(Duration.ofMinutes(5))
         .maxPollRecords(10);
 
-    KafkaAdmin.create(BROKER_INFO.connect(), topic, 1);
+    KafkaAdmin.create(brokerInfo.connect(), topic, 1);
 
     buckets = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
     receiver = records -> buckets.putAll(Thread.currentThread().getName(), records);
@@ -83,7 +87,7 @@ public class DispatcherWithOnePartitionTest {
   public void after() {
     if (dispatcher1 != null) dispatcher1.stopAsync().awaitTerminated();
     if (dispatcher2 != null) dispatcher2.stopAsync().awaitTerminated();
-    KafkaAdmin.deleteTopic(BROKER_INFO.connect(), topic);
+    KafkaAdmin.deleteTopic(brokerInfo.connect(), topic);
   }
 
   @Test
@@ -476,13 +480,13 @@ public class DispatcherWithOnePartitionTest {
   }
 
   private void send(FooRecord... record) {
-    try (KafkaSender<FooRecord> sender = new KafkaSender<>(BROKER_INFO, json, sink, senderSetup)) {
+    try (KafkaSender<FooRecord> sender = new KafkaSender<>(servicelet, brokerInfo, json, sink, senderSetup)) {
       sender.write(asList(record));
     }
   }
 
   private Dispatcher<FooRecord> createAndStartDispatcher(String group, boolean autoCommit) {
-    Dispatcher<FooRecord> recordDispatcher = new Dispatcher<>(BROKER_INFO, sink, json, () -> receiver,
+    Dispatcher<FooRecord> recordDispatcher = new Dispatcher<>(servicelet, brokerInfo, sink, json, () -> receiver,
         defaultSetupBuilder.group(group).autoCommit(autoCommit).build());
     recordDispatcher.startAsync().awaitRunning();
     return recordDispatcher;

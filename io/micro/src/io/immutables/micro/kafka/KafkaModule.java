@@ -1,6 +1,8 @@
 package io.immutables.micro.kafka;
 
 import io.immutables.codec.OkJson;
+import io.immutables.micro.MicroInfo;
+import io.immutables.micro.Servicelet;
 import io.immutables.micro.wiring.LocalPorts;
 import io.immutables.micro.wiring.docker.DockerRunner;
 import io.immutables.stream.Receiver;
@@ -124,8 +126,8 @@ public class KafkaModule implements Module {
   @Singleton
   public Streams.SenderFactory senderFactory(BrokerInfo brokerInfo, OkJson json, ExceptionSink sink) {
     return new Streams.SenderFactory() {
-      @Override public <R> Sender<R> create(Key<R> key) {
-        return new KafkaSender<>(brokerInfo, json, sink,
+      @Override public <R> Sender<R> create(Servicelet.Name servicelet, Key<R> key) {
+        return new KafkaSender<>(servicelet, brokerInfo, json, sink,
             new KafkaSender.Setup.Builder()
                 .topic(topicFor(key))
                 .type(key.getTypeLiteral().getType())
@@ -144,8 +146,8 @@ public class KafkaModule implements Module {
   @Singleton
   public Streams.DispatcherFactory dispatcherFactory(BrokerInfo brokerInfo, OkJson json, ExceptionSink sink) {
     return new Streams.DispatcherFactory() {
-      @Override public <R> Service create(Key<R> key, Optional<String> group, Provider<Receiver<R>> receiverProvider) {
-        return new Dispatcher<>(brokerInfo, sink, json, receiverProvider::get,
+      @Override public <R> Service create(Servicelet.Name servicelet, Key<R> key, Optional<String> group, Provider<Receiver<R>> receiverProvider) {
+        return new Dispatcher<>(servicelet, brokerInfo, sink, json, receiverProvider::get,
             new Dispatcher.Setup.Builder()
                 .group(group)
                 .topic(topicFor(key))

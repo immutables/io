@@ -1,0 +1,693 @@
+[template public generate]
+
+[for m in model.modules]
+  [generateImports m]
+[/for]
+
+[for dt in model.dataTypes]
+  [generateType dt]
+[/for]
+
+[for ent in model.entities]
+  [generateEntity ent]
+[/for]
+
+[/template]
+
+[template generateImports Module m]
+
+[let filename][m.name].ts[/let]
+
+[output.append filename]
+[for e in m.typeUsage.entrySet]
+import {[for t in e.value][if not for.first], [/if][t.name][/for]} from './[e.key]'
+[/for]
+import * as meta from '../src/data/meta'
+import * as lens from '../src/data/lens'
+import * as slot from '../src/data/slot'
+import * as store from '../src/data/store'
+[/output.append]
+
+[/template]
+
+
+[template generateType DataTypeModel dt]
+[for m = dt.module, t = dt.definition]
+
+[let filename][m.name].ts[/let]
+
+[output.append filename]
+
+[docComment t.comment]
+  [if t.isEnum]
+[generateEnumType m t]
+  [else if isInline t]
+[generateInlineType m t]
+  [else if t.hasCases]
+[generateCaseType m t]
+  [else]
+[generateDataType m t]
+  [/if]
+[/output.append]
+
+[/for]
+[/template]
+
+
+[template generateInlineType Module m Datatype t]
+export type [t.name] = [for p in t.constructor.mergedParameters][typef p.type][/for] & {
+  readonly __nominal?: unique symbol
+}
+[/template]
+
+
+[template generateDataType Module m Datatype t]
+[for ctor = t.constructor]
+export interface [t.name] {
+  [interfaceProperties ctor]
+}
+
+export namespace [t.name] {
+  [for p in ctor.mergedParameters, Typed tp = decideType p.type][if not for.first][/if]
+  export const [p.name] = lens.lens<[t.name], [typef tp.type]>(
+      [toLower t.name] => [toLower t.name].[p.name],
+      (_[toLower t.name], [p.name]) => Object.assign({}, _[toLower t.name], {[p.name]}))
+  [/for]
+
+  export type In = Slot & slot.InArray<[t.name]>
+  export type Of = slot.ForArray<[t.name], In>
+
+  export interface Slot extends slot.Slot<[t.name]> {
+[for p in ctor.mergedParameters, Typed tp = decideType p.type]
+  [if tp.scalar]
+    readonly [p.name]: slot.Slot<[typef tp.type]>
+  [else if tp.struct or tp.hasCases]
+    readonly [p.name]: [tp.dataType.name].Slot
+  [else if tp.option]
+    [for el = tp.element]
+      [if el.scalar]
+    readonly [p.name]: slot.Opt<[typef el.type]>
+      [else if el.struct or el.hasCases]
+    readonly [p.name]: [el.dataType.name].Opt
+      [else]
+      [/if]
+    [/for]
+  [else if tp.arrayLike]
+    [for el = tp.element]
+      [if el.scalar]
+    readonly [p.name]: slot.Array<[typef el.type]>
+      [else if el.struct]
+    readonly [p.name]: [el.dataType.name].Of
+      [else]
+      [/if]
+    [/for]
+  [/if]
+[/for]
+  }
+
+  export interface Opt extends slot.Opt<[t.name]> {
+[for p in ctor.mergedParameters, Typed tp = decideType p.type]
+  [if tp.scalar]
+    readonly [p.name]: slot.Opt<[typef tp.type]>
+  [else if tp.struct or tp.hasCases]
+    readonly [p.name]: [tp.dataType.name].Opt
+  [else if tp.option]
+    [for el = tp.element]
+      [if el.scalar]
+    readonly [p.name]: slot.Opt<[typef el.type]>
+      [else if el.struct or el.hasCases]
+    readonly [p.name]: [el.dataType.name].Opt
+      [else]
+      [/if]
+    [/for]
+  [else if tp.arrayLike][-- Considering arrays are empty when optional --]
+    [for el = tp.element]
+      [if el.scalar]
+    readonly [p.name]: slot.Array<[typef el.type]>
+      [else if el.struct or el.hasCases]
+    readonly [p.name]: [el.dataType.name].Of
+      [else]
+      [/if]
+    [/for]
+  [/if]
+[/for]
+  }
+
+  export function Slot(value: [t.name], onPropagate?: (v: [t.name]) => void): Slot {
+    return new [t.name]_slot(value, onPropagate)
+  }
+
+  export function Opt(value?: [t.name], onPropagate?: (v: [t.name]) => void): Opt {
+    return new [t.name]_slot(value!, onPropagate) as unknown as Opt
+  }
+
+  export function Of(value: [t.name]['[]'], onPropagate?: (v: [t.name]['[]']) => void): Of {
+    return new slot.ArraySlot(value, (e, p) => Slot(e, p), onPropagate) as Of
+  }
+
+  class [t.name]_slot extends slot.StructSlot<[t.name]> {
+    constructor(_value: [t.name], _onPropagate?: (v: [t.name]) => void) {
+      super(_onPropagate)
+      this._value = _value
+    }
+    [for p in ctor.mergedParameters, Typed tp = decideType p.type]
+    [if tp.struct or tp.hasCases]
+
+    private [p.name]_?: any
+
+    get [p.name](): [tp.dataType.name].Slot {
+      let _ = this.[p.name]_ ?? (this.[p.name]_ = [tp.dataType.name].Slot(
+          this._value?.[p.name],
+          v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+      return _ as [tp.dataType.name].Slot
+    }
+    [else if tp.option]
+[for el = tp.element]
+  [if el.struct or el.hasCases]
+
+    private [p.name]_?: any
+
+    get [p.name](): [el.dataType.name].Opt {
+      let _ = this.[p.name]_ ?? (this.[p.name]_ = [el.dataType.name].Opt(
+          this._value?.[p.name],
+          v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+      return _ as [el.dataType.name].Opt
+    }
+  [else][--if el.scalar or el.hasCases]
+
+    private [p.name]_?: any
+
+    get [p.name](): slot.Opt<[typef el.type]> {
+      let _ = this.[p.name]_ ?? (this.[p.name]_ = new slot.ValueSlot(
+          this._value?.[p.name],
+          v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+      return _ as slot.Opt<[typef el.type]>
+    }
+  [/if]
+[/for]
+    [else if tp.arrayLike]
+[for el = tp.element]
+  [if el.struct or el.hasCases]
+
+    private [p.name]_?: slot.ArraySlot<[el.dataType.name], [el.dataType.name].In>
+
+    get [p.name](): [el.dataType.name].Of {
+      return this.[p.name]_ ?? (this.[p.name]_ = new slot.ArraySlot(
+          this._value?.[p.name],
+          (e, p) => [el.dataType.name].Slot(e, p),
+          v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+    }
+  [else][--if el.scalar]
+
+    private [p.name]_?: slot.ArraySlot<[typef el.type], slot.InArray<[typef el.type]>>
+
+    get [p.name](): slot.Array<[typef el.type]> {
+      return this.[p.name]_ ?? (this.[p.name]_ = new slot.ArraySlot(
+          this._value?.[p.name],
+          (e, p) => new slot.ValueSlot(e, p),
+          v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+    }
+  [/if]
+[/for]
+    [else][--if tp.scalar]
+
+    private [p.name]_?: slot.ValueSlot<[typef tp.type]>
+
+    get [p.name](): slot.Slot<[typef tp.type]> {
+      return this.[p.name]_ ?? (this.[p.name]_ = new slot.ValueSlot(
+          this._value?.[p.name],
+          v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+    }
+    [/if]
+    [/for]
+
+    protected _onDispose() {
+  [for p in ctor.mergedParameters]
+      this.[p.name]_?._dispose()
+  [/for]
+    }
+
+    _applyBelow() {
+  [for p in ctor.mergedParameters, Typed tp = decideType p.type]
+    [if for.first]
+      let v = this._value
+    [/if]
+  [if tp.struct]
+      this.[p.name]_?._apply(v?.[p.name])
+  [else if tp.option]
+      this.[p.name]_?._apply(v?.[p.name])
+  [else if tp.arrayLike]
+      this.[p.name]_?._apply(v?.[p.name])
+  [else][--if tp.scalar]
+      this.[p.name]_?._apply(v?.[p.name])
+  [/if]
+  [/for]
+    }
+  }
+}
+[/for]
+[/template]
+
+[template generateCaseType Module m Datatype t]
+export type [t.name]
+  = [for entry in t.constructors.entrySet, cname = entry.key][if not for.first]
+  | [/if][t.name].[cname][/for]
+
+export namespace [t.name] {
+  export type In = Slot & slot.InArray<[t.name]>
+  export type Of = slot.ForArray<[t.name], In>
+  export interface Slot extends slot.Slot<[t.name]> {
+    [for entry in t.constructors.entrySet, cname = entry.key, ctor = entry.value]
+    readonly [cname]: [cname].Opt
+    readonly _[toLower cname]: boolean
+    [/for]
+    readonly _case: [for entry in t.constructors.entrySet, cname = entry.key, ctor = entry.value]'[cname]' | [/for]undefined
+  }
+
+  export interface Opt extends slot.Opt<[t.name]> {
+    [for entry in t.constructors.entrySet, cname = entry.key, ctor = entry.value]
+    readonly [cname]: [cname].Opt
+    readonly _[toLower cname]: boolean
+    [/for]
+    readonly _case: [for entry in t.constructors.entrySet, cname = entry.key, ctor = entry.value]'[cname]' | [/for]undefined
+  }
+
+  export function Slot(value: [t.name], onPropagate?: (v: [t.name]) => void): Slot {
+    return new [t.name]_slot(value, onPropagate)
+  }
+
+  export function Opt(value?: [t.name], onPropagate?: (v: [t.name]) => void): Opt {
+    return new [t.name]_slot(value!, onPropagate) as unknown as Opt
+  }
+
+  export function Of(value: [t.name]['[]'], onPropagate?: (v: [t.name]['[]']) => void): Of {
+    return new slot.ArraySlot(value, (e, p) => Slot(e, p), onPropagate) as Of
+  }
+
+  class [t.name]_slot extends slot.CaseSlot<[t.name]> {
+    constructor(_value: [t.name], _onPropagate?: (v: [t.name]) => void) {
+      super(_onPropagate)
+      this._value = _value
+    }
+    [for entry in t.constructors.entrySet, cname = entry.key, ctor = entry.value]
+    private [toLower cname]_?: any
+
+    get [cname](): [cname].Opt {
+      let _ = this.[toLower cname]_ ?? (this.[toLower cname]_ = [cname].Opt(
+          (this._[toLower cname] && this._value) as [cname], v => this._ = v))
+      return _ as [cname].Opt
+    }
+
+    get _[toLower cname](): boolean {
+      return this._case === '[cname]'
+    }
+    [/for]
+
+    get _case() {
+      let v = this._value
+      return v && v['["@case"]']
+    }
+
+    protected _onDispose() {
+    [for entry in t.constructors.entrySet, cname = entry.key, ctor = entry.value]
+      this.[toLower cname]_?._dispose()
+    [/for]
+    }
+
+    _applyBelow() {
+      let v = this._value
+    [for entry in t.constructors.entrySet, cname = entry.key, ctor = entry.value]
+      this.[toLower cname]_?._apply(this._[toLower cname] && v)
+    [/for]
+    }
+  }
+
+  [for entry in t.constructors.entrySet, cname = entry.key, ctor = entry.value]
+
+  export interface [cname] {
+    '@case': '[cname]'
+    [interfaceProperties ctor]
+  }
+
+  export namespace [cname] {
+    export type In = Slot & slot.InArray<[cname]>
+    export type Of = slot.ForArray<[cname], In>
+
+    export interface Slot extends slot.Slot<[cname]> {
+  [for p in ctor.mergedParameters, Typed tp = decideType p.type]
+    [if tp.scalar]
+      readonly [p.name]: slot.Slot<[typef tp.type]>
+    [else if tp.struct or tp.hasCases]
+      readonly [p.name]: [tp.dataType.name].Slot
+    [else if tp.option]
+      [for el = tp.element]
+        [if el.scalar]
+      readonly [p.name]: slot.Opt<[typef el.type]>
+        [else if el.struct or el.hasCases]
+      readonly [p.name]: [el.dataType.name].Opt
+        [else]
+        [/if]
+      [/for]
+    [else if tp.arrayLike]
+      [for el = tp.element]
+        [if el.scalar]
+      readonly [p.name]: slot.Array<[typef el.type]>
+        [else if el.struct or el.hasCases]
+      readonly [p.name]: [el.dataType.name].Of
+        [else]
+        [/if]
+      [/for]
+    [/if]
+  [/for]
+    }
+
+    export interface Opt extends slot.Opt<[cname]> {
+  [for p in ctor.mergedParameters, Typed tp = decideType p.type]
+    [if tp.scalar]
+      readonly [p.name]: slot.Opt<[typef tp.type]>
+    [else if tp.struct or tp.hasCases]
+      readonly [p.name]: [tp.dataType.name].Opt
+    [else if tp.option]
+      [for el = tp.element]
+        [if el.scalar]
+      readonly [p.name]: slot.Opt<[typef el.type]>
+        [else if el.struct or el.hasCases]
+      readonly [p.name]: [el.dataType.name].Opt
+        [else]
+        [/if]
+      [/for]
+    [else if tp.arrayLike][-- Considering arrays are empty when optional --]
+      [for el = tp.element]
+        [if el.scalar]
+      readonly [p.name]: slot.Array<[typef el.type]>
+        [else if el.struct or el.hasCases]
+      readonly [p.name]: [el.dataType.name].Of
+        [else]
+        [/if]
+      [/for]
+    [/if]
+  [/for]
+    }
+
+    export function Slot(value: [cname], onPropagate?: (v: [cname]) => void): Slot {
+      return new [cname]_slot(value, onPropagate)
+    }
+
+    export function Opt(value?: [cname], onPropagate?: (v: [cname]) => void): Opt {
+      return new [cname]_slot(value!, onPropagate) as unknown as Opt
+    }
+
+    export function Of(value: [cname]['[]'], onPropagate?: (v: [cname]['[]']) => void): Of {
+      return new slot.ArraySlot(value, (e, p) => Slot(e, p), onPropagate) as Of
+    }
+
+    class [cname]_slot extends slot.StructSlot<[cname]> {
+      constructor(_value: [cname], _onPropagate?: (v: [cname]) => void) {
+        super(_onPropagate)
+        this._value = _value
+      }
+      [for p in ctor.mergedParameters, Typed tp = decideType p.type]
+      [if tp.struct or tp.hasCases]
+
+      private [p.name]_?: any
+
+      get [p.name](): [tp.dataType.name].Slot {
+        let _ = this.[p.name]_ ?? (this.[p.name]_ = [tp.dataType.name].Slot(
+            this._value?.[p.name],
+            v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+        return _ as [tp.dataType.name].Slot
+      }
+      [else if tp.option]
+  [for el = tp.element]
+    [if el.struct or el.hasCases]
+
+      private [p.name]_?: any
+
+      get [p.name](): [el.dataType.name].Opt {
+        let _ = this.[p.name]_ ?? (this.[p.name]_ = [el.dataType.name].Opt(
+            this._value?.[p.name],
+            v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+        return _ as [el.dataType.name].Opt
+      }
+    [else][--if el.scalar ]
+
+      private [p.name]_?: any
+
+      get [p.name](): slot.Opt<[typef el.type]> {
+        let _ = this.[p.name]_ ?? (this.[p.name]_ = new slot.ValueSlot(
+            this._value?.[p.name],
+            v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+        return _ as slot.Opt<[typef el.type]>
+      }
+    [/if]
+  [/for]
+      [else if tp.arrayLike]
+  [for el = tp.element]
+    [if el.struct or el.hasCases]
+
+      private [p.name]_?: slot.ArraySlot<[el.dataType.name], [el.dataType.name].In>
+
+      get [p.name](): [el.dataType.name].Of {
+        return this.[p.name]_ ?? (this.[p.name]_ = new slot.ArraySlot(
+            this._value?.[p.name],
+            (e, p) => [el.dataType.name].Slot(e, p),
+            v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+      }
+    [else][--if el.scalar]
+
+      private [p.name]_?: slot.ArraySlot<[typef el.type], slot.InArray<[typef el.type]>>
+
+      get [p.name](): slot.Array<[typef el.type]> {
+        return this.[p.name]_ ?? (this.[p.name]_ = new slot.ArraySlot(
+            this._value?.[p.name],
+            (e, p) => new slot.ValueSlot(e, p),
+            v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+      }
+    [/if]
+  [/for]
+      [else][--if tp.scalar]
+
+      private [p.name]_?: slot.ValueSlot<[typef tp.type]>
+
+      get [p.name](): slot.Slot<[typef tp.type]> {
+        return this.[p.name]_ ?? (this.[p.name]_ = new slot.ValueSlot(
+            this._value?.[p.name],
+            v => this._value && (this._ = Object.assign({}, this._value, {[p.name]: v}))))
+      }
+      [/if]
+      [/for]
+
+      protected _onDispose() {
+    [for p in ctor.mergedParameters]
+        this.[p.name]_?._dispose()
+    [/for]
+      }
+
+      _applyBelow() {
+    [for p in ctor.mergedParameters, Typed tp = decideType p.type]
+      [if for.first]
+        let v = this._value
+      [/if]
+    [if tp.struct]
+        this.[p.name]_?._apply(v?.[p.name])
+    [else if tp.option]
+        this.[p.name]_?._apply(v?.[p.name])
+    [else if tp.arrayLike]
+        this.[p.name]_?._apply(v?.[p.name])
+    [else][--if tp.scalar]
+        this.[p.name]_?._apply(v?.[p.name])
+    [/if]
+    [/for]
+      }
+    }
+  }
+  [/for]
+}
+[/template]
+
+[template interfaceProperties Constructor ctor]
+  [for p in ctor.mergedParameters, Typed tp = decideType p.type][if not for.first][/if]
+    [if tp.option]
+[p.name]?: [typef tp.element.type]
+    [else if tp.mapn]
+[p.name]: {['[_: string]']: [typef tp.value.type]}
+    [else]
+[p.name]: [typef tp.type]
+    [/if]
+  [/for]
+[/template]
+
+[template generateEnumType Module m Datatype t]
+export enum [t.name] {
+	[for entry in t.constructors.entrySet, cname = entry.key][if not for.first],
+	[/if][cname] = '[cname]'[/for]
+}
+[/template]
+
+[template docComment String comment]
+[if comment]
+/**
+[for String lc in linesOf comment]
+ * [lc][/for]
+ */
+[/if]
+[/template]
+
+
+[template generateEntity EntityModel ent]
+[let filename][ent.module.name].ts[/let]
+
+[output.append filename]
+
+export namespace [ent.definition.name] {
+  export interface Entity extends meta.Entity<[ent.definition.name], Result> {
+  [for cmp in ent.components]
+    readonly [cmp.component.name]: meta.Component<[ent.definition.name], [if cmp.slug.present][typef cmp.slug.get.type][else]undefined[/if], [typef cmp.component.type]>
+  [/for]
+    Slots(factory: store.DataStoreFactory, id: [ent.definition.name] | undefined): Slots
+    Components(_factory: slot.Factory, _: [ent.definition.name] | undefined): Components
+  }
+  export interface Result {
+    readonly [ent.entity.name]: [ent.definition.name]
+    readonly _components: [if ent.components]([for cmp in ent.components][if not for.first] | [/if]'[toHyphen cmp.component.name]'[/for])[/if]['[]']
+  [for cmp in ent.components]
+    [if cmp.slug.present]
+    readonly [cmp.component.name]?: {['[key: string]']: [typef cmp.component.type]}
+    [else]
+    readonly [cmp.component.name]?: [typef cmp.component.type]
+    [/if]
+  [/for]
+  }
+  export interface Slots {
+    readonly id: [ent.definition.name]
+  [for cmp in ent.components]
+    [if cmp.slug.present]
+    [cmp.component.name]([cmp.slug.get.name]: [typef cmp.slug.get.type]): store.DataStore<[typef cmp.component.type]>
+    [else]
+    readonly [cmp.component.name]: store.DataStore<[typef cmp.component.type]>
+    [/if]
+  [/for]
+  }
+
+  export interface Components extends slot.ForEntity<[ent.definition.name], [ent.definition.name].Entity> {
+  [for cmp in ent.components, Typed tp = decideType cmp.component.type]
+    [if cmp.slug.present]
+    [cmp.component.name]([cmp.slug.get.name]: [typef cmp.slug.get.type]): [slotType tp] & slot.Store<[typef cmp.component.type]>
+    [else]
+    readonly [cmp.component.name]: [slotType tp] & slot.Store<[typef cmp.component.type]>
+    [/if]
+  [/for]
+  }
+}
+
+const components_[ent.definition.name] = {
+[for cmp in ent.components]
+  '[toHyphen cmp.component.name]': {
+    entity: '[toHyphen ent.entity.name]',
+    component: '[toHyphen cmp.component.name]',
+    feature: '[cmp.component.name]',
+    key: [if cmp.slug.present]'[toHyphen cmp.slug.get.name]'[else]undefined[/if],
+    toString() {
+      return '[ent.definition.name].[cmp.component.name]::component'
+    }
+  },
+[/for]
+}
+
+function stores_[ent.definition.name](_factory: store.DataStoreFactory, _entity: [ent.definition.name] | undefined): [ent.definition.name].Slots {
+  return {
+    get id() { return _entity! },
+    [for cmp in ent.components][if not for.first],
+    [/if][if cmp.slug.present]
+    [cmp.component.name]([cmp.slug.get.name]: [typef cmp.slug.get.type]) {
+      return _factory.component([ent.definition.name].[cmp.component.name], _entity, [cmp.slug.get.name])
+    }[else]get [cmp.component.name]() {
+      return _factory.component([ent.definition.name].[cmp.component.name], _entity)
+    }[/if][/for]
+  }
+}
+
+function component_slots_[ent.definition.name](_factory: slot.Factory, _: [ent.definition.name] | undefined): [ent.definition.name].Components {
+  return {
+    _entity: [ent.definition.name],
+    get _() { return _! },
+    [for cmp in ent.components, Typed tp = decideType cmp.component.type][if not for.first],
+    [/if][if cmp.slug.present]
+    [cmp.component.name](_key: [typef cmp.slug.get.type]): [slotType tp] & slot.Store<[typef cmp.component.type]> {
+      return _factory.componentStore(
+          [ent.definition.name].[cmp.component.name],
+          [slotSupplier tp],
+          _, _key)
+    }[else]get [cmp.component.name](): [slotType tp] & slot.Store<[typef cmp.component.type]> {
+      return _factory.componentStore(
+          [ent.definition.name].[cmp.component.name],
+          [slotSupplier tp],
+          _)
+    }[/if][/for]
+  }
+}
+
+export const [ent.definition.name]: [ent.definition.name].Entity = {
+  _name: '[toHyphen ent.entity.name]',
+  _feature: '[ent.entity.name]',
+  _components: components_[ent.definition.name],
+[for cmp in ent.components]
+  [cmp.component.name]: components_[ent.definition.name]['[']'[toHyphen cmp.component.name]'[']'] as meta.Component<[ent.definition.name], [if cmp.slug.present][typef cmp.slug.get.type][else]undefined[/if], [typef cmp.component.type]>,
+[/for]
+  Slots: stores_[ent.definition.name],
+  Components: component_slots_[ent.definition.name],
+  toString() {
+    return '[ent.definition.name]::entity'
+  }
+}
+[/output.append]
+
+[/template]
+
+[template slotType Typed tp][output.trim]
+[if tp.struct or tp.hasCases]
+  [tp.dataType.name].Slot
+[else if tp.option]
+  [for el = tp.element]
+    [if el.struct or el.hasCases]
+  [el.dataType.name].Opt
+    [else][--if tp.scalar]
+slot.Opt<[typef el.type]>
+    [/if]
+  [/for]
+[else if tp.arrayLike]
+  [for el = tp.element]
+    [if el.struct or el.hasCases]
+  [el.dataType.name].Of
+    [else][--if tp.scalar]
+slot.Array<[typef el.type]>
+    [/if]
+  [/for]
+[else][--if tp.scalar]
+slot.Slot<[typef tp.type]>
+[/if]
+[/output.trim][/template]
+
+[template slotSupplier Typed tp][output.trim]
+  [if tp.struct or tp.hasCases]
+_v => [tp.dataType.name].Slot(_v)
+  [else if tp.option]
+    [for el = tp.element]
+      [if el.struct or el.hasCases]
+_v => [el.dataType.name].Opt(_v)
+      [else][--if tp.scalar]
+_v => new slot.ValueSlot(_v) as slot.Opt<[typef el.type]>
+      [/if]
+    [/for]
+  [else if tp.arrayLike]
+    [for el = tp.element]
+      [if el.struct or el.hasCases]
+_v => new slot.ArraySlot(_v, (e, p) => [el.dataType.name].Slot(e, p)) as [el.dataType.name].Of
+      [else][--if tp.scalar]
+_v => new slot.ArraySlot(_v, (e, p) => new slot.ValueSlot(e, p)) as slot.Array<[typef el.type]>
+      [/if]
+    [/for]
+  [else][--if tp.scalar]
+_v => new slot.ValueSlot(_v) as slot.Slot<[typef tp.type]>
+  [/if]
+[/output.trim][/template]

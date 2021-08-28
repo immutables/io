@@ -62,9 +62,11 @@ final class MainSetupModule extends AbstractModule {
 
   private static Streams.Setup fallbackStreams(boolean requiresStream) {
     return new Streams.Setup.Builder()
-        .hostPort(HostAndPort.fromHost("localhost"))
-        .autostart(requiresStream)
-        .topicMode(Streams.Setup.Mode.CREATE_IF_NOT_EXIST)
+        //.hostPort(HostAndPort.fromHost("localhost"))
+        //.autostart(requiresStream)
+        //.topicMode(Streams.Setup.Mode.CREATE_IF_NOT_EXIST)
+        .autostart(false)
+        .topicMode(Streams.Setup.Mode.EXISTING)
         .shards(1) // FIXME make the other default 12 or 24 as default
         .build();
   }

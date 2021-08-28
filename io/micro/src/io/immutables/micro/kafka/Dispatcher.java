@@ -2,9 +2,13 @@ package io.immutables.micro.kafka;
 
 import io.immutables.codec.Codec;
 import io.immutables.codec.OkJson;
+import io.immutables.micro.MicroInfo;
+import io.immutables.micro.Servicelet;
 import io.immutables.stream.Receiver;
 import io.immutables.stream.Topic;
 import io.immutables.micro.ExceptionSink;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.*;
@@ -13,6 +17,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import com.google.common.base.Joiner;
 import com.google.common.cache.*;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
@@ -32,6 +37,7 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.*;
 import static org.apache.kafka.clients.consumer.OffsetResetStrategy.EARLIEST;
+import static org.apache.kafka.clients.consumer.OffsetResetStrategy.LATEST;
 
 @Enclosing
 public class Dispatcher<R> extends AbstractScheduledService {
@@ -47,15 +53,22 @@ public class Dispatcher<R> extends AbstractScheduledService {
 
   private boolean partitionsAssigned = false;
 
-  public Dispatcher(KafkaModule.BrokerInfo brokerInfo, ExceptionSink exceptionSink, OkJson json,
+  public Dispatcher(
+      Servicelet.Name servicelet,
+      KafkaModule.BrokerInfo brokerInfo, ExceptionSink exceptionSink, OkJson json,
       Supplier<Receiver<R>> receiverSupplier, Setup setup) {
     this.json = json;
-    this.groupId = setup.group().orElseGet(() -> "Group_" + System.identityHashCode(this));
-    this.clientId = "Client_" + System.identityHashCode(this);
+
+    //this.groupId = setup.group().orElseGet(() -> "Group_" + System.identityHashCode(this));
+    //this.clientId = "Client_" + System.identityHashCode(this);
+
+    this.clientId = servicelet + "__" + RuntimeInfo.key();
+    this.groupId = setup.group().orElse("");
+
     this.setup = setup;
     this.codec = (Codec<R>) json.get(TypeToken.of(setup.type()));
     this.receiverSupplier = receiverSupplier;
-    this.consumer = createConsumer(brokerInfo.connect(), setup);
+    this.consumer = createConsumer(brokerInfo, setup);
     this.handlers = CacheBuilder.newBuilder()
         .expireAfterAccess(setup.idleReceiverTimeout())
         .removalListener(new RemovalListener<Integer, PartitionHandler>() {
@@ -78,10 +91,11 @@ public class Dispatcher<R> extends AbstractScheduledService {
         });
   }
 
-  private Consumer<String, String> createConsumer(String host, Setup setup) {
+  private Consumer<String, String> createConsumer(KafkaModule.BrokerInfo brokerInfo, Setup setup) {
     Properties props = new Properties();
-    props.put(BOOTSTRAP_SERVERS_CONFIG, host);
-    props.put(GROUP_ID_CONFIG, groupId);
+    props.put(BOOTSTRAP_SERVERS_CONFIG, brokerInfo.connect());
+    props.put(CLIENT_ID_CONFIG, clientId);
+    props.put(GROUP_ID_CONFIG, !groupId.isEmpty() ? groupId : clientId);
     props.put(KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
     props.put(VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
     props.put(MAX_POLL_RECORDS_CONFIG, setup.maxPollRecords());
@@ -89,7 +103,7 @@ public class Dispatcher<R> extends AbstractScheduledService {
     props.put(ENABLE_AUTO_COMMIT_CONFIG, false);
     props.put(ALLOW_AUTO_CREATE_TOPICS_CONFIG, false);
     props.put(AUTO_OFFSET_RESET_CONFIG, EARLIEST.name().toLowerCase());
-    props.put(CLIENT_ID_CONFIG, clientId);
+    props.putAll(brokerInfo.setup().props());
     return new KafkaConsumer<>(props);
   }
 
@@ -162,7 +176,7 @@ public class Dispatcher<R> extends AbstractScheduledService {
 
   @Override
   protected String serviceName() {
-    return String.format("%s:%s<%s>", groupId, clientId, topic().value());
+    return String.format("[%s]%s<%s>", groupId, clientId, topic().value());
   }
 
   private void stopHandlersSync() {

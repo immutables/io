@@ -56,7 +56,12 @@ public final class DatabaseModule implements Module {
   @Provides
   @Singleton
   public ConnectionProvider connections(ConnectionInfo database) {
-    return () -> DriverManager.getConnection(database.toJdbcString());
+    var connect = database.toJdbcString();
+    var username = database.setup().username();
+    var password = database.setup().password();
+    return username.isEmpty()
+        ? () -> DriverManager.getConnection(connect)
+        : () -> DriverManager.getConnection(connect, username, password);
   }
 
   @ProvidesIntoSet
@@ -395,7 +400,7 @@ public final class DatabaseModule implements Module {
 
   private Optional<Integer> autostartPort(Databases.Setup setup) {
     URI uri = setup.normalizedConnect();
-    if (LocalPorts.isLocalhost(uri.getHost()) && setup.autostart()) {
+    if (setup.autostart() && LocalPorts.isLocalhost(uri.getHost())) {
       int port = uri.getPort();
       if (port < 0) return Optional.of(POSTGRES_STANDARD_PORT);
       if (port == 0) return Optional.of(LocalPorts.findSomeFreePort());

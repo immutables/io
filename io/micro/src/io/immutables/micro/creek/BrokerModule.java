@@ -1,6 +1,7 @@
 package io.immutables.micro.creek;
 
 import io.immutables.codec.OkJson;
+import io.immutables.micro.Servicelet;
 import io.immutables.stream.Receiver;
 import io.immutables.stream.Sender;
 import io.immutables.micro.Streams;
@@ -47,7 +48,7 @@ public class BrokerModule implements Module {
   @Singleton
   public Streams.SenderFactory senderFactory(Broker broker, OkJson json) {
     return new Streams.SenderFactory() {
-      @Override public <R> Sender<R> create(Key<R> key) {
+      @Override public <R> Sender<R> create(Servicelet.Name servicelet, Key<R> key) {
         return new Producer<>(
             broker,
             json,
@@ -69,7 +70,7 @@ public class BrokerModule implements Module {
   public Streams.DispatcherFactory dispatcherFactory(Broker broker, OkJson json) {
     return new Streams.DispatcherFactory() {
       @Override
-      public <R> Service create(Key<R> key, Optional<String> group, Provider<Receiver<R>> receiverProvider) {
+      public <R> Service create(Servicelet.Name servicelet, Key<R> key, Optional<String> group, Provider<Receiver<R>> receiverProvider) {
         return new Dispatcher<>(broker, json, receiverProvider::get,
             new Dispatcher.Conf.Builder()
                 .topic(topicFor(key))

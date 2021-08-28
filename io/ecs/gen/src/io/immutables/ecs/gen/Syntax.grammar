@@ -325,7 +325,8 @@ type-constraint-conception
   concept:type-reference-named
 
 type-constraint-http
-  uri-method path:uri-path
+  | uri-method path:uri-path?
+  | path:uri-path
 
 features
   | '{' nl* '}'
@@ -614,7 +615,10 @@ literal-bool
   | method:'DELETE'
 
 uri-path
-  segment:uri-segment+
+  segment:uri-segment+ query:uri-query*
+
+uri-query
+  '?' bind:<name>
 
 uri-segment
   | '/' slug:uri-slug ':' bind:<name>

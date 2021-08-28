@@ -2,6 +2,8 @@ package io.immutables.micro.kafka;
 
 import io.immutables.codec.Codec;
 import io.immutables.codec.OkJson;
+import io.immutables.micro.MicroInfo;
+import io.immutables.micro.Servicelet;
 import io.immutables.stream.Keyed;
 import io.immutables.stream.Sender;
 import io.immutables.stream.Sharded;
@@ -13,6 +15,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
 import javax.annotation.Nullable;
+import com.google.common.base.Joiner;
 import com.google.common.reflect.TypeToken;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -38,23 +41,26 @@ public class KafkaSender<R> implements Sender<R>, AutoCloseable {
   private final boolean keyed;
   private final boolean sharded;
 
-  public KafkaSender(KafkaModule.BrokerInfo brokerInfo, OkJson json, ExceptionSink sink, Setup setup) {
+  public KafkaSender(Servicelet.Name servicelet, KafkaModule.BrokerInfo brokerInfo, OkJson json, ExceptionSink sink, Setup setup) {
     this.json = json;
     this.sink = sink;
     this.setup = setup;
-    this.kafkaProducer = createProducer(brokerInfo.connect(), setup);
+    this.kafkaProducer = createProducer(servicelet, brokerInfo, setup);
     this.codec = json.get(setup.type());
     this.keyCodec = getKeyCodec(json, (Class<?>) setup.type());
     this.keyed = keyCodec != null;
     this.sharded = Sharded.class.isAssignableFrom((Class<?>) setup.type());
   }
 
-  private KafkaProducer<String, String> createProducer(String host, Setup setup) {
+  private KafkaProducer<String, String> createProducer(Servicelet.Name servicelet, KafkaModule.BrokerInfo brokerInfo, Setup setup) {
     Properties props = new Properties();
-    props.put(BOOTSTRAP_SERVERS_CONFIG, host);
-    props.put(CLIENT_ID_CONFIG, "KafkaSender@" + setup.type().getTypeName() + "_" + System.identityHashCode(this));
+    props.put(BOOTSTRAP_SERVERS_CONFIG, brokerInfo.connect());
+    //props.put(CLIENT_ID_CONFIG, "KafkaSender@" + setup.type().getTypeName() + "_" + System.identityHashCode(this));
+    var clientId = servicelet + "__" + RuntimeInfo.key();
+    props.put(CLIENT_ID_CONFIG, clientId);
     props.put(KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
     props.put(VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+    props.putAll(brokerInfo.setup().props());
     return new KafkaProducer<>(props);
   }
 

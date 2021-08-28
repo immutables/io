@@ -8,7 +8,7 @@ import javax.inject.Provider;
 /**
  * Provides access to configuration section and hiding JSON details.
  */
-interface SetupLoader {
+public interface SetupLoader {
   /**
    * Loads configuration object from configuration provided to launcher in JSON or similar mechanism. In case
    * configuration is not there or there's an exception reading config the default value will created and returned. It

@@ -43,6 +43,6 @@ contract Kaligula {
 //, query(a, x), GET /ui/:a/:x ?a,x
 contract Two {
 	ui -> Int :: GET /it/now/or/`*****`
-	arr(a, x Bool) -> Int :: POST /abcd-good/lord/:x/:a
+	arr(a, x Bool) -> Int :: POST /abcd-good/lord/:x/:a?q1?q2
 	boor(h String?) -> Bool
 }

@@ -1,5 +1,6 @@
 package io.immutables.micro.wiring;
 
+import io.immutables.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -32,8 +33,9 @@ public final class LocalPorts {
    * Checks if it's "localhost" or IPv4 loopback address, for us it's like the same but, obvously, this is a
    * simplification.
    */
-  public static boolean isLocalhost(String host) {
-    return host.equals("localhost")
+  public static boolean isLocalhost(@Nullable String host) {
+    return host != null
+        || host.equals("localhost")
         || host.equals("127.0.0.1");
   }
 

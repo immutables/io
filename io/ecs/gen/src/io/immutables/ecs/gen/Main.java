@@ -10,12 +10,18 @@ import java.util.Deque;
 import org.immutables.generator.Templates;
 
 public class Main {
+  static class Mode {
+    boolean schema;
+    boolean typescript;
+  }
+
   public static void main(String... args) throws IOException {
     var srcBuilder = Vect.<Path>builder();
 
     var output = new Output();
+    var mode = new Mode();
 
-    initArgs(output, srcBuilder, args);
+    initArgs(output, mode, srcBuilder, args);
 
     Vect<Path> srcs = srcBuilder.build();
     if (srcs.isEmpty()) {
@@ -30,13 +36,18 @@ public class Main {
         if (!compiler.problems.isEmpty()) {
           exitWithProblems(compiler);
         }
-        if (output.schema) {
+        if (mode.typescript) {
+          var template = new Generator_Typescript();
+          template.model = model;
+          template.output = output;
+          template.generate().invoke(Templates.Invokation.initial());
+        } else if (mode.schema) {
 					var template = new Generator_Schema();
 					template.model = model;
 					template.output = output;
 					template.generate().invoke(Templates.Invokation.initial());
 				} else {
-					var template = new Generator_Ecs();
+					var template = new Generator_Jawa();
 					template.model = model;
 					template.output = output;
 					template.generate().invoke(Templates.Invokation.initial());
@@ -56,11 +67,12 @@ public class Main {
     System.exit(2);
   }
 
-  private static void initArgs(Output output, Vect.Builder<Path> srcs, String[] args) {
+  private static void initArgs(Output output, Mode mode, Vect.Builder<Path> srcs, String[] args) {
     var deque = new ArrayDeque<>(Arrays.asList(args));
     while (!deque.isEmpty()) {
       switch (deque.peek()) { // @formatter:off
-			case "--schema": output.schema = true; deque.remove(); break;
+      case "--typescript": mode.typescript = true; deque.remove(); break;
+      case "--schema": mode.schema = true; deque.remove(); break;
       case "--out": output.out = requireValue(deque); break;
 			case "--zip": output.zip = requireValue(deque); break;
 			default:  // @formatter:on
@@ -89,7 +101,8 @@ public class Main {
   }
 
   private static void exitWithUsage() {
-    System.err.println("Usage: <thiscmd> [--out <dir>][--zip <file>] <source_file1> [<source_file1>...]");
+    System.err.println(
+        "Usage: <thiscmd> [--schema|--typescript] [--out <dir>] [--zip <file>] <source_file1> [<source_file1>...]");
     System.exit(-1);
   }
 }

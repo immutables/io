@@ -4,6 +4,7 @@ import io.immutables.codec.OkJaxrsMessageBodyProvider;
 import io.immutables.codec.OkJson;
 import io.immutables.micro.*;
 import io.immutables.micro.wiring.jersey.BridgeInjections;
+import io.immutables.micro.wiring.jersey.AuthorizeClientFilter;
 import io.immutables.micro.wiring.jersey.CorsFilter;
 import io.immutables.micro.wiring.jersey.ParameterConverter;
 
@@ -78,6 +79,11 @@ public final class JaxrsModule implements Module {
   }
 
   @ProvidesIntoSet
+  public @Jaxrs.Registered Object authorizeFilter(Jaxrs.Setup setup) {
+    return new AuthorizeClientFilter(setup::authorize);
+  }
+
+  @ProvidesIntoSet
   public @Jaxrs.Registered Object parameterConverter(ParamConverterProvider converter) {
     return converter;
   }
@@ -93,7 +99,7 @@ public final class JaxrsModule implements Module {
   public Client client(@Jaxrs.Registered Set<Object> registrations) {
     ClientConfig config = new ClientConfig()
         .property(ClientProperties.CONNECT_TIMEOUT, 5_000)
-        .property(ClientProperties.READ_TIMEOUT, 30_000);
+        .property(ClientProperties.READ_TIMEOUT, 10_000);
     registrations.forEach(config::register);
     return ClientBuilder.newClient(config);
   }

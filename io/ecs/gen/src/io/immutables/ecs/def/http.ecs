@@ -1,11 +1,8 @@
 module http
 
 //concept GET
-
-//concept POST
-
 //concept PUT
-
+//concept POST
 //concept DELETE
-
 //concept HEAD
+//query()

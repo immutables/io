@@ -36,9 +36,7 @@ public class JaxrsTest {
     @Override public Val getVal() {
       return VAL;
     }
-
-    @Inject @Context UriInfo uriInfo;
-
+    @Context UriInfo uriInfo;
     @Override public String getBal() {
       return uriInfo.getPath();
     }
