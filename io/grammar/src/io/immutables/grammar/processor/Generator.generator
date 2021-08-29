@@ -362,7 +362,7 @@ switch (t) {
 case TERM_[asTokenConstant l]:
 [/for]
 	match([if prod.hasTagged]part != NO_PART ? [for tg in prod.parts][if for.first]PART_[asConstant tg.tag][/if][/for] : [/if]NO_PART, t);
-	return end(part, p);
+	return [if prod.ephemeral]true[else]end(part, p)[/if];
 default:
 	[-- Just use first in alternatives do describe mismatch --]
 	mismatch([for l in prod.literalAlternatives][if for.first]TERM_[asTokenConstant l][/if][/for], t);

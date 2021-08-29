@@ -37,13 +37,13 @@ class Compiler {
   static final Type.Reference ecsComponent = Type.Reference.of("ecs", "Component");
   static final Type.Reference ecsEntity = Type.Reference.of("ecs", "Entity");
   static final Type.Reference ecsSlug = Type.Reference.of("ecs", "Slug");
-
+/*
   static final Type.Reference httpGet = Type.Reference.of("http", "GET");
   static final Type.Reference httpPut = Type.Reference.of("http", "PUT");
   static final Type.Reference httpPost = Type.Reference.of("http", "POST");
   static final Type.Reference httpDelete = Type.Reference.of("http", "DELETE");
   static final Type.Reference httpHead = Type.Reference.of("http", "HEAD");
-
+*/
   final List<Src> sources = new ArrayList<>();
   final List<String> problems = new ArrayList<>();
   final ListMultimap<String, PerSource> moduleSources = ArrayListMultimap.create();
@@ -454,17 +454,17 @@ class Compiler {
             consumer.accept(extractConcept(scope, concept));
           } else if (constraint instanceof SyntaxTrees.TypeConstraintHttp) {
             var http = ((SyntaxTrees.TypeConstraintHttp) constraint);
-            consumer.accept(extractMethodUri(http, constraints));
+            consumer.accept(extractMethodUri(http));
           } else if (constraint instanceof SyntaxTrees.TypeConstraintFeatureApply) {
             var apply = ((SyntaxTrees.TypeConstraintFeatureApply) constraint);
             var featureName = apply.expression().name().toString();
-            if (source.importedModules.contains("http")
+          /*  if (source.importedModules.contains("http")
               && (featureName.equals("query")
               || featureName.equals("matrix"))) {
              // consumer.accept(extractFeatureApply(featureName, apply.expression().argument()));
             } else {
               source.problem(apply, "Unknown feature in type constraint `" + featureName + "`", "");
-            }
+            }*/
           }
         }
       }
@@ -653,23 +653,13 @@ class Compiler {
         if (source.ok()) moduleBuilder.addDefinitions(t.build());
       }
 
-      private Constraint.MethodUri extractMethodUri(SyntaxTrees.TypeConstraintHttp http,
-          Iterable<? extends SyntaxTrees.TypeConstraint> constraints) {
-        Set<String> queryParams = new HashSet<>();
-        for (var constraint : constraints) {
-          if (constraint instanceof SyntaxTrees.TypeConstraintFeatureApply) {
-            var apply = ((SyntaxTrees.TypeConstraintFeatureApply) constraint);
-            var featureName = apply.expression().name().toString();
-            var argument = apply.expression().argument();
-            if (featureName.equals("query") && argument.isPresent()) {
-              queryParams.addAll(new ExtractParameters().collectParams(argument.get()));
-            }
-          }
-        }
+      private Constraint.MethodUri extractMethodUri(SyntaxTrees.TypeConstraintHttp http) {
         return new Constraint.MethodUri.Builder()
             .method(http.method().map(Symbol::toString))
             .uri(http.path().map(u -> toUriString(source, u)))
-            .addAllQueryParameters(queryParams)
+            .addAllQueryParameters(http.path().stream()
+								.flatMap(u -> u.query().stream().map(q -> q.bind().toString()))
+								.collect(Collectors.toSet()))
             .addAllPathParameters(http.path().stream()
                 .flatMap(u -> u.segment().stream())
                 .flatMap(s -> s.bind().stream())

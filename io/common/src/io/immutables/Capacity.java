@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 /**
  * Ensures capacity for arrays by nearest larger power of 2 increase in size and trying to avoid
- * oveflows until max size for array is reached.
+ * overflows until max size for array is reached.
  */
 public final class Capacity {
 	private Capacity() {}

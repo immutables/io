@@ -68,8 +68,8 @@ public interface [t.name] {
 @[rs][getHttpMethod f]
 [/if]
 [typef f.out] [f.name]([for p in f.inParameters][if not for.first],[/if]
-	[if f isHttpPathParameter p.name]
-	@[rs]QueryParam("[p.name]")
+  [if f isHttpQueryParameter p.name]
+  @[rs]QueryParam("[p.name]")
   [else if f isHttpPathParameter p.name]
   @[rs]PathParam("[p.name]")
   [/if]
