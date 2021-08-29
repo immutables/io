@@ -24,7 +24,7 @@
 
 [template generateContract ContractModel im]
 [for m = im.module, t = im.definition]
-[output.system]
+[output.java m.name t.name]
 package [m.name];
 
 [if t.comment]
@@ -44,7 +44,7 @@ public interface [t.name] {
   [generateContractFeature t f]
   [/for]
 }
-[/output.system]
+[/output.java]
 [/for]
 [/template]
 
