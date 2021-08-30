@@ -143,7 +143,7 @@ final class Coding {
 			} else if (v instanceof Number) {
 				peek = At.DOUBLE;
 			} else if (v instanceof Boolean) {
-				peek = At.LONG;
+				peek = At.BOOLEAN;
 			} else { // if (v instanceof String) // WHAT ABOUT OTHER/SPECIAL?
 				peek = At.STRING;
 			}
