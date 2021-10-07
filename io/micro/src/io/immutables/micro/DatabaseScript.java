@@ -12,7 +12,7 @@ import com.google.common.io.Resources;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Database script (usually initialialization DDLs and migrations). Standard implementations for executing SQL
+ * Database script (usually initialization DDLs and migrations). Standard implementations for executing SQL
  * statements from string and from resource are provided via factory methods.
  */
 public interface DatabaseScript {

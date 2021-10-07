@@ -102,12 +102,13 @@ public class InMemoryReportAggregator implements ReportSink {
         parent.children.remove(node);
         node.parent = null; // should not cause non-GC'ed cycle, but just to short circuit such checks
       }
+			// making sure it's removed anyway
+			tree.remove(id);
+			return true;
     } else {
       // cannot be null, hesitate to insert assertion though
+			return false;
     }
-    // making sure it's removed anyway
-    tree.remove(id);
-    return true;
   }
 
   @Nullable

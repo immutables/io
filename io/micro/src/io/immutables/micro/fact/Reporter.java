@@ -29,6 +29,8 @@ public interface Reporter {
 
     void update(V value);
 
+		void update(String label, V value);
+
     void close();
 
     Reporter reportUnder();
@@ -98,6 +100,7 @@ public interface Reporter {
     var id = idSupplier.newId(parent);
     return new Report<>() {
       V v = value;
+			String l = label;
       Reporter reporter;
 
       {
@@ -130,7 +133,14 @@ public interface Reporter {
         sink.report(toEntry(ReportEntry.Kind.V));
       }
 
-      @Override
+			@Override
+			public void update(String label, V value) {
+				v = value;
+				l = label;
+				sink.report(toEntry(ReportEntry.Kind.V));
+			}
+
+			@Override
       public void close() {
         sink.report(toEntry(ReportEntry.Kind.D));
       }
@@ -149,7 +159,7 @@ public interface Reporter {
       }
 
       private ReportEntry toEntry(ReportEntry.Kind kind) {
-        return ReportEntry.of(id, parent, kind, label, v, clock.instant());
+        return ReportEntry.of(id, parent, kind, l, v, clock.instant());
       }
     };
   }

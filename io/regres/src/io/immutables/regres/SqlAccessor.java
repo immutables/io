@@ -33,6 +33,9 @@ public interface SqlAccessor {
 		boolean ignoreMore() default false;
 	}
 
+	/**
+	 * Use this annotation when extracting only single column, not the entire result set row.
+	 */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.METHOD)
 	public @interface Column {
@@ -42,8 +45,7 @@ public interface SqlAccessor {
 		 */
 		String value() default "";
 		/**
-		 * Column index to extract. Zero-based, not one-based (sorry if you expected otherwise). By
-		 * default first column (0).
+		 * Column index to extract. Zero-based, not one-based. By default, it is the first column (0).
 		 */
 		int index() default 0;
 	}
@@ -71,7 +73,7 @@ public interface SqlAccessor {
 	}
 
 	/**
-	 * This parameter object will be spread as if it was marshaled to attributes, and those individual
+	 * This parameter object will be spread as if it was marshaled to the attributes, and those individual
 	 * attributes will constitute placeholders in SQL.
 	 */
 	@Retention(RetentionPolicy.RUNTIME)
