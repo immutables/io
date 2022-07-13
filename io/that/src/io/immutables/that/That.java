@@ -120,9 +120,6 @@ public interface That<T, S extends That<T, S>> {
 			try {
 				CanThrow runnable = What.get(this);
 				runnable.run();
-				throw What.newAssertionError(
-						"expected thrown " + thrownType.getCanonicalName(),
-						"actual nothing thrown");
 			} catch (Throwable throwable) {
 				if (thrownType.isInstance(throwable)) {
 					return Assert.that(thrownType.cast(throwable));
@@ -131,6 +128,9 @@ public interface That<T, S extends That<T, S>> {
 						"expected thrown " + thrownType.getCanonicalName(),
 						"actual: " + throwable.getClass().getCanonicalName() + ": " + throwable.getMessage());
 			}
+			throw What.newAssertionError(
+					"expected thrown " + thrownType.getCanonicalName(),
+					"actual nothing thrown");
 		}
 	}
 
