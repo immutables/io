@@ -1,24 +1,26 @@
 package io.immutables.codec;
 
-import com.google.common.reflect.TypeToken;
-import com.squareup.moshi.JsonReader;
-import com.squareup.moshi.JsonReader.Options;
-import com.squareup.moshi.JsonReader.Token;
-import com.squareup.moshi.JsonWriter;
 import io.immutables.Capacity;
 import io.immutables.Unreachable;
 import io.immutables.codec.Codec.At;
 import io.immutables.codec.Codec.Field;
 import io.immutables.codec.Codec.FieldIndex;
 import io.immutables.codec.Codec.NullAware;
+import okio.Buffer;
+import okio.BufferedSink;
+import okio.BufferedSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import okio.*;
 import javax.annotation.Nullable;
+import com.google.common.reflect.TypeToken;
+import com.squareup.moshi.JsonReader;
+import com.squareup.moshi.JsonReader.Options;
+import com.squareup.moshi.JsonReader.Token;
+import com.squareup.moshi.JsonWriter;
 
 public final class OkJson implements Resolver {
 	private final Resolver resolver;
@@ -52,7 +54,7 @@ public final class OkJson implements Resolver {
 	public static OkJson configure(Consumer<Setup> c) {
 		var configurer = new Setup() {
 			String indent = "";
-			Resolver.Compound compound = Codecs.builtin();
+			Compound compound = Codecs.builtin();
 			boolean serializeNulls;
 			boolean lenient;
 

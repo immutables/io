@@ -1,12 +1,12 @@
 package io.immutables.codec;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.reflect.TypeToken;
 import io.immutables.Nullable;
 import java.io.IOException;
 import java.lang.annotation.Target;
 import java.util.function.Supplier;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.google.common.reflect.TypeToken;
 import static java.lang.annotation.ElementType.TYPE_USE;
 
 public abstract class Codec<T> {
@@ -128,11 +128,10 @@ public abstract class Codec<T> {
 	}
 
 	/**
-	 * Sub interface that allows codes to communicate that they already handles null well. Because
-	 * some of the codecs may be configured to support {@code null} or not it is not enought to check
-	 * for the
-	 * {@code instanceof NullAware}, but also to check if {@link #supportsNull()} is actually on by
-	 * this particual codec instance.
+	 * Sub interface that allows codes to communicate that they already handle null well. Because
+	 * some codecs may be configured to support {@code null} or not it is not enough to check
+	 * for the {@code instanceof NullAware}, but also to check if {@link #supportsNull()} is actually on by
+	 * this particular codec instance.
 	 */
 	interface NullAware {
 		boolean supportsNull();

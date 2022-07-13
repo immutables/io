@@ -1,10 +1,6 @@
 package io.immutables.codec;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * As we support matching only a single qualifier annotation, we use this meta-annotation as a marker

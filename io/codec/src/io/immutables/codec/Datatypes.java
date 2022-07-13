@@ -1,14 +1,14 @@
 package io.immutables.codec;
 
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.reflect.TypeToken;
 import io.immutables.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.List;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.reflect.TypeToken;
 import org.immutables.data.Datatype;
 import org.immutables.data.Datatype.Builder;
 import org.immutables.data.Datatype.Feature;
@@ -156,7 +156,7 @@ public final class Datatypes {
 	}
 
 	private static class InstanceBuilder<T> implements Builder<T> {
-		private T instance;
+		private final T instance;
 
 		InstanceBuilder(Class<T> type) {
 			try {

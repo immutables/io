@@ -1,24 +1,9 @@
 package io.immutables.codec;
 
-import com.google.common.base.CaseFormat;
-import com.google.common.base.CharMatcher;
-import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.TypeToken;
 import io.immutables.Capacity;
 import io.immutables.Nullable;
 import io.immutables.Unreachable;
-import io.immutables.codec.Codec.Adapter;
-import io.immutables.codec.Codec.At;
-import io.immutables.codec.Codec.ContainerCodec;
-import io.immutables.codec.Codec.Err;
-import io.immutables.codec.Codec.Field;
-import io.immutables.codec.Codec.FieldIndex;
-import io.immutables.codec.Codec.In;
-import io.immutables.codec.Codec.NullAware;
-import io.immutables.codec.Codec.Out;
+import io.immutables.codec.Codec.*;
 import io.immutables.collect.Vect;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -28,8 +13,13 @@ import java.net.URI;
 import java.time.*;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.function.Function;
 import java.util.function.Supplier;
+import com.google.common.base.CaseFormat;
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import org.immutables.data.Datatype;
 
 public final class Codecs {
@@ -257,7 +247,7 @@ public final class Codecs {
 		}
 
 		public static <K, V> Supplier<MapBuilder<K, V, ImmutableMap<K, V>>> immutableMapSupplier() {
-			return () -> new MapCodec.MapBuilder<>() {
+			return () -> new MapBuilder<>() {
 				final ImmutableMap.Builder<K, V> b = ImmutableMap.builder();
 
 				@Override
@@ -496,7 +486,8 @@ public final class Codecs {
 		@Override
 		public T decode(In in) throws IOException {
 			if (supportsNull && in.peek() == At.NULL) {
-				in.skip();
+				in.takeNull();
+				return null;
 			}
 			switch (type) { // @formatter:off
 			case INT: return box(in.takeInt());
@@ -693,7 +684,7 @@ public final class Codecs {
 	private static class StringValueIo implements In, Out {
 		private @Nullable String value;
 
-		private void onlyStringrExpected() throws IOException {
+		private void onlyStringExpected() throws IOException {
 			unexpected("Only takeString() expected");
 		}
 
@@ -734,7 +725,7 @@ public final class Codecs {
 
 		@Override
 		public void takeNull() throws IOException {
-			if (value != null) onlyStringrExpected();
+			if (value != null) onlyStringExpected();
 		}
 
 		@Override
@@ -759,29 +750,29 @@ public final class Codecs {
 
 		@Override
 		public boolean hasNext() throws IOException {
-			onlyStringrExpected();
+			onlyStringExpected();
 			return false;
 		}
 
 		@Override
 		public void beginArray() throws IOException {
-			onlyStringrExpected();
+			onlyStringExpected();
 		}
 
 		@Override
 		public void endArray() throws IOException {
-			onlyStringrExpected();
+			onlyStringExpected();
 		}
 
 		@Override
 		public @Field int takeField() throws IOException {
-			onlyStringrExpected();
+			onlyStringExpected();
 			throw Unreachable.contractual();
 		}
 
 		@Override
 		public void endStruct() throws IOException {
-			onlyStringrExpected();
+			onlyStringExpected();
 		}
 
 		@Override
@@ -821,7 +812,7 @@ public final class Codecs {
 
 		@Override
 		public void putField(@Field int field) throws IOException {
-			onlyStringrExpected();
+			onlyStringExpected();
 		}
 
 		@Override
@@ -831,7 +822,7 @@ public final class Codecs {
 
 		@Override
 		public void beginStruct(FieldIndex f) throws IOException {
-			onlyStringrExpected();
+			onlyStringExpected();
 		}
 	}
 

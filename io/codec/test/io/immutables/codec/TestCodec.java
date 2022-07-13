@@ -1,19 +1,15 @@
 package io.immutables.codec;
 
+import io.immutables.codec.Dutu.Bubu;
+import io.immutables.codec.Dutu.Opts;
+import okio.Buffer;
+import java.io.IOException;
+import java.util.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.squareup.moshi.JsonReader;
 import com.squareup.moshi.JsonWriter;
-import io.immutables.codec.Dutu.Bubu;
-import io.immutables.codec.Dutu.Opts;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
-import okio.Buffer;
 import org.junit.Test;
 import static io.immutables.that.Assert.that;
 
@@ -137,6 +133,8 @@ public class TestCodec {
 
 		String json = buffer.readUtf8().replace('"', '\'');
 		that(json).is("{'s':'X','i':42,'l':null,'d':null}");
+
+		that(codec.decode(in(json))).equalTo(opts);
 	}
 
 	@Test

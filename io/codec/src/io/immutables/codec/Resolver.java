@@ -1,20 +1,15 @@
 package io.immutables.codec;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Table;
-import com.google.common.reflect.TypeToken;
 import io.immutables.Nullable;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Target;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Table;
+import com.google.common.reflect.TypeToken;
 import static java.lang.annotation.ElementType.TYPE_USE;
 
 public interface Resolver {
@@ -39,8 +34,8 @@ public interface Resolver {
 		@Target(TYPE_USE)
 		@interface Priority {}
 
-		static final @Priority int DEFAULT_PRIORITY = 0;
-		static final @Priority int LOWEST_PRIORITY = Integer.MIN_VALUE;
+		public static final @Priority int DEFAULT_PRIORITY = 0;
+    public static final @Priority int LOWEST_PRIORITY = Integer.MIN_VALUE;
 		private final List<FactoryEntry> factories = new ArrayList<>();
 
 		private static class FactoryEntry implements Comparable<FactoryEntry> {
