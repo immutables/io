@@ -2,7 +2,10 @@ load('//io:rules.bzl', 'java_module', 'java_test_vm_args')
 
 java_library(
 	name = 'lang',
-	srcs = glob(['src/io/immutables/lang/*.java']),
+	srcs = glob([
+		'src/io/immutables/lang/*.java',
+		'src/io/immutables/lang/type/*.java'
+	]),
 	resources = glob(['src/io/immutables/lang/*.grammar']),
 	deps = [
 		'//lib/immutables/value:annotations',
@@ -84,7 +87,7 @@ java_annotation_processor(
 )
 
 java_test(
-	name = 'test',
+	name = 'test_compile',
 	srcs = glob(['test/io/immutables/lang/fixture/*.java']),
 	resources = glob(['test/io/immutables/lang/fixture/*.test.im']),
 	deps = [
@@ -96,6 +99,21 @@ java_test(
 	resources_root = 'test',
 	plugins = [
 		':sourcerun_processor',
+		'//io/common:immutables',
+	],
+	vm_args = java_test_vm_args(),
+)
+
+java_test(
+	name = 'test',
+	srcs = glob(['test/**/*.java'], exclude = ['test/io/immutables/lang/fixture/*.java']),
+	deps = [
+		':lang',
+		'//io/that:that',
+		'//lib/junit:junit',
+	],
+	resources_root = 'test',
+	plugins = [
 		'//io/common:immutables',
 	],
 	vm_args = java_test_vm_args(),

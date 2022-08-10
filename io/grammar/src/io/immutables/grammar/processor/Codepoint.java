@@ -71,7 +71,7 @@ abstract class Codepoint implements Comparable<Codepoint> {
 		checkArgument(symbol.length() == 1, errorMessage + symbol);
 		@Nullable Character c = Escapes.unescapesRange().get("\\" + symbol.charAt(0));
 		checkArgument(c != null, errorMessage + symbol);
-		return of(c.charValue());
+		return of(c);
 	}
 
 	private static class Domain extends DiscreteDomain<Codepoint> {

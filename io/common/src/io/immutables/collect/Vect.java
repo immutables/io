@@ -58,7 +58,16 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		return new Iterator();
 	}
 
-	public <R> Vect<R> map(Function<E, R> to) {
+	public <R> Vect<R> mapIndex(BiFunction<Integer, ? super E, ? extends R> to) {
+		if (this == EMPTY) return of();
+		Object[] newElements = new Object[elements.length];
+		for (int i = 0; i < elements.length; i++) {
+			newElements[i] = requireNonNull(to.apply(i, (E) elements[i]));
+		}
+		return new Vect<>(newElements);
+	}
+
+	public <R> Vect<R> map(Function<? super E, ? extends R> to) {
 		if (this == EMPTY) return of();
 		Object[] newElements = new Object[elements.length];
 		for (int i = 0; i < elements.length; i++) {
@@ -67,7 +76,7 @@ public final class Vect<E> implements Iterable<E>, Foldable<E> {
 		return new Vect<>(newElements);
 	}
 
-	public <R> Vect<R> flatMap(Function<E, ? extends Iterable<R>> to) {
+	public <R> Vect<R> flatMap(Function<? super E, ? extends Iterable<R>> to) {
 		Builder<R> builder = new Builder<>(elements.length);
 		for (Object e : elements) {
 			for (R r : to.apply((E) e)) {
