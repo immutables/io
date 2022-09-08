@@ -1,8 +1,9 @@
 package io.immutables.grammar;
 
 import io.immutables.Capacity;
-import io.immutables.grammar.Source.Position;
-import io.immutables.grammar.Source.Range;
+import io.immutables.source.Source;
+import io.immutables.source.Source.Position;
+import io.immutables.source.Source.Range;
 import java.util.NoSuchElementException;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;

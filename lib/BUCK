@@ -93,16 +93,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_jar',
-  out = 'value-2.5.6.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.6/value-2.5.6.jar',
-  sha1 = '0dfe48bb1214750b932cd59e6953a32a038b74fd'
+  out = 'value-2.7.1.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.7.1/value-2.7.1.jar',
+  sha1 = '7879e75c53074fd8cbbe014bfa5e8689f8c565ae'
 )
 
 remote_file(
   name = 'immutables_src',
-  out = 'value-2.5.6-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.6/value-2.5.6-sources.jar',
-  sha1 = '02b7b4d8da9dba792f9e9afc81febd63e4cbc500'
+  out = 'value-2.7.1-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.7.1/value-2.7.1-sources.jar',
+  sha1 = '15b4256f7327189fc699921bf2b51d48fab281d3'
 )
 
 prebuilt_jar(
@@ -114,16 +114,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_trees_jar',
-  out = 'trees-2.5.6.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.5.6/trees-2.5.6.jar',
-  sha1 = '3c5921d31118720447f70cab5a76fb9e5791f71d'
+  out = 'trees-2.7.1.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.7.1/trees-2.7.1.jar',
+  sha1 = '8e3586da030018afe1ef8267d1a87105f8105c98'
 )
 
 remote_file(
   name = 'immutables_trees_src',
-  out = 'trees-2.5.6-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.5.6/trees-2.5.6-sources.jar',
-  sha1 = '9eed1438eeef67a401db2be3daea3b5dcd8b0d84'
+  out = 'trees-2.7.1-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/trees/2.7.1/trees-2.7.1-sources.jar',
+  sha1 = '93d978b3df909b9044c3c0faf63c814ee41c3321'
 )
 
 prebuilt_jar(
@@ -135,16 +135,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_ordinal_jar',
-  out = 'ordinal-2.5.6.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.5.6/ordinal-2.5.6.jar',
-  sha1 = '3713d9be1e86b4ea6169b0ea37a9a5c5db787616'
+  out = 'ordinal-2.7.1.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.7.1/ordinal-2.7.1.jar',
+  sha1 = '714a760ccd9fc37d05734b3eb76b66ed03b54f93'
 )
 
 remote_file(
   name = 'immutables_ordinal_src',
-  out = 'ordinal-2.5.6-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.5.6/ordinal-2.5.6-sources.jar',
-  sha1 = 'c7e928d2247cdcf9ef9a5302d63adff8ebb6dee0'
+  out = 'ordinal-2.7.1-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/ordinal/2.7.1/ordinal-2.7.1-sources.jar',
+  sha1 = '366077be1d8481521be0ddac3fa53cb9540b33d2'
 )
 
 prebuilt_jar(
@@ -156,16 +156,16 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_annotations_jar',
-  out = 'value-2.5.6-annotations.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.6/value-2.5.6-annotations.jar',
-  sha1 = 'b6a247a2b31a87f0d20d854308e48708b203a0e4'
+  out = 'value-2.7.1-annotations.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.7.1/value-2.7.1-annotations.jar',
+  sha1 = 'c0840c631ae58a5dd231ad8e33878f0bab807c95'
 )
 
 remote_file(
   name = 'immutables_annotations_src',
-  out = 'value-2.5.6-annotations-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.5.6/value-2.5.6-annotations-sources.jar',
-  sha1 = '7c2a910c05f63191ada34b193c815bb119e68f6f'
+  out = 'value-2.7.1-annotations-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/value/2.7.1/value-2.7.1-annotations-sources.jar',
+  sha1 = '45f7a733b339e005b69ee568209ec1a9d83b65f3'
 )
 
 prebuilt_jar(
@@ -178,14 +178,142 @@ prebuilt_jar(
 
 remote_file(
   name = 'immutables_generator_jar',
-  out = 'generator-processor-2.5.6-luggage.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.5.6/generator-processor-2.5.6-luggage.jar',
-  sha1 = 'b8d70c5b0b34d1d8da21365f315d4e15b0687577'
+  out = 'generator-processor-2.7.1-luggage.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.7.1/generator-processor-2.7.1-luggage.jar',
+  sha1 = '28562cfdff304e5462da55c1fd746d06a82b7dd9'
 )
 
 remote_file(
   name = 'immutables_generator_src',
-  out = 'generator-processor-2.5.6-luggage-sources.jar',
-  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.5.6/generator-processor-2.5.6-luggage-sources.jar',
-  sha1 = '687608df93b7f7d6263cd8f088faa319348f8ae2'
+  out = 'generator-processor-2.7.1-luggage-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/generator-processor/2.7.1/generator-processor-2.7.1-luggage-sources.jar',
+  sha1 = '966a5f47d8e4c4f9730213981f4a2d8cacca7a07'
+)
+
+prebuilt_jar(
+  name = 'gson',
+  binary_jar = ':gson_jar',
+  source_jar = ':gson_src',
+  visibility = ['//...'],
+)
+
+remote_file(
+  name = 'gson_jar',
+  out = 'gson-2.8.5.jar',
+  url = 'https://repo1.maven.org/maven2/com/google/code/gson/gson/2.8.5/gson-2.8.5.jar',
+  sha1 = 'f645ed69d595b24d4cf8b3fbb64cc505bede8829'
+)
+
+remote_file(
+  name = 'gson_src',
+  out = 'gson-2.8.5-sources.jar',
+  url = 'https://repo1.maven.org/maven2/com/google/code/gson/gson/2.8.5/gson-2.8.5-sources.jar',
+  sha1 = 'c5b4c491aecb72e7c32a78da0b5c6b9cda8dee0f'
+)
+
+prebuilt_jar(
+  name = 'immutables_gson',
+  binary_jar = ':immutables_gson_jar',
+  source_jar = ':immutables_gson_src',
+  visibility = ['//...'],
+  deps = [':gson']
+)
+
+remote_file(
+  name = 'immutables_gson_jar',
+  out = 'gson-2.7.1.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/gson/2.7.1/gson-2.7.1.jar',
+  sha1 = '1afa5b9b1589faf215dcd479736e90e8b1743d43'
+)
+
+remote_file(
+  name = 'immutables_gson_src',
+  out = 'gson-2.7.1-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/immutables/gson/2.7.1/gson-2.7.1-sources.jar',
+  sha1 = '54cddd25d0f807d287d1d72d8dbf40ffa8315249'
+)
+
+prebuilt_jar(
+  name = 'jackson',
+  binary_jar = ':jackson_jar',
+  source_jar = ':jackson_src',
+  visibility = ['//...'],
+)
+
+remote_file(
+  name = 'jackson_jar',
+  out = 'jackson-core-2.9.7.jar',
+  url = 'https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.9.7/jackson-core-2.9.7.jar',
+  sha1 = '4b7f0e0dc527fab032e9800ed231080fdc3ac015'
+)
+
+remote_file(
+  name = 'jackson_src',
+  out = 'jackson-core-2.9.7-sources.jar',
+  url = 'https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.9.7/jackson-core-2.9.7-sources.jar',
+  sha1 = '478a76e0ca46b25648abce6ad4858cde5e8488ec'
+)
+
+prebuilt_jar(
+  name = 'jackson_xml',
+  binary_jar = ':jackson_xml_jar',
+  source_jar = ':jackson_xml_src',
+  visibility = ['//...'],
+  deps = [':woodstox_api',':woodstox_core']
+)
+
+remote_file(
+  name = 'jackson_xml_jar',
+  out = 'jackson-dataformat-xml-2.9.7.jar',
+  url = 'https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-xml/2.9.7/jackson-dataformat-xml-2.9.7.jar',
+  sha1 = 'fdbe6c2867454dabeda629e3e24a4c1a227fed23'
+)
+
+remote_file(
+  name = 'jackson_xml_src',
+  out = 'jackson-dataformat-xml-2.9.7-sources.jar',
+  url = 'https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-xml/2.9.7/jackson-dataformat-xml-2.9.7-sources.jar',
+  sha1 = '28bad4e2aac435a0d7e20d27d3c9609192c06dc5'
+)
+
+prebuilt_jar(
+  name = 'woodstox_api',
+  binary_jar = ':woodstox_api_jar',
+  source_jar = ':woodstox_api_src',
+  visibility = ['//...'],
+)
+
+remote_file(
+  name = 'woodstox_api_jar',
+  out = 'stax2-api-3.1.4.jar',
+  url = 'https://repo1.maven.org/maven2/org/codehaus/woodstox/stax2-api/3.1.4/stax2-api-3.1.4.jar',
+  sha1 = 'ac19014b1e6a7c08aad07fe114af792676b685b7'
+)
+
+remote_file(
+  name = 'woodstox_api_src',
+  out = 'stax2-api-3.1.4-sources.jar',
+  url = 'https://repo1.maven.org/maven2/org/codehaus/woodstox/stax2-api/3.1.4/stax2-api-3.1.4-sources.jar',
+  sha1 = 'b40604d61c01cc081a4a7bdfc562aa9847ee8857'
+)
+
+prebuilt_jar(
+  name = 'woodstox_core',
+  binary_jar = ':woodstox_core_jar',
+  source_jar = ':woodstox_core_src',
+  visibility = ['//...'],
+)
+
+remote_file(
+  name = 'woodstox_core_jar',
+  out = 'woodstox-core-5.0.3.jar',
+  url = 'https://repo1.maven.org/maven2/com/fasterxml/woodstox/woodstox-core/5.0.3/woodstox-core-5.0.3.jar',
+  sha1 = '10aa199207fda142eff01cd61c69244877d71770'
+)
+
+remote_file(
+  name = 'woodstox_core_src',
+  out = 'woodstox-core-5.0.3-sources.jar',
+  url = 'https://repo1.maven.org/maven2/com/fasterxml/woodstox/woodstox-core/5.0.3/woodstox-core-5.0.3-sources.jar',
+  sha1 = 'f38482e8b060d9e5354c10103f4c4db53c58db7d'
 )

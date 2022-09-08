@@ -22,7 +22,7 @@ processor_lib_default = [
   '//src:metainf_extensions'
 ]
 
-def java_package(name, srcs = [], test_src = [], deps = [], res = [], test_deps = [], processor_deps = [], processors = []):
+def java_package(name, srcs = [], test_src = [], deps = [], res = [], test_res = [], test_deps = [], processor_deps = [], processors = []):
   java_library(
     name = name,
     srcs = glob(['*.java'], excludes = ['Test*.java']) if not srcs else srcs,
@@ -37,7 +37,7 @@ def java_package(name, srcs = [], test_src = [], deps = [], res = [], test_deps 
       name = name + '_test',
       srcs = glob(['Test*.java']) if not test_src else test_src,
       deps = dedupe(deps + lib_default + lib_test + [':' + name] + test_deps),
-      resources = glob(['*.java']),
+      resources = glob(['*.java']) + test_res,
       vm_args = ['-ea', '-Dio.immutables.that.replace-error-message= ']
     )
 

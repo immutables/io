@@ -4,9 +4,9 @@ import com.google.common.base.Strings;
 import com.google.common.collect.HashMultiset;
 import io.immutables.grammar.Productions.Traversal;
 import io.immutables.grammar.Productions.Traversal.At;
-import io.immutables.grammar.Source;
 import io.immutables.grammar.fixture.ExprTrees.Expression;
 import io.immutables.grammar.fixture.ExprTrees.Expressions;
+import io.immutables.source.Source;
 import org.junit.Test;
 import static io.immutables.that.Assert.that;
 

@@ -1,1 +1,9 @@
-java_package('maven')
+java_package('maven',
+	deps = [
+		'//src/io/immutables/build/dot:dot',
+		'//src/io/immutables/grammar:grammar',
+		'//lib:immutables_gson',
+		'//lib:jackson',
+		'//lib:jackson_xml',
+	]
+)

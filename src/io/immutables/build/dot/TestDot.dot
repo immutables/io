@@ -1,0 +1,7 @@
+// whitespaces are intentionally a bit random
+digraph  "graph1" { 
+  // some nodes, only from / to pairs supported
+	"edge1" -> "edge2" ;
+	"edge1" -> "edge3" ;// comment
+	 "edge2"-> "edge3"; 
+ } 

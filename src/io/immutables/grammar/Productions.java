@@ -3,6 +3,7 @@ package io.immutables.grammar;
 import com.google.common.base.Strings;
 import com.google.common.primitives.Shorts;
 import io.immutables.Capacity;
+import io.immutables.source.Source;
 import java.util.NoSuchElementException;
 
 /**

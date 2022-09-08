@@ -1,0 +1,20 @@
+
+keyword:
+  'digraph' ~ 'digraph' ![a-zA-Z0-9]
+
+literal:
+  <string> ~ ["][^"]*["]
+
+ignored:
+	<comment-newline> ~ [/][/][^\n]*[\n]
+	<newline> ~ [\n]
+  <spacing> ~ [\s\r\t]+
+
+digraph
+  'digraph' id:<string> '{' edge:edge* '}'
+
+edge
+  from:vertex '->' to:vertex ';'
+
+vertex
+  id:<string>

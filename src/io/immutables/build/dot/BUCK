@@ -1,11 +1,10 @@
 java_package(
-  name = 'fixture',
+  name = 'dot',
   res = glob(['*.grammar']),
+  test_res = glob(['*.dot']),
   deps = [
-    '//lib:immutables_generator',
-    '//src/io/immutables/grammar:grammar',
-    '//src/io/immutables/source:source',
     '//src/io/immutables/collect:collect',
+    '//src/io/immutables/grammar:grammar',
     '//lib:immutables_trees',
   ],
   processors = ['io.immutables.grammar.processor.Processor'],

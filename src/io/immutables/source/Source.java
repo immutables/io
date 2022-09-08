@@ -1,4 +1,4 @@
-package io.immutables.grammar;
+package io.immutables.source;
 
 import com.google.common.base.Strings;
 import io.immutables.Capacity;
@@ -10,7 +10,7 @@ import static com.google.common.base.Preconditions.checkPositionIndex;
 import static com.google.common.base.Preconditions.checkState;
 
 public interface Source {
-	
+
 	final class Position {
 		/** 0-based position. */
 		public final int position;
@@ -102,12 +102,134 @@ public interface Source {
 		}
 	}
 
+	final class Lines {
+		private final int[] lines;
+		private final int count;
+
+		private Lines(int[] lines, int count) {
+			this.lines = lines;
+			this.count = count;
+		}
+
+		public int count() {
+			return count;
+		}
+
+		public Range getLineRange(int lineNumber) {
+			checkPositionIndex(lineNumber - 1, count);
+			int before = lines[lineNumber - 1];
+			int after = lines[lineNumber];
+			return Range.of(
+					Position.of(before + 1, lineNumber, 1),
+					Position.of(after, lineNumber, after - before));
+		}
+
+		public Position get(int position) {
+			checkArgument(position >= 0, "position >= 0");
+			int lineIndex = Arrays.binarySearch(lines, 0, count, position);
+			if (lineIndex < 0) {
+				lineIndex = -lineIndex - 2;
+			}
+			int lineNumber = lineIndex + 1;
+			int columnNumber = position - lines[lineIndex];
+			// we've got at newline
+			if (columnNumber == 0) {
+				columnNumber = position - lines[lineIndex - 1];
+				lineNumber--;
+			}
+			return Position.of(position, lineNumber, columnNumber);
+		}
+
+		public static Lines from(char[] input) {
+			Tracker t = new Tracker();
+			for (int i = 0; i < input.length; i++) {
+				if (input[i] == '\n') {
+					t.addNewlineAt(i);
+				}
+			}
+			return t.lines(input.length);
+		}
+
+		public static final class Tracker {
+			private int[] lines = new int[128];
+			{
+				// last position before first line is -1
+				// i.e. non-existing zero line ends on -1 position, on the next, 0
+				// position first line starts.
+				lines[0] = -1;
+			}
+			// at least one line is available starting from 0 position, even if
+			// input is empty
+			private int count = 1;
+
+			public int addNewlineAt(int position) {
+				// recording end of the line
+				lines = Capacity.ensure(lines, count, 1);
+				lines[count++] = position;
+				return count;
+			}
+
+			public Lines lines(int length) {
+				// mark next position after last line,
+				// which is next to last position - equal to length
+				lines[count] = length;
+				return new Lines(lines, count);
+			}
+		}
+
+		@Override
+		public String toString() {
+			return getClass().getSimpleName() + "[" + count + "]";
+		}
+	}
+
+	static CharSequence wrap(char[] input) {
+		class SourceWrapper implements CharSequence {
+			private final char[] input;
+			private final int begin;
+			private final int end;
+
+			SourceWrapper(char[] input) {
+				this(input, 0, input.length);
+			}
+
+			SourceWrapper(char[] input, int begin, int end) {
+				this.input = input;
+				this.begin = begin;
+				this.end = end;
+			}
+
+			@Override
+			public CharSequence subSequence(int begin, int end) {
+				int newBegin = checkPositionIndex(this.begin + begin, input.length);
+				int newEnd = checkPositionIndex(this.begin + end, input.length);
+				return new SourceWrapper(input, newBegin, newEnd);
+			}
+
+			@Override
+			public int length() {
+				return end - begin;
+			}
+
+			@Override
+			public char charAt(int index) {
+				return input[begin + index];
+			}
+
+			@Override
+			public String toString() {
+				return String.valueOf(input, begin, end - begin);
+			}
+		}
+		return new SourceWrapper(input);
+	}
+
 	final class Excerpt {
 		private final int gutterWidth;
 		private final CharSequence source;
 		private final Lines lines;
 
-		Excerpt(CharSequence source, Lines lines) {
+		public Excerpt(CharSequence source, Lines lines) {
 			this.source = source;
 			this.lines = lines;
 			this.gutterWidth = Math.max(1, computeLineNumberMagnitude(lines.count()));
@@ -242,127 +364,5 @@ public interface Source {
 		private static final String ELLIPSIS = "...";
 		private static final String GUTTER_SEPARATOR = " |";
 		private static final int TAB_WIDTH = Integer.getInteger("im.source.tab-width", 2);
-	}
-
-	final class Lines {
-		private int[] lines;
-		private int count;
-
-		private Lines(int[] lines, int count) {
-			this.lines = lines;
-			this.count = count;
-		}
-
-		public int count() {
-			return count;
-		}
-
-		public Range getLineRange(int lineNumber) {
-			checkPositionIndex(lineNumber - 1, count);
-			int before = lines[lineNumber - 1];
-			int after = lines[lineNumber];
-			return Range.of(
-					Position.of(before + 1, lineNumber, 1),
-					Position.of(after, lineNumber, after - before));
-		}
-
-		public Position get(int position) {
-			checkArgument(position >= 0, "position >= 0");
-			int lineIndex = Arrays.binarySearch(lines, 0, count, position);
-			if (lineIndex < 0) {
-				lineIndex = -lineIndex - 2;
-			}
-			int lineNumber = lineIndex + 1;
-			int columnNumber = position - lines[lineIndex];
-			// we've got at newline
-			if (columnNumber == 0) {
-				columnNumber = position - lines[lineIndex - 1];
-				lineNumber--;
-			}
-			return Position.of(position, lineNumber, columnNumber);
-		}
-
-		public static Lines from(char[] input) {
-			Tracker t = new Tracker();
-			for (int i = 0; i < input.length; i++) {
-				if (input[i] == '\n') {
-					t.addNewlineAt(i);
-				}
-			}
-			return t.lines(input.length);
-		}
-
-		public static final class Tracker {
-			private int[] lines = new int[128];
-			{
-				// last position before first line is -1
-				// i.e. non-existing zero line ends on -1 position, on the next, 0
-				// position first line starts.
-				lines[0] = -1;
-			}
-			// at least one line is available starting from 0 position, even if
-			// input is empty
-			private int count = 1;
-
-			public int addNewlineAt(int position) {
-				// recording end of the line
-				lines = Capacity.ensure(lines, count, 1);
-				lines[count++] = position;
-				return count;
-			}
-
-			public Lines lines(int length) {
-				// mark next position after last line,
-				// which is next to last position - equal to length
-				lines[count] = length;
-				return new Lines(lines, count);
-			}
-		}
-
-		@Override
-		public String toString() {
-			return getClass().getSimpleName() + "[" + count + "]";
-		}
-	}
-
-	static CharSequence wrap(char[] input) {
-		class SourceWrapper implements CharSequence {
-			private final char[] input;
-			private final int begin;
-			private final int end;
-
-			SourceWrapper(char[] input) {
-				this(input, 0, input.length);
-			}
-
-			SourceWrapper(char[] input, int begin, int end) {
-				this.input = input;
-				this.begin = begin;
-				this.end = end;
-			}
-
-			@Override
-			public CharSequence subSequence(int begin, int end) {
-				int newBegin = checkPositionIndex(this.begin + begin, input.length);
-				int newEnd = checkPositionIndex(this.begin + end, input.length);
-				return new SourceWrapper(input, newBegin, newEnd);
-			}
-
-			@Override
-			public int length() {
-				return end - begin;
-			}
-
-			@Override
-			public char charAt(int index) {
-				return input[begin + index];
-			}
-
-			@Override
-			public String toString() {
-				return String.valueOf(input, begin, end - begin);
-			}
-		}
-		return new SourceWrapper(input);
 	}
 }

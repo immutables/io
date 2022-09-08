@@ -1,6 +1,6 @@
-package io.immutables.grammar;
+package io.immutables.source;
 
-import io.immutables.grammar.Source.Lines;
+import io.immutables.source.Source.Lines;
 import org.junit.Test;
 import static io.immutables.that.Assert.that;
 
