@@ -14,10 +14,10 @@ public final class TypeSignature implements Named, Parameterizable {
 		this.parameters = parameters;
 		this.constructor = parameters.isEmpty()
 				? Type.Terminal.define(name)
-				: parameterizedTyctor();
+				: parameterizedConstructor();
 	}
 
-	private TypeConstructor parameterizedTyctor() {
+	private TypeConstructor parameterizedConstructor() {
 		return new TypeConstructor() {
 			@Override public String name() {
 				return name;

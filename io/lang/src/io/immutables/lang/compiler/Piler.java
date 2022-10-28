@@ -14,8 +14,11 @@ public class Piler {
 				Resources.getResource(Piler.class, sourceName),
 				StandardCharsets.UTF_8);
 
-		if (content.isEmpty() || content.endsWith("\n")) {
-			// TEMPORARY FIX for at least two issues of our parser generator:
+		if (content.isEmpty() || !content.endsWith("\n")) {
+			// second condition covers the first, but I leave both to make problems
+			// explained below more visible
+
+			// FIXME for at least two issues of our parser generator:
 			// 1. Cannot properly have no content (assertion failed, at EOP)
 			// 2. Comment on the last line without newline causes IOOBE
 			content += "\n";

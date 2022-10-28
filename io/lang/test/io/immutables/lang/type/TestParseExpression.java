@@ -21,11 +21,6 @@ public class TestParseExpression {
 		System.out.println(expression4);
 	}
 
-	@Test
-	public void feat1() {
-		Expression expression3 = expression("a.b(1, \"c\")");
-	}
-
 	private static Expression expression(String code) {
 		SyntaxTerms terms = SyntaxTerms.from(code.toCharArray());
 		SyntaxProductions<Expression> productions = SyntaxProductions.expression(terms);

@@ -12,7 +12,7 @@ class Unify {
 		void recursive(Type.Variable v, Type in);
 		void alias(Type.Variable v, Type.Variable from);
 		void substitute(Type.Variable v, Type with);
-		void mismatch(Type to, Type from);
+		void bottom(Type to, Type from);
 	}
 
 	static void unify(Solution solution, Type to, Type from) {
@@ -36,16 +36,16 @@ class Unify {
 	// this gets a chance to run type coercions, otherwise expected.equals(actual) would
 	// make it will never run or always mismatch
 	private static void unifyToTerminal(Solution solution, Type.Terminal t, Type from) {
-		solution.mismatch(t, from); // add conformance coercions before else
+		solution.bottom(t, from); // add conformance coercions before else
 	}
 
 	private static void unifyToApplied(Solution solution, Type.Applied a, Type from) {
 		if (Applied(from, f -> {
 			if (a.constructor() == f.constructor() && pairwise(a.arguments, f.arguments,
 					(aa, fa) -> unify(solution, aa, fa))) ;
-			else solution.mismatch(a, f);
+			else solution.bottom(a, f);
 		})) ;
-		else solution.mismatch(a, from); // add conformance coercions before else
+		else solution.bottom(a, from); // add conformance coercions before else
 	}
 
 	// this gets a chance to run type coercions, otherwise expected.equals(actual) would
@@ -54,8 +54,8 @@ class Unify {
 		if (Product(from, f -> {
 			if (pairwise(p.components(), f.components(),
 					(pc, fc) -> unify(solution, pc, fc))) ;
-			else solution.mismatch(p, from);
+			else solution.bottom(p, from);
 		})) ;
-		else solution.mismatch(p, from); // add conformance coercions before else
+		else solution.bottom(p, from); // add conformance coercions before else
 	}
 }

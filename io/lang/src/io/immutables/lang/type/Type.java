@@ -46,6 +46,31 @@ public abstract class Type {
 		}
 	}
 
+	/**
+	 * Existential type is similar to a type variable, but it is unknown,
+	 * cannot be matches or aliased. However, it can be found equal to the instance of itself
+	 * and can be found conforming to a type variable if bounds.
+	 */
+	public static final class Existential extends Type {
+		private final String hint;
+
+		private Existential(String hint) {this.hint = hint;}
+
+		@Override public String toString() {return "\u2203" + hint;}
+
+		@Override public <I, O> O accept(Visitor<I, O> v, I in) {
+			return v.existential(this, in);
+		}
+
+		public static Existential exists(String hint) {
+			return new Existential(hint);
+		}
+
+		public static Existential exists() {
+			return new Existential("_");
+		}
+	}
+
 	public static abstract class Nominal extends Type implements Named {
 		public abstract TypeConstructor constructor();
 	}
@@ -189,6 +214,10 @@ public abstract class Type {
 
 		default O variable(Variable v, I in) {
 			return otherwise(v, in);
+		}
+
+		default O existential(Existential e, I in) {
+			return otherwise(e, in);
 		}
 
 		default O terminal(Terminal b, I in) {

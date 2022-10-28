@@ -1,5 +1,6 @@
 package io.immutables.lang.type;
 
+import java.util.Map;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 import static io.immutables.lang.type.FixtureTypes.*;
@@ -14,7 +15,7 @@ public class TestTypes {
 		var A_ = Type.Variable.allocate(A.name());
 		var B_ = Type.Variable.allocate(B.name());
 
-		var subs = ImmutableMap.of(A, A_, B, B_);
+		var subs = Map.of(A, A_, B, B_);
 		var before = Type.Product.of(A, B);
 		var after = before.transform(Types.substitution(subs));
 

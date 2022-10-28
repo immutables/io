@@ -4,9 +4,14 @@ interface FixtureTypes {
 	Type.Terminal i32 = Type.Terminal.define("i32");
 	Type.Terminal bool = Type.Terminal.define("bool");
 	Type.Terminal str = Type.Terminal.define("str");
+
 	Type.Variable J = Type.Variable.allocate("J");
 	Type.Variable K = Type.Variable.allocate("K");
 	Type.Variable L = Type.Variable.allocate("L");
+
+	Type.Variable X = Type.Variable.allocate("X");
+	Type.Variable Y = Type.Variable.allocate("Y");
+	Type.Variable Z = Type.Variable.allocate("Z");
 
 	Type.Product Empty = Type.Product.Empty;
 

@@ -10,11 +10,12 @@ import static io.immutables.lang.type.Types.traverse;
 import static java.util.Collections.newSetFromMap;
 import static java.util.Objects.requireNonNullElse;
 
+@Deprecated
 public class Solver {
 	final List<String> messages = new ArrayList<>();
 	private @Nullable Resolution resolution;
 
-	enum Resolution { Trivial, Assumming, Impossible }
+	enum Resolution { Trivial, Assuming, Impossible, Deferred }
 
 	interface Proposition {
 		void collectVariables(Consumer<Type.Variable> consumer);
@@ -55,7 +56,7 @@ public class Solver {
 				switch (solution.resolution) {
 				case Impossible:
 					return false;
-				case Assumming:
+				case Assuming:
 				case Trivial:
 					active.remove(a);
 					eliminated.add(a);
@@ -118,19 +119,19 @@ public class Solver {
 
 		@Override public void alias(Type.Variable v, Type.Variable from) {
 			messages.add("alias " + v + " \u27FC " + from);
-			if (resolution != Resolution.Impossible) resolution = Resolution.Assumming;
+			if (resolution != Resolution.Impossible) resolution = Resolution.Assuming;
 			// TODO alias is trick if goes both ways
 			//substitutions.put(v, from);
 		}
 
 		@Override public void substitute(Type.Variable v, Type with) {
 			messages.add("when " + v + " \u27FC " + with);
-			if (resolution != Resolution.Impossible) resolution = Resolution.Assumming;
+			if (resolution != Resolution.Impossible) resolution = Resolution.Assuming;
 
 			//substitutions.put(v, with);
 		}
 
-		@Override public void mismatch(Type to, Type from) {
+		@Override public void bottom(Type to, Type from) {
 			messages.add("mismatch " + to + " </= " + from);
 			resolution = Resolution.Impossible;
 		}
